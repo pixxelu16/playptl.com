@@ -1,84 +1,169 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', config('app.name', 'playptl'))</title>
-    <meta name="description" content="@yield('meta_description', 'Official website for '.config('app.name', 'playptl').'.')">
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f5f7fb;
-            color: #1f2937;
-        }
-
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .site-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px 7%;
-            background: #ffffff;
-            box-shadow: 0 1px 8px rgba(15, 23, 42, 0.06);
-        }
-
-        .brand {
-            font-size: 22px;
-            font-weight: 800;
-        }
-
-        .nav {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            padding: 10px 16px;
-            background: #2563eb;
-            color: #ffffff;
-            font-weight: 700;
-        }
-
-        .button.secondary {
-            background: #111827;
-        }
-
-        .site-main {
-            min-height: calc(100vh - 76px);
-        }
-    </style>
+    <title>@yield('title', 'Premier Tennis League')</title>
+    <meta name="description" content="@yield('meta_description', 'Premier Tennis League official website.')">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: '#5BA04B', lime: '#BDE630', mint: '#E4F7E7' },
+                    borderRadius: { ui: '7px' },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    keyframes: {
+                        marquee: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        },
+                    },
+                    animation: {
+                        marquee: 'marquee 50s linear infinite',
+                        'marquee-gallery': 'marquee 65s linear infinite',
+                    },
+                },
+            },
+        };
+    </script>
     @stack('styles')
 </head>
-<body>
-    <header class="site-header">
-        <a class="brand" href="{{ url('/') }}">{{ config('app.name', 'playptl') }}</a>
-        <nav class="nav">
-            <a href="{{ url('/') }}">Home</a>
-            @auth
-                <a class="button" href="{{ route('dashboard') }}">Dashboard</a>
-            @else
-                <a href="{{ route('login') }}">Login</a>
-                <a class="button secondary" href="{{ route('register') }}">Register</a>
-            @endauth
-        </nav>
+<body class="min-h-screen overflow-x-hidden bg-[#0a0f18] font-sans text-white antialiased">
+    @php
+        $logoPath = 'frontend/images/logo.png';
+        $hasLogo = file_exists(public_path($logoPath));
+    @endphp
+
+    <header class="@yield('header_class', 'relative z-30 bg-[#0a0f18] px-5 py-5 sm:px-8 lg:px-14 lg:py-6')">
+        <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
+            <a href="{{ url('/') }}" class="group flex items-center gap-3">
+                @if ($hasLogo)
+                    <img src="{{ asset($logoPath) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
+                @else
+                    <span class="league-1 text-3xl tracking-wide text-lime sm:text-5xl">PTL</span>
+                @endif
+            </a>
+
+            <nav class="flex flex-wrap items-center justify-center gap-8 text-[15px] font-medium sm:gap-10" aria-label="Main">
+                <a href="{{ url('/') }}" class="text-lime">Home</a>
+
+                <div class="relative" data-dropdown>
+                    <button type="button" class="inline-flex items-center gap-1 rounded-sm text-white/95 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f18]" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-controls="nav-league-menu" id="nav-league-btn">
+                        League
+                        <svg data-dropdown-chevron class="h-3.5 w-3.5 opacity-80 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="nav-league-menu" role="menu" aria-labelledby="nav-league-btn" data-dropdown-panel class="invisible pointer-events-none absolute left-1/2 z-50 mt-3 min-w-[220px] -translate-x-1/2 translate-y-2 rounded-ui border border-white/10 bg-[rgba(10,15,24,0.96)] py-2 opacity-0 shadow-xl backdrop-blur-md transition-all duration-200 ease-out lg:left-0 lg:translate-x-0">
+                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Season overview</a>
+                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Schedule &amp; fixtures</a>
+                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Standings</a>
+                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Teams &amp; rosters</a>
+                        <a href="{{ route('register') }}" role="menuitem" class="block px-4 py-2.5 text-[14px] text-lime hover:bg-white/10">Register a team</a>
+                    </div>
+                </div>
+
+                <div class="relative" data-dropdown>
+                    <button type="button" class="inline-flex items-center gap-1 rounded-sm text-white/95 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f18]" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-controls="nav-gallery-menu" id="nav-gallery-btn">
+                        Gallery
+                        <svg data-dropdown-chevron class="h-3.5 w-3.5 opacity-80 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="nav-gallery-menu" role="menu" aria-labelledby="nav-gallery-btn" data-dropdown-panel class="invisible pointer-events-none absolute left-1/2 z-50 mt-3 min-w-[200px] -translate-x-1/2 translate-y-2 rounded-ui border border-white/10 bg-[rgba(10,15,24,0.96)] py-2 opacity-0 shadow-xl backdrop-blur-md transition-all duration-200 ease-out lg:left-0 lg:translate-x-0">
+                        <a href="#gallery" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Match photos</a>
+                        <a href="#gallery" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Highlights</a>
+                        <a href="#gallery" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Behind the scenes</a>
+                    </div>
+                </div>
+
+                <a href="#" class="text-white/95 transition-colors hover:text-white">Charity</a>
+            </nav>
+
+            <div class="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-end">
+                @auth
+                    <a href="{{ route('dashboard') }}" class="inline-flex min-w-[110px] items-center justify-center rounded-ui bg-brand px-5 py-2.5 text-[15px] font-bold text-white transition-opacity hover:opacity-95">Dashboard</a>
+                @else
+                    <a href="{{ route('login') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-brand px-5 py-2.5 text-[15px] font-bold text-white transition-opacity hover:opacity-95">Login</a>
+                    <a href="{{ route('register') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-lime px-5 py-2.5 text-[15px] font-bold text-[#1a1a1a] transition-opacity hover:opacity-95">Register</a>
+                @endauth
+            </div>
+        </div>
     </header>
 
-    <main class="site-main">
-        @yield('content')
-    </main>
+    @yield('content')
+
+    <footer class="bg-[#090E1A] font-sans text-[rgba(255,255,255,0.56)] antialiased" role="contentinfo">
+        <div class="mx-auto max-w-[1400px] px-5 py-14 sm:px-8 lg:px-14 lg:py-16">
+            <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[130px]">
+                <div class="max-w-sm lg:max-w-none">
+                    <a href="{{ url('/') }}" class="inline-block">
+                        @if ($hasLogo)
+                            <img src="{{ asset($logoPath) }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
+                        @else
+                            <span class="league-1 text-5xl tracking-wide text-lime">PTL</span>
+                        @endif
+                    </a>
+                    <p class="mt-6 text-[15px] leading-[1.65] text-[rgba(255,255,255,0.56)]">
+                        The region's premier competitive tennis league. Forging champions, building community, raising funds for causes that matter.
+                    </p>
+                </div>
+
+                <nav aria-label="League">
+                    <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">League</h2>
+                    <ul class="space-y-3 text-[15px]">
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Tournaments</a></li>
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Standings</a></li>
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Players</a></li>
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Match Results</a></li>
+                    </ul>
+                </nav>
+
+                <nav aria-label="Community">
+                    <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">Community</h2>
+                    <ul class="space-y-3 text-[15px]">
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Charity Partners</a></li>
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Junior Program</a></li>
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Volunteer</a></li>
+                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Sponsors</a></li>
+                    </ul>
+                </nav>
+
+                <div>
+                    <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">Contact us</h2>
+                    <div class="space-y-5 text-[15px] leading-relaxed text-[rgba(255,255,255,0.56)]">
+                        <div>
+                            <p class="mb-1 text-[rgba(255,255,255,0.56)]">Call Us:</p>
+                            <p><a href="tel:+919876543210" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">+91 98765 43210</a></p>
+                        </div>
+                        <div>
+                            <p class="mb-1 text-[rgba(255,255,255,0.56)]">Email:</p>
+                            <p><a href="mailto:player.one@example.com" class="break-all text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">player.one@example.com</a></p>
+                        </div>
+                        <div>
+                            <p class="mb-1 text-[rgba(255,255,255,0.56)]">Address:</p>
+                            <p>18 Sector 22, Chandigarh, India</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 border-t border-white/[0.08] pt-8">
+                <p class="text-center text-[13px] leading-relaxed text-[rgba(255,255,255,0.56)] sm:text-sm">
+                    &copy; 2026 Premier Tennis League. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ asset('frontend/js/custom.js') }}"></script>
+    @stack('scripts')
 </body>
 </html>
