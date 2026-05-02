@@ -5,35 +5,11 @@
 @section('header_class', 'absolute inset-x-0 top-0 z-30 px-5 pb-4 pt-6 sm:px-8 lg:px-14')
 
 @section('content')
-    @php
-        $heroVideo = 'frontend/videos/hero-section-video.mp4';
-        $hasHeroVideo = file_exists(public_path($heroVideo));
-        $assetExists = fn (string $path): bool => file_exists(public_path($path));
-        $frontendAssetUrl = static function (string $path): string {
-            $baseUrl = request()->getBaseUrl();
-            $isAlreadyInsidePublic = str_ends_with($baseUrl, '/public') || str_contains($baseUrl, '/public/');
-
-            return asset(($isAlreadyInsidePublic ? '' : 'public/').$path);
-        };
-        $partners = collect(range(1, 9))->map(fn (int $number): string => "frontend/images/partner-{$number}.png");
-        $galleryImages = [
-            'frontend/images/man-focused-tennis-game 2.png',
-            'frontend/images/person-playing-tennis-game-winter-time 1.png',
-            'frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png',
-            'frontend/images/tennis-player-serving-hard 1.png',
-            'frontend/images/young-man-tennis-player-court 1.png',
-        ];
-    @endphp
-
     <main>
         <section class="relative flex min-h-screen flex-col overflow-hidden">
-            @if ($hasHeroVideo)
-                <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                    <source src="{{ $frontendAssetUrl($heroVideo) }}" type="video/mp4">
-                </video>
-            @else
-                <div class="absolute inset-0 z-0 bg-[radial-gradient(circle_at_20%_20%,rgba(189,230,48,0.28),transparent_28%),linear-gradient(135deg,#08101c_0%,#102416_48%,#0a0f18_100%)]" aria-hidden="true"></div>
-            @endif
+            <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
+            </video>
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 
@@ -184,19 +160,64 @@
 
             <div class="relative w-full min-w-0 overflow-hidden">
                 <div class="flex w-max select-none will-change-transform motion-reduce:animate-none animate-marquee">
-                    @foreach ([1, 2] as $strip)
-                        <ul class="flex shrink-0 items-center gap-10 pr-10 sm:gap-14 sm:pr-14 md:gap-16 md:pr-16" role="{{ $strip === 1 ? 'list' : 'presentation' }}" @if ($strip === 2) aria-hidden="true" @endif>
-                            @foreach ($partners as $partner)
-                                <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                                    @if ($assetExists($partner))
-                                        <img src="{{ $frontendAssetUrl($partner) }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                                    @else
-                                        <span class="text-xs font-bold uppercase tracking-[0.16em] text-[#55A64E]">Partner</span>
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endforeach
+                    <ul class="flex shrink-0 items-center gap-10 pr-10 sm:gap-14 sm:pr-14 md:gap-16 md:pr-16" role="list">
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-1.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-2.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-3.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-4.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-5.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-6.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-7.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-8.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-9.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                    </ul>
+                    <ul class="flex shrink-0 items-center gap-10 pr-10 sm:gap-14 sm:pr-14 md:gap-16 md:pr-16" role="presentation" aria-hidden="true">
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-1.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-2.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-3.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-4.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-5.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-6.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-7.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-8.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
+                            <img src="{{ asset('frontend/images/partner-9.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                        </li>
+                    </ul>
                 </div>
             </div>
         </section>
@@ -219,21 +240,40 @@
                 <div id="gallery-panel-{{ $panel }}" role="tabpanel" aria-labelledby="gallery-tab-{{ $panel }}" data-gallery-panel="{{ $panel }}" class="{{ $hidden ? 'hidden ' : '' }}w-full min-w-0 focus:outline-none" tabindex="0" @if ($hidden) hidden @endif>
                     <div class="relative w-full min-w-0 overflow-x-hidden">
                         <div class="flex w-max select-none will-change-transform motion-reduce:animate-none animate-marquee-gallery">
-                            @foreach ([1, 2] as $strip)
-                                <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="{{ $strip === 1 ? 'list' : 'presentation' }}" @if ($strip === 2) aria-hidden="true" @endif>
-                                    @foreach ($galleryImages as $image)
-                                        <li class="shrink-0">
-                                            @if ($assetExists($image))
-                                                <img src="{{ $frontendAssetUrl($image) }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                            @else
-                                                <div class="asset-fallback h-[540px] w-[360px] shrink-0 rounded-2xl shadow-md">
-                                                    Gallery Photo
-                                                </div>
-                                            @endif
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @endforeach
+                            <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="list">
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/man-focused-tennis-game 2.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/person-playing-tennis-game-winter-time 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/tennis-player-serving-hard 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/young-man-tennis-player-court 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                            </ul>
+                            <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="presentation" aria-hidden="true">
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/man-focused-tennis-game 2.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/person-playing-tennis-game-winter-time 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/tennis-player-serving-hard 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                                <li class="shrink-0">
+                                    <img src="{{ asset('frontend/images/young-man-tennis-player-court 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
