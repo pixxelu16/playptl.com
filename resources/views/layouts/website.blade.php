@@ -35,7 +35,7 @@
     </script>
     @stack('styles')
 </head>
-<body class="min-h-screen overflow-x-hidden bg-[#0a0f18] font-sans text-white antialiased">
+<body class="@yield('body_class', 'min-h-screen overflow-x-hidden bg-[#0a0f18] font-sans text-white antialiased')">
     @php
         $logoPath = 'frontend/images/logo.png';
         $hasLogo = file_exists(public_path($logoPath));
@@ -97,6 +97,26 @@
             </div>
         </div>
     </header>
+
+    @if ($errors->any())
+        <div class="mx-auto max-w-[520px] px-5 pt-10 sm:px-8 lg:px-14">
+            <div class="rounded-ui border border-red-500/35 bg-red-950/50 px-4 py-3 text-sm text-red-100">
+                <ul class="list-disc space-y-1 pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
+    @if (session('status'))
+        <div class="mx-auto max-w-[520px] px-5 pt-10 sm:px-8 lg:px-14">
+            <div class="rounded-ui border border-emerald-500/35 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-100">
+                {{ session('status') }}
+            </div>
+        </div>
+    @endif
 
     @yield('content')
 
