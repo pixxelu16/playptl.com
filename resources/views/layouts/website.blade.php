@@ -5,10 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Premier Tennis League')</title>
     <meta name="description" content="@yield('meta_description', 'Premier Tennis League official website.')">
+    @php
+        $frontendAssetUrl = static function (string $path): string {
+            $baseUrl = request()->getBaseUrl();
+            $isAlreadyInsidePublic = str_ends_with($baseUrl, '/public') || str_contains($baseUrl, '/public/');
+
+            return asset(($isAlreadyInsidePublic ? '' : 'public/').$path);
+        };
+    @endphp
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
+    <link rel="stylesheet" href="{{ $frontendAssetUrl('frontend/css/style.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -45,7 +53,7 @@
         <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
             <a href="{{ url('/') }}" class="group flex items-center gap-3">
                 @if ($hasLogo)
-                    <img src="{{ asset($logoPath) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
+                    <img src="{{ $frontendAssetUrl($logoPath) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
                 @else
                     <span class="league-1 text-3xl tracking-wide text-lime sm:text-5xl">PTL</span>
                 @endif
@@ -126,7 +134,7 @@
                 <div class="max-w-sm lg:max-w-none">
                     <a href="{{ url('/') }}" class="inline-block">
                         @if ($hasLogo)
-                            <img src="{{ asset($logoPath) }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
+                            <img src="{{ $frontendAssetUrl($logoPath) }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
                         @else
                             <span class="league-1 text-5xl tracking-wide text-lime">PTL</span>
                         @endif
@@ -183,7 +191,7 @@
         </div>
     </footer>
 
-    <script src="{{ asset('frontend/js/custom.js') }}"></script>
+    <script src="{{ $frontendAssetUrl('frontend/js/custom.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

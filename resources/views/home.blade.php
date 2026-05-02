@@ -9,6 +9,12 @@
         $heroVideo = 'frontend/videos/hero-section-video.mp4';
         $hasHeroVideo = file_exists(public_path($heroVideo));
         $assetExists = fn (string $path): bool => file_exists(public_path($path));
+        $frontendAssetUrl = static function (string $path): string {
+            $baseUrl = request()->getBaseUrl();
+            $isAlreadyInsidePublic = str_ends_with($baseUrl, '/public') || str_contains($baseUrl, '/public/');
+
+            return asset(($isAlreadyInsidePublic ? '' : 'public/').$path);
+        };
         $partners = collect(range(1, 9))->map(fn (int $number): string => "frontend/images/partner-{$number}.png");
         $galleryImages = [
             'frontend/images/man-focused-tennis-game 2.png',
@@ -23,7 +29,7 @@
         <section class="relative flex min-h-screen flex-col overflow-hidden">
             @if ($hasHeroVideo)
                 <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                    <source src="{{ asset($heroVideo) }}" type="video/mp4">
+                    <source src="{{ $frontendAssetUrl($heroVideo) }}" type="video/mp4">
                 </video>
             @else
                 <div class="absolute inset-0 z-0 bg-[radial-gradient(circle_at_20%_20%,rgba(189,230,48,0.28),transparent_28%),linear-gradient(135deg,#08101c_0%,#102416_48%,#0a0f18_100%)]" aria-hidden="true"></div>
@@ -183,7 +189,7 @@
                             @foreach ($partners as $partner)
                                 <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
                                     @if ($assetExists($partner))
-                                        <img src="{{ asset($partner) }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
+                                        <img src="{{ $frontendAssetUrl($partner) }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
                                     @else
                                         <span class="text-xs font-bold uppercase tracking-[0.16em] text-[#55A64E]">Partner</span>
                                     @endif
@@ -218,7 +224,7 @@
                                     @foreach ($galleryImages as $image)
                                         <li class="shrink-0">
                                             @if ($assetExists($image))
-                                                <img src="{{ asset($image) }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
+                                                <img src="{{ $frontendAssetUrl($image) }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
                                             @else
                                                 <div class="asset-fallback h-[540px] w-[360px] shrink-0 rounded-2xl shadow-md">
                                                     Gallery Photo
