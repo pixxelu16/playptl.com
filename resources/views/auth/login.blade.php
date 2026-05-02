@@ -69,7 +69,7 @@
 
                 {{-- Right: image --}}
                 <div class="relative min-h-[260px] w-full lg:min-h-[480px] lg:w-1/2 lg:max-w-[50%]">
-                    <img src="{{ asset('frontend/images/man-focused-tennis-game 2.png') }}" alt="Tennis player with racket"
+                    <img src="{{ asset('public/frontend/images/man-focused-tennis-game 2.png') }}" alt="Tennis player with racket"
                         class="h-full min-h-[260px] w-full object-cover lg:absolute lg:inset-0 lg:min-h-full lg:rounded-r-[12px]"
                         width="480" height="640" loading="eager" decoding="async">
                 </div>
