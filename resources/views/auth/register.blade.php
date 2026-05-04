@@ -1,4 +1,4 @@
-@extends('layouts.website')
+﻿@extends('layouts.website')
 
 @section('header_theme', 'light')
 @section('header_logo_path', 'public/frontend/images/logo-2.png')
