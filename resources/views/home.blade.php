@@ -1,4 +1,4 @@
-@extends('layouts.website')
+﻿@extends('layouts.website')
 
 @section('nav_active', 'home')
 
