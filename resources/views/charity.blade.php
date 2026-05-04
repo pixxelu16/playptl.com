@@ -48,7 +48,7 @@
             </div>
         </section>
 
-        <section class="bg-[#E9F5E9] py-10 font-sans antialiased sm:py-12 lg:py-16" aria-labelledby="charity-impact-heading">
+        <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-16" aria-labelledby="charity-impact-heading">
             <h2 id="charity-impact-heading" class="sr-only">Charity impact</h2>
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
@@ -76,7 +76,7 @@
             </div>
         </section>
 
-        <section class="bg-[#f1f8f1] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-goal-heading">
+        <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-goal-heading">
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <h2 id="charity-goal-heading" class="sr-only">Season fundraising goal</h2>
                 <div class="relative overflow-hidden rounded-[15px] bg-white p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.05] sm:p-8 lg:p-10">
@@ -123,7 +123,7 @@
             </div>
         </section>
 
-        <section class="bg-[#F0F7ED] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-donate-cta-heading">
+        <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-donate-cta-heading">
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <h2 id="charity-donate-cta-heading" class="sr-only">Make a donation</h2>
                 <div
@@ -241,7 +241,7 @@
             ];
         @endphp
 
-        <section class="bg-[#E8F5E9] py-10 font-sans antialiased sm:py-12 lg:py-16" aria-labelledby="charity-partners-programs-heading">
+        <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-16" aria-labelledby="charity-partners-programs-heading">
             <h2 id="charity-partners-programs-heading" class="sr-only">Charity partners and active programs</h2>
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10 lg:items-start">
@@ -347,7 +347,7 @@
             ];
         @endphp
 
-        <section class="bg-[#E8F5E9] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-upcoming-events-heading">
+        <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-upcoming-events-heading">
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <h2 id="charity-upcoming-events-heading" class="mb-8 text-left text-[clamp(1.125rem,2.5vw,1.5rem)] font-bold uppercase tracking-[0.08em] text-[#1B3022] sm:mb-10">
                     Upcoming charity events
@@ -392,7 +392,7 @@
             ];
         @endphp
 
-        <section class="bg-[#E8F5E9] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-top-volunteers-heading">
+        <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="charity-top-volunteers-heading">
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <div class="mb-8 flex flex-wrap items-center justify-between gap-4 sm:mb-10">
                     <h2 id="charity-top-volunteers-heading" class="text-left text-[clamp(1.125rem,2.5vw,1.375rem)] font-bold uppercase tracking-[0.06em] text-[#1B2B1B]">
