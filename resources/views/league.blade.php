@@ -5,11 +5,11 @@
 @section('title', 'PTL Spring 2026 | Premier Tennis League')
 @section('meta_description', 'PTL Spring 2026 season overview — divisions, schedule window, and player registration for Premier Tennis League.')
 
-@section('header_class', 'absolute inset-x-0 top-0 z-30 bg-transparent px-5 pb-4 pt-6 sm:px-8 lg:px-14')
+@section('header_class', 'absolute inset-x-0 top-0 z-[100] bg-transparent px-5 pb-4 pt-6 sm:px-8 lg:px-14')
 
 @section('content')
     <main>
-        <section class="relative flex min-h-screen flex-col overflow-hidden">
+        <section class="relative flex h-[685px] min-h-[685px] flex-col overflow-hidden">
             <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
                 <source src="{{ asset('public/frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
             </video>

@@ -24,6 +24,9 @@
       }
       return '$' + m;
     }
+    if (format === 'intComma') {
+      return Math.round(value).toLocaleString('en-US');
+    }
     return String(value);
   }
 
