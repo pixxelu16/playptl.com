@@ -45,13 +45,13 @@
         $headerLogoPath = trim((string) $__env->yieldContent('header_logo_path'));
         $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : 'public/frontend/images/logo.png';
     @endphp
-    <header class="@yield('header_class', $defaultHeaderClass)">
+    <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass)">
         <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
             <a href="{{ url('/') }}" class="group flex items-center gap-3">
                 <img src="{{ asset($headerLogoSrc) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
             </a>
 
-            <nav class="flex flex-wrap items-center justify-center gap-8 text-[15px] font-medium sm:gap-10" aria-label="Main">
+            <nav class="relative z-10 flex flex-wrap items-center justify-center gap-8 text-[16px] font-medium sm:gap-10" aria-label="Main">
                 <a href="{{ url('/') }}" @class([
                     'transition-colors',
                     'text-[#c1e82c]' => ! $headerLight && $navActive === 'home',
@@ -82,16 +82,20 @@
                     </div>
                 </div>
 
-                <a href="{{ url('/') }}#gallery" @class([
+                <a href="{{ url('/gallery') }}" @class([
                     'transition-colors',
-                    'text-white/95 hover:text-white' => ! $headerLight,
-                    'text-[#1a1a1a]/90 hover:text-[#1a1a1a]' => $headerLight,
+                    'text-[#B4F000]' => ! $headerLight && $navActive === 'gallery',
+                    'text-white/95 hover:text-white' => ! $headerLight && $navActive !== 'gallery',
+                    'font-semibold text-[#B4F000]' => $headerLight && $navActive === 'gallery',
+                    'text-[#1a1a1a]/90 hover:text-[#1a1a1a]' => $headerLight && $navActive !== 'gallery',
                 ])>Gallery</a>
 
-                <a href="#" @class([
+                <a href="{{ url('/charity') }}" @class([
                     'transition-colors',
-                    'text-white/95 hover:text-white' => ! $headerLight,
-                    'text-[#1a1a1a]/90 hover:text-[#1a1a1a]' => $headerLight,
+                    'text-[#C1D72E]' => ! $headerLight && $navActive === 'charity',
+                    'text-white/95 hover:text-white' => ! $headerLight && $navActive !== 'charity',
+                    'font-semibold text-[#C1D72E]' => $headerLight && $navActive === 'charity',
+                    'text-[#1a1a1a]/90 hover:text-[#1a1a1a]' => $headerLight && $navActive !== 'charity',
                 ])>Charity</a>
             </nav>
 
@@ -99,8 +103,8 @@
                 @auth
                     <a href="{{ route('dashboard') }}" class="inline-flex min-w-[110px] items-center justify-center rounded-ui bg-brand px-5 py-2.5 text-[15px] font-bold text-white transition-opacity hover:opacity-95">Dashboard</a>
                 @else
-                    <a href="{{ route('login') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-brand px-5 py-2.5 text-[15px] font-bold text-white transition-opacity hover:opacity-95">Login</a>
-                    <a href="{{ route('register') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-lime px-5 py-2.5 text-[15px] font-bold text-[#1a1a1a] transition-opacity hover:opacity-95">Register</a>
+                    <a href="{{ route('login') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-[#4CAF50] px-5 py-2.5 text-[16px] font-bold text-white transition-opacity hover:opacity-95">Login</a>
+                    <a href="{{ route('register') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-[#C1D72E] px-5 py-2.5 text-[16px] font-bold text-[#1a1a1a] transition-opacity hover:opacity-95">Register</a>
                 @endauth
             </div>
         </div>
@@ -153,7 +157,7 @@
                 <nav aria-label="Community">
                     <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">Community</h2>
                     <ul class="space-y-3 text-[15px]">
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Charity Partners</a></li>
+                        <li><a href="{{ url('/charity') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Charity Partners</a></li>
                         <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Junior Program</a></li>
                         <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Volunteer</a></li>
                         <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Sponsors</a></li>

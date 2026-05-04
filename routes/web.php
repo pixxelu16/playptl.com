@@ -20,6 +20,14 @@ Route::get('/', function () {
     return view('home');
 });
 
+Route::get('/gallery', function () {
+    return view('gallery');
+})->name('gallery');
+
+Route::get('/charity', function () {
+    return view('charity');
+})->name('charity');
+
 Route::get('/league', [LeagueController::class, 'index'])->name('league');
 Route::get('/league/group/{slug}', [LeagueController::class, 'show'])->name('league.group');
 
