@@ -4,9 +4,17 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\AdminAnnouncementController;
+use App\Http\Controllers\AdminGroupController;
+use App\Http\Controllers\AdminLeagueController;
 use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\LeagueController;
+use App\Models\Announcement;
+use App\Models\Group;
+use App\Models\League;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 
 Route::get('/', function () {
     return view('home');
@@ -34,8 +42,50 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', function () {
-            return view('admin.dashboard');
+            return view('admin.dashboard', [
+                'leaguesCount' => League::query()->count(),
+                'announcementsCount' => Announcement::query()->count(),
+                'groupsCount' => Group::query()->count(),
+            ]);
         })->name('dashboard');
+
+        Route::resource('leagues', AdminLeagueController::class);
+        Route::resource('announcements', AdminAnnouncementController::class);
+        Route::resource('groups', AdminGroupController::class);
+
+        Route::get('/profile', function () {
+            return view('admin.profile');
+        })->name('profile');
+
+        Route::put('/profile', function (Request $request) {
+            $user = $request->user();
+
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            ]);
+
+            $user->update($validated);
+
+            return back()->with('status', 'Profile updated successfully.');
+        })->name('profile.update');
+
+        Route::get('/change-password', function () {
+            return view('admin.change-password');
+        })->name('password.edit');
+
+        Route::put('/change-password', function (Request $request) {
+            $validated = $request->validate([
+                'current_password' => ['required', 'current_password'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
+
+            $request->user()->update([
+                'password' => $validated['password'],
+            ]);
+
+            return back()->with('status', 'Password changed successfully.');
+        })->name('password.update');
     });
 
     Route::middleware('role:organiser')->prefix('organiser')->name('organiser.')->group(function () {
