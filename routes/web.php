@@ -5,11 +5,15 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardRedirectController;
+use App\Http\Controllers\LeagueController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('home');
 });
+
+Route::get('/league', [LeagueController::class, 'index'])->name('league');
+Route::get('/league/group/{slug}', [LeagueController::class, 'show'])->name('league.group');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');

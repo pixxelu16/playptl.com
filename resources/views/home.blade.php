@@ -1,5 +1,7 @@
 @extends('layouts.website')
 
+@section('nav_active', 'home')
+
 @section('title', 'Premier Tennis League')
 @section('meta_description', 'Premier Tennis League is a competitive tennis platform for tournaments, teams, players, fixtures, galleries, and community events.')
 @section('header_class', 'absolute inset-x-0 top-0 z-30 px-5 pb-4 pt-6 sm:px-8 lg:px-14')
