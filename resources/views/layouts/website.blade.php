@@ -7,17 +7,17 @@
     <meta name="description" content="@yield('meta_description', 'Premier Tennis League official website.')">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('public/frontend/css/style.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { brand: '#5BA04B', lime: '#BDE630', mint: '#E4F7E7' },
+                    colors: { brand: '#5cb85c', lime: '#c1e82c', mint: '#E4F7E7' },
                     borderRadius: { ui: '7px' },
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        sans: ['Inter', 'Montserrat', 'system-ui', 'sans-serif'],
                     },
                     keyframes: {
                         marquee: {
@@ -36,24 +36,45 @@
     @stack('styles')
 </head>
 <body class="@yield('body_class', 'min-h-screen overflow-x-hidden bg-[#0a0f18] font-sans text-white antialiased')">
-    <header class="@yield('header_class', 'relative z-30 bg-[#0a0f18] px-5 py-5 sm:px-8 lg:px-14 lg:py-6')">
+    @php
+        $headerLight = trim((string) $__env->yieldContent('header_theme')) === 'light';
+        $navActive = trim((string) $__env->yieldContent('nav_active'));
+        $defaultHeaderClass = $headerLight
+            ? 'relative z-30 bg-[#E4F7E7] px-5 py-5 sm:px-8 lg:px-14 lg:py-6'
+            : 'relative z-30 bg-[#0a0f18] px-5 py-5 sm:px-8 lg:px-14 lg:py-6';
+        $headerLogoPath = trim((string) $__env->yieldContent('header_logo_path'));
+        $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : 'public/frontend/images/logo.png';
+    @endphp
+    <header class="@yield('header_class', $defaultHeaderClass)">
         <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
             <a href="{{ url('/') }}" class="group flex items-center gap-3">
-                <img src="{{ asset('public/frontend/images/logo.png') }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
+                <img src="{{ asset($headerLogoSrc) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
             </a>
 
             <nav class="flex flex-wrap items-center justify-center gap-8 text-[15px] font-medium sm:gap-10" aria-label="Main">
-                <a href="{{ url('/') }}" class="text-lime">Home</a>
+                <a href="{{ url('/') }}" @class([
+                    'transition-colors',
+                    'text-[#c1e82c]' => ! $headerLight && $navActive === 'home',
+                    'text-white/95 hover:text-white' => ! $headerLight && $navActive !== 'home',
+                    'font-semibold text-[#c1e82c]' => $headerLight && $navActive === 'home',
+                    'text-[#1a1a1a]/90 hover:text-[#1a1a1a]' => $headerLight && $navActive !== 'home',
+                ])>Home</a>
 
                 <div class="relative" data-dropdown>
-                    <button type="button" class="inline-flex items-center gap-1 rounded-sm text-white/95 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f18]" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-controls="nav-league-menu" id="nav-league-btn">
+                    <button type="button" @class([
+                        'inline-flex items-center gap-1 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/80 focus-visible:ring-offset-2',
+                        'text-[#c1e82c]' => ! $headerLight && $navActive === 'league',
+                        'text-white/95 hover:text-white focus-visible:ring-offset-[#0a0f18]' => ! $headerLight && $navActive !== 'league',
+                        'font-semibold text-[#c1e82c]' => $headerLight && $navActive === 'league',
+                        'text-[#1a1a1a]/90 hover:text-[#1a1a1a] focus-visible:ring-offset-[#E4F7E7]' => $headerLight && $navActive !== 'league',
+                    ]) data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-controls="nav-league-menu" id="nav-league-btn">
                         League
                         <svg data-dropdown-chevron class="h-3.5 w-3.5 opacity-80 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
                     <div id="nav-league-menu" role="menu" aria-labelledby="nav-league-btn" data-dropdown-panel class="invisible pointer-events-none absolute left-1/2 z-50 mt-3 min-w-[220px] -translate-x-1/2 translate-y-2 rounded-ui border border-white/10 bg-[rgba(10,15,24,0.96)] py-2 opacity-0 shadow-xl backdrop-blur-md transition-all duration-200 ease-out lg:left-0 lg:translate-x-0">
-                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Season overview</a>
+                        <a href="{{ route('league') }}" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Season overview</a>
                         <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Schedule &amp; fixtures</a>
                         <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Standings</a>
                         <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Teams &amp; rosters</a>
@@ -61,21 +82,17 @@
                     </div>
                 </div>
 
-                <div class="relative" data-dropdown>
-                    <button type="button" class="inline-flex items-center gap-1 rounded-sm text-white/95 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f18]" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-controls="nav-gallery-menu" id="nav-gallery-btn">
-                        Gallery
-                        <svg data-dropdown-chevron class="h-3.5 w-3.5 opacity-80 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <div id="nav-gallery-menu" role="menu" aria-labelledby="nav-gallery-btn" data-dropdown-panel class="invisible pointer-events-none absolute left-1/2 z-50 mt-3 min-w-[200px] -translate-x-1/2 translate-y-2 rounded-ui border border-white/10 bg-[rgba(10,15,24,0.96)] py-2 opacity-0 shadow-xl backdrop-blur-md transition-all duration-200 ease-out lg:left-0 lg:translate-x-0">
-                        <a href="#gallery" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Match photos</a>
-                        <a href="#gallery" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Highlights</a>
-                        <a href="#gallery" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Behind the scenes</a>
-                    </div>
-                </div>
+                <a href="{{ url('/') }}#gallery" @class([
+                    'transition-colors',
+                    'text-white/95 hover:text-white' => ! $headerLight,
+                    'text-[#1a1a1a]/90 hover:text-[#1a1a1a]' => $headerLight,
+                ])>Gallery</a>
 
-                <a href="#" class="text-white/95 transition-colors hover:text-white">Charity</a>
+                <a href="#" @class([
+                    'transition-colors',
+                    'text-white/95 hover:text-white' => ! $headerLight,
+                    'text-[#1a1a1a]/90 hover:text-[#1a1a1a]' => $headerLight,
+                ])>Charity</a>
             </nav>
 
             <div class="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-end">

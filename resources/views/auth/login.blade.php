@@ -1,5 +1,8 @@
 @extends('layouts.website')
 
+@section('header_theme', 'light')
+@section('header_logo_path', 'public/frontend/images/logo-2.png')
+
 @section('body_class', 'min-h-screen overflow-x-hidden bg-[#f4faf4] font-sans antialiased text-[#333333]')
 
 @section('title', 'Login | '.config('app.name', 'playptl'))
@@ -22,7 +25,7 @@
 @endpush
 
 @section('content')
-    <div class="login-page flex min-h-[calc(100vh-200px)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div class="login-page flex min-h-[calc(100vh-200px)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-[#E4F7E7]">
         <div class="w-full max-w-[960px] overflow-hidden rounded-[12px] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
             <div class="flex flex-col lg:flex-row">
                 {{-- Left: form --}}

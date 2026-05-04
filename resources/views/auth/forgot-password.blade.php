@@ -1,5 +1,7 @@
 @extends('layouts.website')
 
+@section('header_theme', 'light')
+
 @section('title', 'Forgot Password | '.config('app.name', 'playptl'))
 @section('meta_description', 'Request a secure password reset link for your '.config('app.name', 'playptl').' account.')
 
