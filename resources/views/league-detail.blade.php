@@ -11,7 +11,7 @@
     <main>
         <section class="relative flex h-[685px] min-h-[685px] flex-col overflow-hidden">
             <video class="absolute inset-0 z-0 h-full min-h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('public/frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
+                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
             </video>
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
@@ -27,7 +27,7 @@
                     <nav class="mb-6 flex flex-wrap items-center gap-x-1 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.28em] sm:mb-8 sm:text-xs md:text-[13px]" aria-label="Breadcrumb">
                         <a href="{{ url('/') }}" class="text-white transition-colors hover:text-white/90">Home</a>
                         <span class="mx-1 inline text-[#c1e82c] sm:mx-2">&gt;&gt;</span>
-                        <a href="{{ route('league') }}" class="text-white transition-colors hover:text-white/90">{{ $breadcrumbLeagueLabel }}</a>
+                        <a href="{{ route('league.overview', ['slug' => $leagueSlug ?? '']) }}" class="text-white transition-colors hover:text-white/90">{{ $breadcrumbLeagueLabel }}</a>
                         <span class="mx-1 inline text-[#c1e82c] sm:mx-2">&gt;&gt;</span>
                         <span class="text-[#c1e82c]">{{ $breadcrumbGroup }}</span>
                     </nav>
@@ -425,7 +425,7 @@
                                     @if (!empty($col['champion']))
                                         <div class="relative mt-1 overflow-hidden rounded-[10px] ">
                                             <img
-                                                src="{{ asset('public/frontend/images/champion.png') }}"
+                                                src="{{ asset('frontend/images/champion.png') }}"
                                                 alt="Champion — Season 2026"
                                                 class="block h-auto w-full max-w-full"
                                                 loading="lazy"

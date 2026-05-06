@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -8,7 +8,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('public/frontend/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
+    @php
+        $pageBgRaw = trim((string) $__env->yieldContent('page_bg'));
+        $pageBg = preg_match('/^#[0-9a-fA-F]{3,8}$/', $pageBgRaw) ? $pageBgRaw : '';
+    @endphp
+    @if ($pageBg !== '')
+        <style>
+            html,
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: {{ $pageBg }} !important;
+            }
+            html {
+                height: 100%;
+            }
+            body {
+                min-height: 100%;
+            }
+        </style>
+    @endif
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -43,7 +63,9 @@
             ? 'relative z-30 bg-[#E4F7E7] px-5 py-5 sm:px-8 lg:px-14 lg:py-6'
             : 'relative z-30 bg-[#0a0f18] px-5 py-5 sm:px-8 lg:px-14 lg:py-6';
         $headerLogoPath = trim((string) $__env->yieldContent('header_logo_path'));
-        $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : 'public/frontend/images/logo.png';
+        $defaultHeaderLogo = $navActive === 'home' ? 'frontend/images/logo.png' : 'frontend/images/logo-2.png';
+        $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : $defaultHeaderLogo;
+        $activeLeagueMenuItems = \App\Helpers\LeagueMenuHelper::activeLeagues();
     @endphp
     <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass)">
         <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
@@ -74,11 +96,11 @@
                         </svg>
                     </button>
                     <div id="nav-league-menu" role="menu" aria-labelledby="nav-league-btn" data-dropdown-panel class="invisible pointer-events-none absolute left-1/2 z-50 mt-3 min-w-[220px] -translate-x-1/2 translate-y-2 rounded-ui border border-white/10 bg-[rgba(10,15,24,0.96)] py-2 opacity-0 shadow-xl backdrop-blur-md transition-all duration-200 ease-out lg:left-0 lg:translate-x-0">
-                        <a href="{{ route('league') }}" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Season overview</a>
-                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Schedule &amp; fixtures</a>
-                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Standings</a>
-                        <a href="#" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Teams &amp; rosters</a>
-                        <a href="{{ route('register') }}" role="menuitem" class="block px-4 py-2.5 text-[14px] text-lime hover:bg-white/10">Register a team</a>
+                        @forelse ($activeLeagueMenuItems as $leagueMenuItem)
+                            <a href="{{ route('league.overview', ['slug' => $leagueMenuItem->slug]) }}" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">{{ $leagueMenuItem->name }}</a>
+                        @empty
+                            <span class="block px-4 py-2.5 text-[14px] text-white/60">No active leagues</span>
+                        @endforelse
                     </div>
                 </div>
 
@@ -137,7 +159,7 @@
             <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[130px]">
                 <div class="max-w-sm lg:max-w-none">
                     <a href="{{ url('/') }}" class="inline-block">
-                        <img src="{{ asset('public/frontend/images/logo.png') }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
+                        <img src="{{ asset('frontend/images/logo.png') }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
                     </a>
                     <p class="mt-6 text-[15px] leading-[1.65] text-[rgba(255,255,255,0.56)]">
                         The region's premier competitive tennis league. Forging champions, building community, raising funds for causes that matter.
@@ -191,7 +213,7 @@
         </div>
     </footer>
 
-    <script src="{{ asset('public/frontend/js/custom.js') }}"></script>
+    <script src="{{ asset('frontend/js/custom.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

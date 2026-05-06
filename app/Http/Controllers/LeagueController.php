@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Arr;
+use App\Models\GroupCard;
+use App\Models\League;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -10,36 +11,62 @@ class LeagueController extends Controller
 {
     public function index(): View
     {
-        return view('league', [
-            'breadcrumbCurrent' => 'PTL SPRING 2026',
-            'heroTitleLight' => 'PTL SPRING',
-            'heroTitleAccent' => '2026',
-            'statDivisions' => 8,
-            'statSeasonLabel' => 'Season:',
-            'statSeasonRange' => 'May – Aug 2026',
-            'statPlayers' => 105,
-            'groupsHeadingDark' => 'PTL SPRING 2026',
-            'groupsHeadingGreen' => 'GROUPS',
-            'groupCards' => [
-                ['slug' => 'voyagers-singles', 'tag' => 'SINGLES', 'title' => 'Voyagers Singles', 'meta' => '15 Players - 3 Groups'],
-                ['slug' => 'voyagers-double', 'tag' => 'DOUBLES', 'title' => 'Voyagers Double', 'meta' => '15 Players - 3 Groups'],
-                ['slug' => 'challengers-singles', 'tag' => 'SINGLES', 'title' => 'Challengers Singles', 'meta' => '15 Players - 3 Groups'],
-                ['slug' => 'challengers-doubles', 'tag' => 'DOUBLES', 'title' => 'Challengers Doubles', 'meta' => '15 Players - 3 Groups'],
-                ['slug' => 'warriors-singles', 'tag' => 'SINGLES', 'title' => 'Warriors Singles', 'meta' => '15 Players - 3 Groups'],
-                ['slug' => 'warriors-doubles', 'tag' => 'DOUBLES', 'title' => 'Warriors Doubles', 'meta' => '15 Players - 3 Groups'],
-                ['slug' => 'mixed-doubles', 'tag' => 'MIXED', 'title' => 'Mixed Doubles', 'meta' => '10 Players - 2 Groups'],
-                ['slug' => 'youth-singles', 'tag' => 'YOUTH', 'title' => 'Youth Singles', 'meta' => '20 Players - 4 Groups'],
-            ],
-        ]);
+        return view('league', $this->leagueOverviewPayload(null));
     }
 
-    public function show(string $slug): View
+    public function overview(string $slug): View
     {
-        $detail = Arr::get($this->groupDetailMap(), $slug);
+        $league = League::query()
+            ->with(['groupCards' => fn ($q) => $q->orderBy('display_order')->orderBy('name')])
+            ->where('slug', $slug)
+            ->where('stats', 'active')
+            ->firstOrFail();
 
-        if ($detail === null) {
+        return view('league', $this->leagueOverviewPayload($league));
+    }
+
+    public function show(string $leagueSlug, string $groupCardSlug): View
+    {
+        $league = League::query()
+            ->with(['groupCards' => fn ($q) => $q->where('status', 'active')])
+            ->where('slug', $leagueSlug)
+            ->where('stats', 'active')
+            ->firstOrFail();
+
+        $groupCard = $league->groupCards->firstWhere('slug', $groupCardSlug);
+        if (! $groupCard instanceof GroupCard) {
             abort(404);
         }
+
+        $groupNameUpper = Str::upper($groupCard->name);
+        $parts = preg_split('/\s+/', $groupNameUpper) ?: [];
+        $heroAccent = array_pop($parts) ?? '';
+        $heroLight = implode(' ', $parts);
+        if ($heroLight === '') {
+            $heroLight = $groupNameUpper;
+            $heroAccent = '';
+        }
+
+        $seasonRange = 'May – Aug 2026';
+        if ($league->start_date || $league->end_date) {
+            $start = $league->start_date?->format('M Y');
+            $end = $league->end_date?->format('M Y');
+            $seasonRange = trim(collect([$start, $end])->filter()->join(' – '));
+            $seasonRange = $seasonRange !== '' ? $seasonRange : 'TBA';
+        }
+
+        $detail = $this->detailPayload(
+            slug: $groupCardSlug,
+            pageTitle: $groupCard->name.' | '.$league->name,
+            breadcrumbGroup: $groupNameUpper,
+            heroTitleLight: $heroLight,
+            heroTitleAccent: $heroAccent,
+            statPlayers: (int) $groupCard->players_count,
+            statGroups: (int) $groupCard->groups_count,
+        );
+        $detail['leagueSlug'] = $leagueSlug;
+        $detail['breadcrumbLeagueLabel'] = Str::upper($league->name);
+        $detail['statSeasonRange'] = $seasonRange;
 
         $detail['playerProfiles'] = $this->buildPlayerProfiles(
             $detail['breadcrumbGroup'],
@@ -48,87 +75,6 @@ class LeagueController extends Controller
         );
 
         return view('league-detail', $detail);
-    }
-
-    /**
-     * @return array<string, array<string, mixed>>
-     */
-    protected function groupDetailMap(): array
-    {
-        return [
-            'voyagers-singles' => $this->detailPayload(
-                slug: 'voyagers-singles',
-                pageTitle: 'Voyagers Singles | PTL Spring 2026',
-                breadcrumbGroup: 'VOYAGERS SINGLES',
-                heroTitleLight: 'VOYAGERS',
-                heroTitleAccent: 'SINGLES',
-                statPlayers: 15,
-                statGroups: 3,
-            ),
-            'voyagers-double' => $this->detailPayload(
-                slug: 'voyagers-double',
-                pageTitle: 'Voyagers Double | PTL Spring 2026',
-                breadcrumbGroup: 'VOYAGERS DOUBLE',
-                heroTitleLight: 'VOYAGERS',
-                heroTitleAccent: 'DOUBLE',
-                statPlayers: 15,
-                statGroups: 3,
-            ),
-            'challengers-singles' => $this->detailPayload(
-                slug: 'challengers-singles',
-                pageTitle: 'Challengers Singles | PTL Spring 2026',
-                breadcrumbGroup: 'CHALLENGERS SINGLES',
-                heroTitleLight: 'CHALLENGERS',
-                heroTitleAccent: 'SINGLES',
-                statPlayers: 15,
-                statGroups: 3,
-            ),
-            'challengers-doubles' => $this->detailPayload(
-                slug: 'challengers-doubles',
-                pageTitle: 'Challengers Doubles | PTL Spring 2026',
-                breadcrumbGroup: 'CHALLENGERS DOUBLES',
-                heroTitleLight: 'CHALLENGERS',
-                heroTitleAccent: 'DOUBLES',
-                statPlayers: 15,
-                statGroups: 3,
-            ),
-            'warriors-singles' => $this->detailPayload(
-                slug: 'warriors-singles',
-                pageTitle: 'Warriors Singles | PTL Spring 2026',
-                breadcrumbGroup: 'WARRIORS SINGLES',
-                heroTitleLight: 'WARRIORS',
-                heroTitleAccent: 'SINGLES',
-                statPlayers: 15,
-                statGroups: 3,
-            ),
-            'warriors-doubles' => $this->detailPayload(
-                slug: 'warriors-doubles',
-                pageTitle: 'Warriors Doubles | PTL Spring 2026',
-                breadcrumbGroup: 'WARRIORS DOUBLES',
-                heroTitleLight: 'WARRIORS',
-                heroTitleAccent: 'DOUBLES',
-                statPlayers: 15,
-                statGroups: 3,
-            ),
-            'mixed-doubles' => $this->detailPayload(
-                slug: 'mixed-doubles',
-                pageTitle: 'Mixed Doubles | PTL Spring 2026',
-                breadcrumbGroup: 'MIXED DOUBLES',
-                heroTitleLight: 'MIXED',
-                heroTitleAccent: 'DOUBLES',
-                statPlayers: 10,
-                statGroups: 2,
-            ),
-            'youth-singles' => $this->detailPayload(
-                slug: 'youth-singles',
-                pageTitle: 'Youth Singles | PTL Spring 2026',
-                breadcrumbGroup: 'YOUTH SINGLES',
-                heroTitleLight: 'YOUTH',
-                heroTitleAccent: 'SINGLES',
-                statPlayers: 20,
-                statGroups: 4,
-            ),
-        ];
     }
 
     /**
@@ -499,5 +445,55 @@ class LeagueController extends Controller
         }
 
         return $profiles;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function leagueOverviewPayload(?League $league): array
+    {
+        $leagueName = $league?->name ?? 'PTL SPRING 2026';
+        $leagueTitle = Str::upper(trim($leagueName));
+        $segments = preg_split('/\s+/', $leagueTitle) ?: [];
+        $heroAccent = array_pop($segments) ?? '';
+        $heroLight = implode(' ', $segments);
+
+        if ($heroLight === '') {
+            $heroLight = $leagueTitle;
+            $heroAccent = '';
+        }
+
+        $activeGroupCards = $league?->groupCards->where('status', 'active')->values() ?? collect();
+        $statDivisions = $activeGroupCards->count();
+        $statPlayers = (int) $activeGroupCards->sum('players_count');
+        $seasonRange = 'May – Aug 2026';
+        if ($league?->start_date || $league?->end_date) {
+            $start = $league?->start_date?->format('M Y');
+            $end = $league?->end_date?->format('M Y');
+            $seasonRange = trim(collect([$start, $end])->filter()->join(' – '));
+            $seasonRange = $seasonRange !== '' ? $seasonRange : 'TBA';
+        }
+
+        return [
+            'currentLeagueSlug' => $league?->slug,
+            'pageTitle' => $leagueName.' | Premier Tennis League',
+            'pageMetaDescription' => ($league?->description && trim($league->description) !== '')
+                ? trim($league->description)
+                : $leagueName.' season overview on Premier Tennis League.',
+            'breadcrumbCurrent' => $leagueTitle,
+            'heroTitleLight' => $heroLight,
+            'heroTitleAccent' => $heroAccent,
+            'statDivisions' => $statDivisions,
+            'statSeasonLabel' => 'Season:',
+            'statSeasonRange' => $seasonRange,
+            'statPlayers' => $statPlayers,
+            'groupsHeadingGreen' => 'GROUPS',
+            'groupCards' => $activeGroupCards->map(fn (GroupCard $card): array => [
+                'slug' => $card->slug ?: Str::slug($card->name),
+                'tag' => strtoupper($card->tag),
+                'title' => $card->name,
+                'meta' => $card->players_count.' Players - '.$card->groups_count.' Groups',
+            ])->values()->all(),
+        ];
     }
 }

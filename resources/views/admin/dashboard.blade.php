@@ -42,6 +42,16 @@
                 </div>
                 <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
             </a>
+
+            <a class="admin-stat-card admin-stat-card--groups" href="{{ route('admin.group-cards.index') }}">
+                <span class="admin-stat-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
+                <div class="admin-stat-body">
+                    <span class="admin-stat-label">Total Group Cards</span>
+                    <strong class="admin-stat-value">{{ $groupCardsCount ?? 0 }}</strong>
+                    <span class="admin-stat-hint">Manage group cards</span>
+                </div>
+                <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+            </a>
         </div>
     </section>
 @endsection

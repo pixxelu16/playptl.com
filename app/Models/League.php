@@ -1,15 +1,16 @@
 <?php
 namespace App\Models;
 
+use Database\Factories\LeagueFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'logo_path', 'description', 'stats', 'start_date', 'end_date', 'type'])]
+#[Fillable(['name', 'slug', 'logo_path', 'description', 'stats', 'start_date', 'end_date', 'type'])]
 class League extends Model
 {
-    /** @use HasFactory<\Database\Factories\LeagueFactory> */
+    /** @use HasFactory<LeagueFactory> */
     use HasFactory;
 
     /**
@@ -28,5 +29,10 @@ class League extends Model
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class);
+    }
+
+    public function groupCards(): BelongsToMany
+    {
+        return $this->belongsToMany(GroupCard::class);
     }
 }
