@@ -19,7 +19,7 @@
     <main>
         <section class="relative flex h-[685px] min-h-[685px] flex-col overflow-hidden">
             <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('public/frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
+                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
             </video>
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-[rgba(0,0,0,0.6)]" aria-hidden="true"></div>
@@ -324,21 +324,21 @@
         @php
             $charityUpcomingEvents = [
                 [
-                    'image' => 'public/frontend/images/front-view-couple-tennis-court 1.png',
+                    'image' => 'frontend/images/front-view-couple-tennis-court 1.png',
                     'date' => 'Jul 20, 2026',
                     'title' => 'Charity doubles tournament',
                     'meta' => 'Highland Country Club · All day',
                     'target' => '$15,000',
                 ],
                 [
-                    'image' => 'public/frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png',
+                    'image' => 'frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png',
                     'date' => 'Jul 20, 2026',
                     'title' => 'Junior scholarship gala dinner',
                     'meta' => 'Chandigarh Golf Club · 7:00 PM',
                     'target' => '$15,000',
                 ],
                 [
-                    'image' => 'public/frontend/images/tennis-player-serving-hard 1.png',
+                    'image' => 'frontend/images/tennis-player-serving-hard 1.png',
                     'date' => 'Jul 20, 2026',
                     'title' => 'Season-end charity match',
                     'meta' => 'Westside Rec Center · 4:00 PM',

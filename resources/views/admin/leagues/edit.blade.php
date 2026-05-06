@@ -27,4 +27,5 @@
             <button class="admin-button" type="submit">Update League</button>
         </form>
     </section>
+
 @endsection

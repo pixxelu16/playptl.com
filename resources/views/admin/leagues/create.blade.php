@@ -26,4 +26,5 @@
             <button class="admin-button" type="submit">Create League</button>
         </form>
     </section>
+
 @endsection

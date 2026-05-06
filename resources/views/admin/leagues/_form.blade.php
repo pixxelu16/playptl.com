@@ -2,21 +2,13 @@
 @php
     $today = now()->toDateString();
     $selectedGroupIds = old('group_ids', $league->exists ? $league->groups->pluck('id')->all() : []);
+    $selectedGroupCardIds = old('group_card_ids', $league->exists ? $league->groupCards->pluck('id')->all() : []);
 @endphp
 
 <div class="admin-form-grid">
-    <div class="admin-form-group">
+    <div class="admin-form-group" style="grid-column: 1 / -1;">
         <label class="admin-label" for="name">League Name</label>
         <input class="admin-input" id="name" type="text" name="name" value="{{ old('name', $league->name) }}" required>
-    </div>
-
-    <div class="admin-form-group">
-        <label class="admin-label" for="type">League Type</label>
-        <select class="admin-input" id="type" name="type" required>
-            <option value="">Select Type</option>
-            <option value="single" @selected(old('type', $league->type) === 'single')>Single</option>
-            <option value="doubles" @selected(old('type', $league->type) === 'doubles')>Doubles</option>
-        </select>
     </div>
 
     <div class="admin-form-group">
@@ -39,6 +31,26 @@
             <span>Current logo</span>
         </div>
     @endif
+</div>
+
+<div class="admin-form-group">
+    <span class="admin-label">Assign Group Cards</span>
+    <p class="admin-field-hint">Select one or more group cards for this league listing section.</p>
+    <div class="admin-checkbox-grid">
+        @forelse ($groupCards ?? [] as $groupCard)
+            <label class="admin-checkbox-inline">
+                <input type="checkbox" name="group_card_ids[]" value="{{ $groupCard->id }}" @checked(in_array($groupCard->id, $selectedGroupCardIds, true))>
+                <span>
+                    {{ $groupCard->name }}
+                    <small class="admin-muted">
+                        ({{ strtoupper($groupCard->tag) }} · {{ $groupCard->players_count }} players · {{ $groupCard->groups_count }} groups · {{ ucfirst($groupCard->status) }})
+                    </small>
+                </span>
+            </label>
+        @empty
+            <p class="admin-muted">No group cards yet. Add them from the Group Cards section first.</p>
+        @endforelse
+    </div>
 </div>
 
 <div class="admin-form-group">

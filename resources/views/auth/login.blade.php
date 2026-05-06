@@ -1,9 +1,10 @@
-﻿@extends('layouts.website')
+@extends('layouts.website')
 
 @section('header_theme', 'light')
-@section('header_logo_path', 'public/frontend/images/logo-2.png')
+@section('header_logo_path', 'frontend/images/logo-2.png')
 
-@section('body_class', 'min-h-screen overflow-x-hidden bg-[#f4faf4] font-sans antialiased text-[#333333]')
+@section('page_bg', '#f4faf4')
+@section('body_class', 'min-h-screen overflow-x-hidden font-sans antialiased text-[#333333]')
 
 @section('title', 'Login | '.config('app.name', 'playptl'))
 @section('meta_description', 'Login to your '.config('app.name', 'playptl').' account and access your role-based dashboard.')
@@ -72,7 +73,7 @@
 
                 {{-- Right: image --}}
                 <div class="relative min-h-[260px] w-full lg:min-h-[480px] lg:w-1/2 lg:max-w-[50%]">
-                    <img src="{{ asset('public/frontend/images/man-focused-tennis-game 2.png') }}" alt="Tennis player with racket"
+                    <img src="{{ asset('frontend/images/man-focused-tennis-game 2.png') }}" alt="Tennis player with racket"
                         class="h-full min-h-[260px] w-full object-cover lg:absolute lg:inset-0 lg:min-h-full lg:rounded-r-[12px]"
                         width="480" height="640" loading="eager" decoding="async">
                 </div>
