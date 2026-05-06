@@ -10,12 +10,12 @@
 @section('content')
     @php
         $galleryPhotos = [
-            'public/frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png',
-            'public/frontend/images/tennis-player-serving-hard 1.png',
-            'public/frontend/images/young-man-tennis-player-court 1.png',
-            'public/frontend/images/person-playing-tennis-game-winter-time 1.png',
-            'public/frontend/images/man-focused-tennis-game 2.png',
-            'public/frontend/images/front-view-couple-tennis-court 1.png',
+            'frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png',
+            'frontend/images/tennis-player-serving-hard 1.png',
+            'frontend/images/young-man-tennis-player-court 1.png',
+            'frontend/images/person-playing-tennis-game-winter-time 1.png',
+            'frontend/images/man-focused-tennis-game 2.png',
+            'frontend/images/front-view-couple-tennis-court 1.png',
         ];
         $galleryDateFilters = [
             ['key' => 'all', 'label' => 'All'],
@@ -31,7 +31,7 @@
     <main>
         <section class="relative flex h-[685px] min-h-[685px] flex-col overflow-hidden">
             <video class="absolute inset-0 z-0 h-full min-h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('public/frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
+                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
             </video>
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>

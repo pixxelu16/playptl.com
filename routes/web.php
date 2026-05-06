@@ -1,16 +1,18 @@
 <?php
 
+use App\Http\Controllers\AdminAnnouncementController;
+use App\Http\Controllers\AdminGroupCardController;
+use App\Http\Controllers\AdminGroupController;
+use App\Http\Controllers\AdminLeagueController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\AdminAnnouncementController;
-use App\Http\Controllers\AdminGroupController;
-use App\Http\Controllers\AdminLeagueController;
 use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\LeagueController;
 use App\Models\Announcement;
 use App\Models\Group;
+use App\Models\GroupCard;
 use App\Models\League;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -28,8 +30,11 @@ Route::get('/charity', function () {
     return view('charity');
 })->name('charity');
 
-Route::get('/league', [LeagueController::class, 'index'])->name('league');
-Route::get('/league/group/{slug}', [LeagueController::class, 'show'])->name('league.group');
+Route::get('/league', function () {
+    abort(404);
+})->name('league');
+Route::get('/league/{slug}', [LeagueController::class, 'overview'])->name('league.overview');
+Route::get('/league/{leagueSlug}/{groupCardSlug}', [LeagueController::class, 'show'])->name('league.group');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
@@ -54,12 +59,14 @@ Route::middleware('auth')->group(function () {
                 'leaguesCount' => League::query()->count(),
                 'announcementsCount' => Announcement::query()->count(),
                 'groupsCount' => Group::query()->count(),
+                'groupCardsCount' => GroupCard::query()->count(),
             ]);
         })->name('dashboard');
 
         Route::resource('leagues', AdminLeagueController::class);
         Route::resource('announcements', AdminAnnouncementController::class);
         Route::resource('groups', AdminGroupController::class);
+        Route::resource('group-cards', AdminGroupCardController::class);
 
         Route::get('/profile', function () {
             return view('admin.profile');

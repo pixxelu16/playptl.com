@@ -4,6 +4,9 @@
 @section('meta_description', 'View league details from the admin dashboard.')
 
 @section('content')
+    @php
+        $defaultLeagueLogo = asset('frontend/images/champion.png');
+    @endphp
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
@@ -24,18 +27,13 @@
 
         <div class="admin-detail-grid">
             <div class="admin-detail-logo">
-                @if ($league->logo_path)
-                    <img src="{{ asset($league->logo_path) }}" alt="{{ $league->name }} logo">
-                @else
-                    <span>No Logo</span>
-                @endif
+                <img
+                    src="{{ $league->logo_path ? asset($league->logo_path) : $defaultLeagueLogo }}"
+                    alt="{{ $league->name }} logo"
+                >
             </div>
 
             <div class="admin-detail-list">
-                <div>
-                    <span>League Type</span>
-                    <strong>{{ ucfirst($league->type) }}</strong>
-                </div>
                 <div>
                     <span>Start Date</span>
                     <strong>{{ $league->start_date?->format('M d, Y') ?? '-' }}</strong>
@@ -60,6 +58,23 @@
                         <ul class="admin-group-tag-list">
                             @foreach ($league->groups as $group)
                                 <li><span class="admin-badge">{{ $group->name }}</span></li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+                <div>
+                    <span>Assigned Group Cards</span>
+                    @if ($league->groupCards->isEmpty())
+                        <p>-</p>
+                    @else
+                        <ul class="admin-group-tag-list">
+                            @foreach ($league->groupCards as $groupCard)
+                                <li>
+                                    <span class="admin-badge">
+                                        {{ $groupCard->name }}
+                                        ({{ strtoupper($groupCard->tag) }})
+                                    </span>
+                                </li>
                             @endforeach
                         </ul>
                     @endif

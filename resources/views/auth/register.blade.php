@@ -1,17 +1,18 @@
-﻿@extends('layouts.website')
+@extends('layouts.website')
 
 @section('header_theme', 'light')
-@section('header_logo_path', 'public/frontend/images/logo-2.png')
+@section('header_logo_path', 'frontend/images/logo-2.png')
 
+@section('page_bg', '#E4F7E7')
 @php
     $tab = old('registration_tab', 'singles');
     $isDoubles = $tab === 'doubles';
-    $heroRegisterImg = 'public/frontend/images/front-view-couple-tennis-court 1.png';
+    $heroRegisterImg = 'frontend/images/front-view-couple-tennis-court 1.png';
     $accentSingles = '#5DA44E';
     $accentDoubles = '#5FA252';
 @endphp
 
-@section('body_class', 'min-h-screen overflow-x-hidden bg-[#E4F7E7] font-sans antialiased text-[#1a1a1a]')
+@section('body_class', 'min-h-screen overflow-x-hidden font-sans antialiased text-[#1a1a1a]')
 
 @section('title', 'Tournament Registration | '.config('app.name', 'playptl'))
 @section('meta_description', 'Register for Premier Tennis League tournaments — Singles or Doubles.')

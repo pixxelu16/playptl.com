@@ -4,6 +4,9 @@
 @section('meta_description', 'Manage leagues from the admin dashboard.')
 
 @section('content')
+    @php
+        $defaultLeagueLogo = asset('frontend/images/champion.png');
+    @endphp
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
@@ -26,7 +29,6 @@
                     <tr>
                         <th>Logo</th>
                         <th>League Name</th>
-                        <th>Type</th>
                         <th>Start Date</th>
                         <th>End Date</th>
                         <th>Actions</th>
@@ -36,11 +38,11 @@
                     @forelse ($leagues as $league)
                         <tr>
                             <td>
-                                @if ($league->logo_path)
-                                    <img class="admin-table-logo" src="{{ asset($league->logo_path) }}" alt="{{ $league->name }} logo">
-                                @else
-                                    <span class="admin-logo-placeholder">NA</span>
-                                @endif
+                                <img
+                                    class="admin-table-logo"
+                                    src="{{ $league->logo_path ? asset($league->logo_path) : $defaultLeagueLogo }}"
+                                    alt="{{ $league->name }} logo"
+                                >
                             </td>
                             <td>
                                 <strong>{{ $league->name }}</strong>
@@ -48,7 +50,6 @@
                                     <span>{{ Str::limit($league->description, 70) }}</span>
                                 @endif
                             </td>
-                            <td><span class="admin-badge">{{ ucfirst($league->type) }}</span></td>
                             <td>{{ $league->start_date?->format('M d, Y') ?? '-' }}</td>
                             <td>{{ $league->end_date?->format('M d, Y') ?? '-' }}</td>
                             <td>
