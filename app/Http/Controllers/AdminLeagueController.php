@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Group;
@@ -102,8 +101,8 @@ class AdminLeagueController extends Controller
     protected function validatedData(Request $request): array
     {
         return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'name'        => ['required', 'string', 'max:255'],
+            'logo'        => ['nullable', 'image', 'max:2048'],
             'description' => ['nullable', 'string'],
             'stats' => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
             'start_date' => ['nullable', 'date', 'after_or_equal:today'],
@@ -124,7 +123,7 @@ class AdminLeagueController extends Controller
     {
         $normalized = array_map('intval', $ids);
 
-        return array_values(array_unique(array_filter($normalized, fn (int $id) => $id > 0)));
+        return array_values(array_unique(array_filter($normalized, fn(int $id) => $id > 0)));
     }
 
     protected function generateUniqueSlug(string $name, ?int $ignoreLeagueId = null): string
@@ -159,8 +158,8 @@ class AdminLeagueController extends Controller
         $directory = public_path('admin/uploads/leagues');
         File::ensureDirectoryExists($directory);
 
-        $file = $request->file('logo');
-        $filename = uniqid('league-', true).'.'.$file->getClientOriginalExtension();
+        $file     = $request->file('logo');
+        $filename = uniqid('league-', true) . '.' . $file->getClientOriginalExtension();
         $file->move($directory, $filename);
 
         return 'admin/uploads/leagues/'.$filename;
