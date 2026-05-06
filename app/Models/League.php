@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -22,7 +21,7 @@ class League extends Model
     {
         return [
             'start_date' => 'date',
-            'end_date' => 'date',
+            'end_date'   => 'date',
         ];
     }
 

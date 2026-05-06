@@ -6,6 +6,13 @@
     box-sizing: border-box;
 }
 
+/* UA `body { margin: 8px }` beats `*` — explicit selectors remove the top gap */
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
 [data-dropdown].is-open [data-dropdown-panel] {
     opacity: 1;
     visibility: visible;

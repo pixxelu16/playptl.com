@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Group;
@@ -30,7 +29,7 @@ class AdminLeagueController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validatedData($request);
-        $groupIds = $this->normalizeGroupIds($validated['group_ids'] ?? []);
+        $groupIds  = $this->normalizeGroupIds($validated['group_ids'] ?? []);
         unset($validated['group_ids']);
         $validated['logo_path'] = $this->storeLogo($request);
 
@@ -43,7 +42,7 @@ class AdminLeagueController extends Controller
     public function show(League $league): View
     {
         return view('admin.leagues.show', [
-            'league' => $league->load(['groups' => fn ($q) => $q->orderBy('name')]),
+            'league' => $league->load(['groups' => fn($q) => $q->orderBy('name')]),
         ]);
     }
 
@@ -58,7 +57,7 @@ class AdminLeagueController extends Controller
     public function update(Request $request, League $league): RedirectResponse
     {
         $validated = $this->validatedData($request);
-        $groupIds = $this->normalizeGroupIds($validated['group_ids'] ?? []);
+        $groupIds  = $this->normalizeGroupIds($validated['group_ids'] ?? []);
         unset($validated['group_ids']);
         $logoPath = $this->storeLogo($request);
 
@@ -87,14 +86,14 @@ class AdminLeagueController extends Controller
     protected function validatedData(Request $request): array
     {
         return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'name'        => ['required', 'string', 'max:255'],
+            'logo'        => ['nullable', 'image', 'max:2048'],
             'description' => ['nullable', 'string'],
-            'stats' => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
-            'start_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:today', 'after_or_equal:start_date'],
-            'type' => ['required', Rule::in(['single', 'doubles'])],
-            'group_ids' => ['nullable', 'array'],
+            'stats'       => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
+            'start_date'  => ['nullable', 'date', 'after_or_equal:today'],
+            'end_date'    => ['nullable', 'date', 'after_or_equal:today', 'after_or_equal:start_date'],
+            'type'        => ['required', Rule::in(['single', 'doubles'])],
+            'group_ids'   => ['nullable', 'array'],
             'group_ids.*' => ['integer', 'exists:groups,id'],
         ]);
     }
@@ -107,7 +106,7 @@ class AdminLeagueController extends Controller
     {
         $normalized = array_map('intval', $ids);
 
-        return array_values(array_unique(array_filter($normalized, fn (int $id) => $id > 0)));
+        return array_values(array_unique(array_filter($normalized, fn(int $id) => $id > 0)));
     }
 
     protected function storeLogo(Request $request): ?string
@@ -119,11 +118,11 @@ class AdminLeagueController extends Controller
         $directory = public_path('public/admin/uploads/leagues');
         File::ensureDirectoryExists($directory);
 
-        $file = $request->file('logo');
-        $filename = uniqid('league-', true).'.'.$file->getClientOriginalExtension();
+        $file     = $request->file('logo');
+        $filename = uniqid('league-', true) . '.' . $file->getClientOriginalExtension();
         $file->move($directory, $filename);
 
-        return 'public/admin/uploads/leagues/'.$filename;
+        return 'public/admin/uploads/leagues/' . $filename;
     }
 
     protected function deleteLogo(?string $path): void
