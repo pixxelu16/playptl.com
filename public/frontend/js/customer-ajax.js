@@ -1,0 +1,339 @@
+/* global Stripe, validate */
+(function ($) {
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderResponse($box, type, message) {
+    if (!$box || !$box.length) return;
+    if (!message) {
+      $box.empty();
+      return;
+    }
+    var bg = type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-red-900';
+    $box.html(
+      '<div class="rounded-[10px] border px-3 py-2 ' +
+        bg +
+        '">' +
+        escapeHtml(message) +
+        '</div>'
+    );
+  }
+
+  function setTabUI(which) {
+    var greenSingles = '#5DA44E';
+    var greenDoubles = '#5FA252';
+
+    var $tabSingles = $('#tab-singles');
+    var $tabDoubles = $('#tab-doubles');
+    var $singlesForm = $('#singles-register-form');
+    var $doublesForm = $('#doubles-register-form');
+
+    var isDoubles = which === 'doubles';
+
+    $doublesForm.toggleClass('hidden', !isDoubles);
+    $singlesForm.toggleClass('hidden', isDoubles);
+
+    if ($tabDoubles.length) {
+      $tabDoubles.css('backgroundColor', isDoubles ? greenDoubles : '#fff');
+      $tabDoubles.css('color', isDoubles ? '#fff' : '#222');
+      $tabDoubles.css('border', isDoubles ? 'none' : '1px solid #d1d1d1');
+    }
+    if ($tabSingles.length) {
+      $tabSingles.css('backgroundColor', !isDoubles ? greenSingles : '#fff');
+      $tabSingles.css('color', !isDoubles ? '#fff' : '#222');
+      $tabSingles.css('border', !isDoubles ? 'none' : '1px solid #d1d1d1');
+    }
+  }
+
+  function initRegisterForm(formSelector) {
+    var $form = $(formSelector);
+    if (!$form.length) return;
+
+    var tab = $form.data('registration-tab');
+    var $responseBox = $form.find('.custom_register_form_res');
+    var $loader = $form.find('.common-loader');
+    var $btn = $form.find('.disable-button');
+
+    var stripeKey = $form.data('stripe-key') || '';
+    var paymentIntentUrl = $form.data('payment-intent-url') || '';
+    var registerUrl = $form.data('register-url') || $form.attr('action') || '';
+    var csrf = $form.data('csrf') || '';
+
+    var stripe = stripeKey && window.Stripe ? Stripe(stripeKey) : null;
+    var elements = stripe ? stripe.elements() : null;
+    var card = null;
+    var cardComplete = false;
+    var pendingSuccessRedirect = false;
+    var successRedirectDelayMs = 3000;
+
+    function setCardError(message) {
+      var $err = $form.find('.stripe-card-error');
+      if (!$err.length) return;
+      if (!message) {
+        $err.text('').addClass('hidden');
+        return;
+      }
+      $err.text(message).removeClass('hidden');
+    }
+
+    function mountCard() {
+      if (!stripe || !elements) return;
+      if (card) return;
+      var mount = $form.find('.stripe-card-element').get(0);
+      if (!mount) return;
+      card = elements.create('card', {
+        hidePostalCode: true,
+        style: {
+          base: {
+            color: '#111827',
+            fontFamily: 'Inter, Montserrat, system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
+            fontSize: '14px',
+            '::placeholder': { color: '#9CA3AF' },
+          },
+          invalid: { color: '#DC2626' },
+        },
+      });
+      card.mount(mount);
+      card.on('change', function (event) {
+        cardComplete = !!event.complete;
+        if (event.error && event.error.message) setCardError(event.error.message);
+        else setCardError('');
+        $(mount).toggleClass('border-red-500', !cardComplete && event.empty === false);
+      });
+    }
+
+    // Live UX
+    $form.on('input change', 'input, select, textarea', function () {
+      $(this).removeClass('border-red-500');
+    });
+
+    $form.on('input', 'input[name="phone_singles"], input[name="phone_doubles"], input[name="d2_phone"]', function () {
+      var v = String($(this).val() || '');
+      var cleaned = v.replace(/\D+/g, '');
+      if (cleaned !== v) $(this).val(cleaned);
+    });
+
+    function clearFieldErrors() {
+      $form.find('input,select').removeClass('border-red-500');
+    }
+
+    function applyFieldErrors(errors) {
+      if (!errors) return;
+      Object.keys(errors).forEach(function (name) {
+        $form.find('[name="' + name + '"]').addClass('border-red-500');
+      });
+    }
+
+    function constraintsFor(tabKey) {
+      var base = {
+        email: { presence: { allowEmpty: false }, email: true },
+        password: { presence: { allowEmpty: false }, length: { minimum: 8 } },
+        password_confirmation: {
+          presence: { allowEmpty: false },
+          equality: { attribute: 'password', message: '^Passwords do not match.' },
+        },
+      };
+
+      if (tabKey === 'singles') {
+        return $.extend({}, base, {
+          singles_first: { presence: { allowEmpty: false } },
+          singles_last: { presence: { allowEmpty: false } },
+          phone_singles: { presence: { allowEmpty: false } },
+          city_singles: { presence: { allowEmpty: false } },
+          state_singles: { presence: { allowEmpty: false } },
+          age_group_singles: { presence: { allowEmpty: false } },
+          skill_singles: { presence: { allowEmpty: false } },
+          sex_singles: { presence: { allowEmpty: false } },
+          tournament_singles: { presence: { allowEmpty: false } },
+        });
+      }
+
+      return $.extend({}, base, {
+        d1_first: { presence: { allowEmpty: false } },
+        d1_last: { presence: { allowEmpty: false } },
+        phone_doubles: { presence: { allowEmpty: false } },
+        city_doubles: { presence: { allowEmpty: false } },
+        state_doubles: { presence: { allowEmpty: false } },
+        age_group_doubles: { presence: { allowEmpty: false } },
+        skill_doubles: { presence: { allowEmpty: false } },
+        sex_doubles: { presence: { allowEmpty: false } },
+        tournament_doubles: { presence: { allowEmpty: false } },
+        d2_first: { presence: { allowEmpty: false } },
+        d2_last: { presence: { allowEmpty: false } },
+        d2_email: { presence: { allowEmpty: false }, email: true },
+        d2_phone: { presence: { allowEmpty: false } },
+      });
+    }
+
+    function validateForm() {
+      if (!window.validate) {
+        renderResponse($responseBox, 'error', 'Validation library missing. Please refresh.');
+        return { _validation: ['missing'] };
+      }
+      clearFieldErrors();
+      var values = {};
+      $form.serializeArray().forEach(function (it) {
+        values[it.name] = it.value;
+      });
+      var errors = validate(values, constraintsFor(tab)) || null;
+      if (errors) applyFieldErrors(errors);
+      return errors;
+    }
+
+    function setPasswordMatchMessage() {
+      var pass = $form.find('input[name="password"]').val() || '';
+      var conf = $form.find('input[name="password_confirmation"]').val() || '';
+      var $msg = $form.find('.password-match-error');
+      if (!$msg.length) return;
+      if (!conf) {
+        $msg.text('').addClass('hidden');
+        return;
+      }
+      if (pass !== conf) {
+        $msg.text('Passwords do not match.').removeClass('hidden');
+      } else {
+        $msg.text('').addClass('hidden');
+      }
+    }
+
+    $form.on('input', 'input[name="password"], input[name="password_confirmation"]', setPasswordMatchMessage);
+
+    mountCard();
+
+    $form.on('submit', function (e) {
+      e.preventDefault();
+      pendingSuccessRedirect = false;
+      renderResponse($responseBox, '', '');
+
+      if (!paymentIntentUrl || !registerUrl) {
+        renderResponse($responseBox, 'error', 'Configuration error: URLs missing.');
+        return;
+      }
+
+      var errors = validateForm();
+      if (errors) {
+        setPasswordMatchMessage();
+        return;
+      }
+
+      if (!stripe || !elements) {
+        setCardError('Payment is unavailable. Please refresh the page.');
+        return;
+      }
+
+      mountCard();
+      if (!cardComplete) {
+        setCardError('Card details are required.');
+        $form.find('.stripe-card-element').addClass('border-red-500');
+        return;
+      }
+
+      // Disable submit + show loader
+      $btn.prop('disabled', true);
+      if ($loader.length) $loader.removeClass('hidden');
+
+      // Compute name
+      var computed;
+      if (tab === 'singles') {
+        computed = ($.trim($form.find('[name="singles_first"]').val()) + ' ' + $.trim($form.find('[name="singles_last"]').val())).trim();
+      } else {
+        var a = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
+        var b = ($.trim($form.find('[name="d2_first"]').val()) + ' ' + $.trim($form.find('[name="d2_last"]').val())).trim();
+        computed = (a + ' & ' + b).trim();
+      }
+      $form.find('.computed_name').val(computed);
+
+      var leagueId = tab === 'singles' ? $form.find('select[name="tournament_singles"]').val() : $form.find('select[name="tournament_doubles"]').val();
+      var email = tab === 'singles' ? $form.find('#singles_email').val() : $form.find('#doubles_email').val();
+
+      if (!leagueId) {
+        setCardError('Please select a tournament before payment.');
+        $form.find('select[name="' + (tab === 'singles' ? 'tournament_singles' : 'tournament_doubles') + '"]').addClass('border-red-500');
+        $btn.prop('disabled', false);
+        if ($loader.length) $loader.addClass('hidden');
+        return;
+      }
+
+      var formDataArray = $form.serializeArray();
+
+      $.ajax({
+        type: 'POST',
+        url: paymentIntentUrl,
+        contentType: 'application/json',
+        dataType: 'json',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf },
+        data: JSON.stringify({ league_id: leagueId, registration_tab: tab, email: email }),
+      })
+        .then(function (pi) {
+          return stripe.confirmCardPayment(pi.client_secret, {
+            payment_method: { card: card, billing_details: { email: email, name: computed || undefined } },
+          });
+        })
+        .then(function (result) {
+          if (result.error) throw new Error(result.error.message || 'Payment failed.');
+          if (!result.paymentIntent || result.paymentIntent.status !== 'succeeded') throw new Error('Payment not completed.');
+
+          $form.find('.payment_intent_id').val(result.paymentIntent.id);
+          formDataArray = $form.serializeArray();
+
+          return $.ajax({
+            type: 'POST',
+            url: registerUrl,
+            data: formDataArray,
+            dataType: 'html',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf },
+          });
+        })
+        .then(function (html) {
+          $responseBox.html(html);
+          var redirectUrl = $responseBox.find('[data-redirect-url]').attr('data-redirect-url');
+          if (redirectUrl) {
+            pendingSuccessRedirect = true;
+            window.setTimeout(function () {
+              window.location.href = redirectUrl;
+            }, successRedirectDelayMs);
+            return;
+          }
+          renderResponse($responseBox, 'success', 'Successfully registered.');
+        })
+        .fail(function (jqXHR) {
+          var msg = 'Something went wrong.';
+          if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.message) {
+            msg = jqXHR.responseJSON.message;
+          }
+          // Server / payment errors: show only below Submit (response box), not under the card field
+          setCardError('');
+          var text = jqXHR && jqXHR.responseText ? String(jqXHR.responseText).trim() : '';
+          var looksLikeHtml = text.length > 0 && text.charAt(0) === '<';
+          if (looksLikeHtml) {
+            $responseBox.html(jqXHR.responseText);
+          } else {
+            renderResponse($responseBox, 'error', msg);
+          }
+        })
+        .always(function () {
+          if (!pendingSuccessRedirect) {
+            $btn.prop('disabled', false);
+          }
+          if ($loader.length) $loader.addClass('hidden');
+        });
+    });
+  }
+
+  $(function () {
+    // Tabs
+    $('#tab-singles').on('click', function () { setTabUI('singles'); });
+    $('#tab-doubles').on('click', function () { setTabUI('doubles'); });
+
+    // Init both forms (independent validation + ajax)
+    initRegisterForm('#singles-register-form');
+    initRegisterForm('#doubles-register-form');
+  });
+})(window.jQuery);
+

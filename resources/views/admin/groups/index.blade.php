@@ -28,7 +28,7 @@
                         <th>Description</th>
                         <th>Players Count</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th style="width:120px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -39,7 +39,7 @@
                             <td>{{ $group->players_count }}</td>
                             <td><span class="admin-badge">{{ ucfirst($group->status) }}</span></td>
                             <td>
-                                <div class="admin-table-actions">
+                                <div class="admin-table-actions" style="justify-content:flex-end;">
                                     <a href="{{ route('admin.groups.show', $group) }}" title="View"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
                                     <a href="{{ route('admin.groups.edit', $group) }}" title="Edit"><i class="fa-solid fa-pen" aria-hidden="true"></i></a>
                                     <form method="POST" action="{{ route('admin.groups.destroy', $group) }}" onsubmit="return confirm('Delete this group?')">

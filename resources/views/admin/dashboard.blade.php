@@ -33,12 +33,12 @@
                 <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
             </a>
 
-            <a class="admin-stat-card admin-stat-card--groups" href="{{ route('admin.groups.index') }}">
+            <a class="admin-stat-card admin-stat-card--groups" href="{{ route('admin.league-management.index') }}">
                 <span class="admin-stat-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
                 <div class="admin-stat-body">
                     <span class="admin-stat-label">Total Groups</span>
                     <strong class="admin-stat-value">{{ $groupsCount ?? 0 }}</strong>
-                    <span class="admin-stat-hint">Manage groups</span>
+                    <span class="admin-stat-hint">Assign groups to leagues</span>
                 </div>
                 <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
             </a>
@@ -49,6 +49,26 @@
                     <span class="admin-stat-label">Total Group Cards</span>
                     <strong class="admin-stat-value">{{ $groupCardsCount ?? 0 }}</strong>
                     <span class="admin-stat-hint">Manage group cards</span>
+                </div>
+                <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+            </a>
+
+            <a class="admin-stat-card admin-stat-card--groups" href="{{ route('admin.players.index') }}">
+                <span class="admin-stat-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+                <div class="admin-stat-body">
+                    <span class="admin-stat-label">Total Players</span>
+                    <strong class="admin-stat-value">{{ $playersCount ?? 0 }}</strong>
+                    <span class="admin-stat-hint">Manage players</span>
+                </div>
+                <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+            </a>
+
+            <a class="admin-stat-card admin-stat-card--groups" href="{{ route('admin.payment-histories.index') }}">
+                <span class="admin-stat-icon" aria-hidden="true"><i class="fa-solid fa-credit-card"></i></span>
+                <div class="admin-stat-body">
+                    <span class="admin-stat-label">Total Payments</span>
+                    <strong class="admin-stat-value">{{ $paymentsCount ?? 0 }}</strong>
+                    <span class="admin-stat-hint">Payment history</span>
                 </div>
                 <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
             </a>

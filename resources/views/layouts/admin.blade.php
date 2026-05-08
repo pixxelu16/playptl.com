@@ -37,7 +37,15 @@
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.group-cards.*') ? 'is-active' : '' }}" href="{{ route('admin.group-cards.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
-                        <span>Group Cards</span>
+                        <span>Sub Groups</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.players.*') ? 'is-active' : '' }}" href="{{ route('admin.players.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+                        <span>Players</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.payment-histories.*') ? 'is-active' : '' }}" href="{{ route('admin.payment-histories.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
+                        <span>Payment History</span>
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.announcements.*') ? 'is-active' : '' }}" href="{{ route('admin.announcements.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></span>
@@ -65,8 +73,11 @@
                 </button>
 
                 <div class="admin-topbar-actions">
+                    @php
+                        $adminAvatarSrc = auth()->user()->avatar_path ?: 'upload/user-avatar/default-user-pic.png';
+                    @endphp
                     <button class="admin-user-menu" type="button" aria-expanded="false" data-user-menu-toggle>
-                        <span class="admin-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</span>
+                        <img class="admin-avatar" src="{{ asset($adminAvatarSrc) }}" alt="Profile photo" width="36" height="36">
                         <span>Hi, {{ auth()->user()->name }}</span>
                         <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                     </button>

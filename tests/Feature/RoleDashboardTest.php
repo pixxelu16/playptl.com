@@ -29,13 +29,13 @@ class RoleDashboardTest extends TestCase
             ->assertRedirect(route('organiser.dashboard'));
     }
 
-    public function test_dashboard_redirects_player_to_player_dashboard(): void
+    public function test_dashboard_redirects_player_to_website_profile_fallback(): void
     {
         $user = User::factory()->create(['role' => UserRole::Player]);
 
         $this->actingAs($user)
             ->get('/dashboard')
-            ->assertRedirect(route('player.dashboard'));
+            ->assertRedirect(route('player.my-profile'));
     }
 
     public function test_user_is_redirected_from_wrong_role_dashboard(): void
