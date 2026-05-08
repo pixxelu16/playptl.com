@@ -125,7 +125,7 @@ class LeagueController extends Controller
     /**
      * Demo “My Profile” form payload — replace with authenticated user later.
      *
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     protected function sampleMyProfile(string $breadcrumbGroup): array
     {
@@ -133,7 +133,7 @@ class LeagueController extends Controller
 
         return [
             'name' => 'Arjun Kumar',
-            'roleLine' => 'Player - Group A',
+            'roleLine' => 'Player · Group A',
             'avatarUrl' => 'https://ui-avatars.com/api/?name='.rawurlencode('Arjun Kumar').'&size=256&background=E8F5E9&color=2E7D32&bold=true',
             'firstName' => 'Arjun',
             'lastName' => 'Kumar',
@@ -146,6 +146,23 @@ class LeagueController extends Controller
             'group' => 'Group A',
             'homeCourt' => 'Highland Country Club · Court 3',
             'dominantHand' => 'Right',
+            /** Demo “Players Schedule” / Add Location — replace with persisted data later. */
+            'scheduleMatchOptions' => [
+                'Arjun Kumar Vs Rahul Singh',
+                'Arjun Kumar Vs Vikram Mehta',
+                'Rahul Singh Vs Karan Joshi',
+            ],
+            'scheduleMatch' => 'Arjun Kumar Vs Rahul Singh',
+            'scheduleDate' => '2026-05-10',
+            'scheduleTime' => '10:00',
+            'scheduleVenue' => 'Highland Country Club · Court 3',
+            /**
+             * Upload Match Images grid (3×4): same 6 thumbnails as the design, Row3–4 repeat Row1–2.
+             * Filenames with spaces are URL-encoded so images load reliably on all hosts.
+             *
+             * @see public/frontend/images/
+             */
+            'uploadMatchGallery' => $this->uploadMatchGalleryUrls(),
         ];
     }
 
