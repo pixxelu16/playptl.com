@@ -795,7 +795,6 @@
                                 class="profile-section-panel hidden overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] sm:p-8 font-['Inter',ui-sans-serif,system-ui,sans-serif]"
                                 data-profile-section="upload"
                             >
-<<<<<<< HEAD
                                 <h4 class="mb-2 text-[18px] font-bold text-[#212121] sm:text-[20px]">Upload Image</h4>
                                 <p class="mb-5 text-[14px] text-[#757575]">Upload a JPG, PNG, or WebP profile photo up to 2MB.</p>
                                 <form class="space-y-4" action="{{ route('player.profile.update') }}" method="post" enctype="multipart/form-data">
@@ -811,7 +810,6 @@
                                         Upload Image
                                     </button>
                                 </form>
-=======
                                 <h4 class="mb-6 text-[18px] font-bold leading-tight text-[#333333] sm:text-[20px]">Upload Match Images</h4>
                                 <div class="mb-6">
                                     <label for="mp-upload-match" class="mb-1.5 block text-[14px] font-bold text-[#333333]">Match Players</label>
@@ -911,7 +909,6 @@
                                         </div>
                                     </form>
                                 </div>
->>>>>>> 22ad779e40b36f59080947a4e4129e31d6484422
                             </div>
                         </div>
                     </div>
