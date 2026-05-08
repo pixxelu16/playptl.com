@@ -233,16 +233,12 @@ body.admin-body {
 }
 
 .admin-avatar {
-    display: inline-flex;
+    display: inline-block;
     width: 36px;
     height: 36px;
-    align-items: center;
-    justify-content: center;
     border-radius: 999px;
-    background: #c1e82c;
-    color: #55A64E;
-    font-size: 13px;
-    font-weight: 800;
+    border: 1px solid #d7ead9;
+    object-fit: cover;
 }
 
 .admin-user-dropdown {
@@ -411,6 +407,16 @@ body.admin-body {
     color: #ffffff;
 }
 
+.admin-button-secondary {
+    background: #ffffff;
+    color: #55A64E;
+    border: 1px solid #d7ead9;
+}
+
+.admin-button-secondary.admin-button-link {
+    color: #55A64E;
+}
+
 .admin-alert {
     margin-top: 18px;
     border-radius: 10px;
@@ -447,6 +453,30 @@ body.admin-body {
     padding: 15px 14px;
     text-align: left;
     vertical-align: middle;
+}
+
+/* Compact tables (used on summary-style pages) */
+.admin-table.admin-table-compact {
+    min-width: 0;
+}
+
+.admin-table.admin-table-compact th,
+.admin-table.admin-table-compact td {
+    padding: 7px 10px;
+    font-size: 12px;
+}
+
+.admin-table.admin-table-compact .admin-badge {
+    font-size: 10px !important;
+    padding: 3px 7px;
+}
+
+.admin-table.admin-table-compact .admin-table-actions a,
+.admin-table.admin-table-compact .admin-table-actions button {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    font-size: 12px;
 }
 
 .admin-table th {

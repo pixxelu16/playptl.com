@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Models\GroupCard;
+use App\Models\Group;
 use App\Models\League;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -55,24 +58,34 @@ class LeagueController extends Controller
             $seasonRange = $seasonRange !== '' ? $seasonRange : 'TBA';
         }
 
+        $playerGroups = $this->assignedPlayerGroups($league, $groupCard);
+        $assignedPlayerCount = collect($playerGroups)->sum('playerCount');
+        $assignedGroupCount = count($playerGroups);
+
         $detail = $this->detailPayload(
             slug: $groupCardSlug,
             pageTitle: $groupCard->name.' | '.$league->name,
             breadcrumbGroup: $groupNameUpper,
             heroTitleLight: $heroLight,
             heroTitleAccent: $heroAccent,
-            statPlayers: (int) $groupCard->players_count,
-            statGroups: (int) $groupCard->groups_count,
+            statPlayers: (int) $assignedPlayerCount,
+            statGroups: (int) $assignedGroupCount,
         );
         $detail['leagueSlug'] = $leagueSlug;
+        $detail['leagueId'] = $league->id;
+        $detail['groupCardId'] = $groupCard->id;
         $detail['breadcrumbLeagueLabel'] = Str::upper($league->name);
         $detail['statSeasonRange'] = $seasonRange;
+        $detail['playerGroups'] = $playerGroups;
+        $detail['standingsRows'] = $this->sampleStandingsTable($playerGroups);
 
         $detail['playerProfiles'] = $this->buildPlayerProfiles(
             $detail['breadcrumbGroup'],
             (int) $detail['statPlayers'],
             (int) $detail['statGroups'],
+            $playerGroups,
         );
+        $detail['myProfile'] = $this->playerMyProfile($league, $groupCard, $detail['breadcrumbGroup']);
 
         return view('league-detail', $detail);
     }
@@ -133,6 +146,54 @@ class LeagueController extends Controller
             'group' => 'Group A',
             'homeCourt' => 'Highland Country Club · Court 3',
             'dominantHand' => 'Right',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function playerMyProfile(League $league, GroupCard $groupCard, string $breadcrumbGroup): array
+    {
+        $user = auth()->user();
+        if (! $user || $user->role !== UserRole::Player) {
+            return $this->sampleMyProfile($breadcrumbGroup);
+        }
+
+        $registration = $user->leagueRegistrations()
+            ->where('league_id', $league->id)
+            ->where(function ($q) use ($groupCard) {
+                $q->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
+            })
+            ->with('group')
+            ->latest('id')
+            ->first();
+
+        $firstName = trim((string) ($user->first_name ?? ''));
+        $lastName = trim((string) ($user->last_name ?? ''));
+        if ($firstName === '' && $lastName === '') {
+            $parts = preg_split('/\s+/', trim((string) $user->name), 2) ?: [];
+            $firstName = $parts[0] ?? '';
+            $lastName = $parts[1] ?? '';
+        }
+
+        $groupName = (string) ($registration?->group?->name ?? '—');
+        $divisionLabel = Str::title(Str::lower($breadcrumbGroup));
+
+        return [
+            'name' => trim((string) $user->name) !== '' ? (string) $user->name : trim($firstName.' '.$lastName),
+            'roleLine' => 'Player - '.$groupName,
+            'avatarUrl' => asset($user->avatar_path ?: 'upload/user-avatar/default-user-pic.png'),
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'dob' => $user->date_of_birth?->format('Y-m-d') ?? '',
+            'ntrp' => (string) ($registration?->skill_level ?? ''),
+            'email' => (string) $user->email,
+            'phone' => (string) ($user->phone ?? ''),
+            'city' => (string) ($user->city ?? ''),
+            'division' => $divisionLabel,
+            'group' => $groupName,
+            'homeCourt' => (string) ($user->home_court ?? ''),
+            'dominantHand' => (string) ($user->dominant_hand ?? 'Right'),
         ];
     }
 
@@ -210,10 +271,10 @@ class LeagueController extends Controller
      *
      * @return list<array{rank: int, name: string, matches: int, wins: int, losses: int, points: int, gamePct: int}>
      */
-    protected function sampleStandingsTable(): array
+    protected function sampleStandingsTable(?array $playerGroups = null): array
     {
         $rows = [];
-        foreach ($this->samplePlayerGroups() as $group) {
+        foreach (($playerGroups ?? $this->samplePlayerGroups()) as $group) {
             foreach ($group['players'] as $player) {
                 $name = $player['name'];
                 $h = crc32(Str::slug($name));
@@ -224,6 +285,7 @@ class LeagueController extends Controller
                 $gamePct = 52 + ($h % 45);
                 $rows[] = [
                     'name' => $name,
+                    'avatarUrl' => $player['avatarUrl'] ?? 'https://ui-avatars.com/api/?name='.rawurlencode($name).'&size=64&background=E8F5E9&color=2E7D32&bold=true',
                     'matches' => $matches,
                     'wins' => $wins,
                     'losses' => $losses,
@@ -356,7 +418,7 @@ class LeagueController extends Controller
             $out = [];
             foreach ($names as $i => $name) {
                 $out[] = [
-                    'index' => str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                    'index' => (string) ($i + 1),
                     'name' => $name,
                     'key' => Str::slug($name),
                 ];
@@ -373,27 +435,98 @@ class LeagueController extends Controller
     }
 
     /**
+     * Build website roster cards from admin-assigned players for this league and group card.
+     *
+     * @return list<array{label: string, playerCount: int, players: list<array<string, mixed>>}>
+     */
+    protected function assignedPlayerGroups(League $league, GroupCard $groupCard): array
+    {
+        if (! Schema::hasTable('groups')
+            || ! Schema::hasTable('league_registrations')
+            || ! Schema::hasColumn('league_registrations', 'group_id')
+            || ! Schema::hasColumn('league_registrations', 'group_card_id')
+        ) {
+            return [];
+        }
+
+        $groups = Group::query()
+            ->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id))
+            ->when(
+                Schema::hasColumn('groups', 'status'),
+                fn ($q) => $q->where('status', 'active')
+            )
+            ->with([
+                'leagueRegistrations' => fn ($q) => $q
+                    ->where('league_id', $league->id)
+                    ->where(function ($qq) use ($groupCard) {
+                        $qq->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
+                    })
+                    ->with('user')
+                    ->oldest('id'),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        return $groups->map(function (Group $group) use ($groupCard): array {
+            $players = $group->leagueRegistrations
+                ->filter(fn ($registration) => $registration->user !== null)
+                ->values()
+                ->map(function ($registration, int $index) use ($group, $groupCard): array {
+                    $user = $registration->user;
+                    $name = trim((string) ($user->name ?? ''));
+                    $name = $name !== '' ? $name : 'Player';
+                    $city = trim((string) ($user->city ?? ''));
+                    $state = trim((string) ($user->state ?? ''));
+                    $location = trim(collect([$city, $state])->filter()->join(', '));
+
+                    return [
+                        'index' => (string) ($index + 1),
+                        'name' => $name,
+                        'key' => 'registration-'.$registration->id,
+                        'avatarUrl' => asset($user->avatar_path ?: 'upload/user-avatar/default-user-pic.png'),
+                        'email' => (string) ($user->email ?? ''),
+                        'phone' => (string) ($user->phone ?? ''),
+                        'location' => $location !== '' ? $location : '—',
+                        'skillLevel' => (string) ($registration->skill_level ?? '—'),
+                        'group' => $group->name,
+                        'division' => $groupCard->name,
+                        'playerId' => '#PTL-'.str_pad((string) $user->id, 3, '0', STR_PAD_LEFT),
+                        'joined' => optional($registration->created_at)->format('M Y') ?: '—',
+                        'status' => ucfirst((string) ($user->status ?? 'Active')),
+                    ];
+                })
+                ->all();
+
+            return [
+                'label' => $group->name,
+                'playerCount' => count($players),
+                'players' => $players,
+            ];
+        })->values()->all();
+    }
+
+    /**
      * Full profile payload for client-side player dashboard (same page, no URL change).
      *
      * @return array<string, array<string, mixed>>
      */
-    protected function buildPlayerProfiles(string $breadcrumbGroup, int $statPlayers, int $statGroups): array
+    protected function buildPlayerProfiles(string $breadcrumbGroup, int $statPlayers, int $statGroups, ?array $playerGroups = null): array
     {
         $division = Str::title(Str::lower($breadcrumbGroup));
         $metaContext = $statPlayers.' Players - '.$statGroups.' Groups';
-        $groups = $this->samplePlayerGroups();
+        $groups = $playerGroups ?? $this->samplePlayerGroups();
         $profiles = [];
         $idCounter = 1;
 
         foreach ($groups as $group) {
             $names = array_map(fn (array $p) => $p['name'], $group['players']);
             foreach ($group['players'] as $pi => $player) {
-                $key = Str::slug($player['name']);
+                $key = $player['key'] ?? Str::slug($player['name']);
                 $h = crc32($key);
-                $matches = 3 + ($h % 3);
-                $wins = max(0, min($matches, (int) floor($matches * (0.55 + (($h % 9) * 0.04)))));
-                $losses = max(0, $matches - $wins);
-                $points = 48 + ($h % 40);
+                $matches = 5;
+                $wins = 3;
+                $losses = 2;
+                $points = 73;
 
                 $opponents = [];
                 foreach ($names as $n) {
@@ -402,13 +535,18 @@ class LeagueController extends Controller
                     }
                 }
                 $recent = [];
+                $staticResults = [
+                    ['score' => '6-3, 7-5', 'result' => 'Win'],
+                    ['score' => '7-6, 6-4', 'result' => 'Win'],
+                    ['score' => '6-2, 6-3', 'result' => 'Loss'],
+                ];
                 for ($r = 0; $r < 3; $r++) {
                     $opp = $opponents[$r % max(1, count($opponents))] ?? 'Opponent';
                     $recent[] = [
                         'opponent' => $opp,
                         'context' => $metaContext,
-                        'score' => ['6-3, 7-5', '7-6, 6-4', '6-2, 6-3'][$r % 3],
-                        'result' => ['Win', 'Win', 'Loss'][$r % 3],
+                        'score' => $staticResults[$r]['score'],
+                        'result' => $staticResults[$r]['result'],
                     ];
                 }
 
@@ -419,27 +557,27 @@ class LeagueController extends Controller
                     'key' => $key,
                     'name' => $player['name'],
                     'subtitle' => 'Player - '.$group['label'],
-                    'avatarUrl' => 'https://ui-avatars.com/api/?name='.rawurlencode($player['name']).'&size=128&background=e1f0e1&color=2d4a2d&bold=true',
-                    'playerId' => '#PTL-'.str_pad((string) $idCounter++, 3, '0', STR_PAD_LEFT),
-                    'division' => $division,
+                    'avatarUrl' => $player['avatarUrl'] ?? 'https://ui-avatars.com/api/?name='.rawurlencode($player['name']).'&size=128&background=e1f0e1&color=2d4a2d&bold=true',
+                    'playerId' => $player['playerId'] ?? '#PTL-'.str_pad((string) $idCounter++, 3, '0', STR_PAD_LEFT),
+                    'division' => $player['division'] ?? $division,
                     'group' => $group['label'],
                     'seed' => $player['index'],
-                    'status' => 'Active',
-                    'joined' => 'Mar 2026',
+                    'status' => $player['status'] ?? 'Active',
+                    'joined' => $player['joined'] ?? 'Mar 2026',
                     'matches' => $matches,
                     'wins' => $wins,
                     'losses' => $losses,
                     'points' => $points,
-                    'winRate' => min(95, 52 + ($h % 35)),
-                    'gamePct' => min(92, 58 + ($h % 28)),
-                    'setPct' => min(90, 55 + ($h % 30)),
+                    'winRate' => 82,
+                    'gamePct' => 67,
+                    'setPct' => 60,
                     'recentMatches' => $recent,
                     'fullName' => $player['name'],
-                    'phone' => '+91 98765 '.str_pad((string) (43210 + ($h % 900)), 5, '0', STR_PAD_LEFT),
-                    'email' => $email,
-                    'location' => 'Chandigarh, India',
-                    'dob' => ['14 Aug 1995', '22 Nov 1992', '03 Jun 1998'][($h >> 3) % 3],
-                    'ntrp' => number_format(4.0 + ($h % 15) / 10, 1),
+                    'phone' => $player['phone'] ?? '+91 98765 '.str_pad((string) (43210 + ($h % 900)), 5, '0', STR_PAD_LEFT),
+                    'email' => $player['email'] ?? $email,
+                    'location' => $player['location'] ?? 'Chandigarh, India',
+                    'dob' => $player['dob'] ?? '—',
+                    'ntrp' => $player['skillLevel'] ?? '—',
                 ];
             }
         }

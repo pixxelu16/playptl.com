@@ -1,9 +1,9 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\Group;
 use App\Models\GroupCard;
 use App\Models\League;
+use App\Models\LeagueRegistration;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -24,7 +24,6 @@ class AdminLeagueController extends Controller
     {
         return view('admin.leagues.create', [
             'league' => new League,
-            'groups' => Group::orderBy('name')->get(),
             'groupCards' => GroupCard::query()->orderBy('display_order')->orderBy('name')->get(),
         ]);
     }
@@ -32,15 +31,13 @@ class AdminLeagueController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validatedData($request);
-        $groupIds = $this->normalizeGroupIds($validated['group_ids'] ?? []);
         $groupCardIds = $this->normalizeGroupIds($validated['group_card_ids'] ?? []);
-        unset($validated['group_ids'], $validated['group_card_ids']);
+        unset($validated['group_card_ids']);
         $validated['type'] = $validated['type'] ?? 'single';
         $validated['slug'] = $this->generateUniqueSlug($validated['name']);
         $validated['logo_path'] = $this->storeLogo($request);
 
         $league = League::create($validated);
-        $league->groups()->sync($groupIds);
         $league->groupCards()->sync($groupCardIds);
 
         return redirect()->route('admin.leagues.index')->with('status', 'League created successfully.');
@@ -48,19 +45,29 @@ class AdminLeagueController extends Controller
 
     public function show(League $league): View
     {
+        $singlesCount = LeagueRegistration::query()
+            ->where('league_id', $league->id)
+            ->where('registration_type', 'singles')
+            ->count();
+
+        $doublesCount = LeagueRegistration::query()
+            ->where('league_id', $league->id)
+            ->where('registration_type', 'doubles')
+            ->count();
+
         return view('admin.leagues.show', [
             'league' => $league->load([
-                'groups' => fn ($q) => $q->orderBy('name'),
                 'groupCards' => fn ($q) => $q->orderBy('display_order')->orderBy('name'),
             ]),
+            'singlesCount' => $singlesCount,
+            'doublesCount' => $doublesCount,
         ]);
     }
 
     public function edit(League $league): View
     {
         return view('admin.leagues.edit', [
-            'league' => $league->load(['groups', 'groupCards']),
-            'groups' => Group::orderBy('name')->get(),
+            'league' => $league->load(['groupCards']),
             'groupCards' => GroupCard::query()->orderBy('display_order')->orderBy('name')->get(),
         ]);
     }
@@ -68,9 +75,8 @@ class AdminLeagueController extends Controller
     public function update(Request $request, League $league): RedirectResponse
     {
         $validated = $this->validatedData($request);
-        $groupIds = $this->normalizeGroupIds($validated['group_ids'] ?? []);
         $groupCardIds = $this->normalizeGroupIds($validated['group_card_ids'] ?? []);
-        unset($validated['group_ids'], $validated['group_card_ids']);
+        unset($validated['group_card_ids']);
         $validated['type'] = $validated['type'] ?? $league->type;
         $validated['slug'] = $this->generateUniqueSlug($validated['name'], $league->id);
         $logoPath = $this->storeLogo($request);
@@ -81,7 +87,6 @@ class AdminLeagueController extends Controller
         }
 
         $league->update($validated);
-        $league->groups()->sync($groupIds);
         $league->groupCards()->sync($groupCardIds);
 
         return redirect()->route('admin.leagues.index')->with('status', 'League updated successfully.');
@@ -108,8 +113,6 @@ class AdminLeagueController extends Controller
             'start_date' => ['nullable', 'date', 'after_or_equal:today'],
             'end_date' => ['nullable', 'date', 'after_or_equal:today', 'after_or_equal:start_date'],
             'type' => ['nullable', Rule::in(['single', 'doubles'])],
-            'group_ids' => ['nullable', 'array'],
-            'group_ids.*' => ['integer', 'exists:groups,id'],
             'group_card_ids' => ['nullable', 'array'],
             'group_card_ids.*' => ['integer', 'exists:group_cards,id'],
         ]);

@@ -1,7 +1,6 @@
-﻿@extends('layouts.website')
+@extends('layouts.website')
 
 @section('nav_active', 'league')
-@section('header_logo_path', 'frontend/images/logo.png')
 
 @section('title', $pageTitle ?? 'Premier Tennis League | League')
 @section('meta_description', $pageMetaDescription ?? 'League season overview — divisions, schedule window, and player registration for Premier Tennis League.')

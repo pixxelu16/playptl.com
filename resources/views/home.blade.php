@@ -1,7 +1,6 @@
-﻿@extends('layouts.website')
+@extends('layouts.website')
 
 @section('nav_active', 'home')
-@section('header_logo_path', 'frontend/images/logo.png')
 
 @section('title', 'Premier Tennis League')
 @section('meta_description', 'Premier Tennis League is a competitive tennis platform for tournaments, teams, players, fixtures, galleries, and community events.')

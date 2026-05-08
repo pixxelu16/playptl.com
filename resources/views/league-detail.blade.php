@@ -1,4 +1,4 @@
-﻿@extends('layouts.website')
+@extends('layouts.website')
 
 @section('nav_active', 'league')
 
@@ -64,13 +64,15 @@
                     <button type="button" id="tab-playoffs" role="tab" aria-selected="false" aria-controls="panel-playoffs" data-league-tab="playoffs" class="league-tab-btn rounded-lg border border-[#2E7D32] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#2E7D32] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#E8F5E9]">
                         Playoffs
                     </button>
-                    <button type="button" id="tab-profile" role="tab" aria-selected="false" aria-controls="panel-profile" data-league-tab="profile" class="league-tab-btn rounded-lg border border-[#2E7D32] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#2E7D32] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#E8F5E9]">
-                        My Profile
-                    </button>
                 </div>
 
                 <div id="panel-players" role="tabpanel" aria-labelledby="tab-players" data-league-panel="players" class="league-tab-panel">
                     <div id="league-teams-view">
+                        @if (empty($playerGroups))
+                            <div class="rounded-xl bg-white p-6 text-center text-[15px] font-semibold text-[#5a8f5a] shadow-[0_2px_12px_rgba(45,74,45,0.08)] ring-1 ring-[#e1f0e1]">
+                                Players will appear here once they are assigned to groups.
+                            </div>
+                        @else
                         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-7">
                             @foreach ($playerGroups as $g)
                                 <div class="overflow-hidden rounded-xl bg-white shadow-[0_2px_12px_rgba(45,74,45,0.08)] p-[5px] ring-1 ring-[#e1f0e1]">
@@ -79,11 +81,11 @@
                                         <span class="text-[13px] font-medium text-[#5a8f5a] sm:text-[14px]">{{ $g['playerCount'] }} players</span>
                                     </div>
                                     <ul class="divide-y divide-[#e8ebe8] px-1 py-0">
-                                        @foreach ($g['players'] as $player)
+                                        @forelse ($g['players'] as $player)
                                             <li class="flex items-center gap-[5px] px-3 py-1.5 sm:gap-3 sm:px-4 sm:py-2">
                                                 <span class="w-7 shrink-0 text-center text-[12px] font-medium tabular-nums text-[#6b7a6b] sm:text-[13px]">{{ $player['index'] }}</span>
                                                 <img
-                                                    src="https://ui-avatars.com/api/?name={!! rawurlencode($player['name']) !!}&size=80&background=e1f0e1&color=2d4a2d&bold=true"
+                                                    src="{{ $player['avatarUrl'] ?? asset('upload/user-avatar/default-user-pic.png') }}"
                                                     alt=""
                                                     class="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white sm:h-11 sm:w-11"
                                                     width="44"
@@ -99,11 +101,14 @@
                                                     </svg>
                                                 </button>
                                             </li>
-                                        @endforeach
+                                        @empty
+                                            <li class="px-4 py-4 text-[14px] font-semibold text-[#5a8f5a]">No players assigned yet.</li>
+                                        @endforelse
                                     </ul>
                                 </div>
                             @endforeach
                         </div>
+                        @endif
                     </div>
 
                     <div id="league-player-dashboard" class="hidden" aria-hidden="true">
@@ -374,7 +379,7 @@
                                             <td class="px-4 py-3.5 align-middle sm:px-5">
                                                 <div class="flex min-w-0 items-center gap-3">
                                                     <img
-                                                        src="https://ui-avatars.com/api/?name={!! rawurlencode($row['name']) !!}&size=64&background=E8F5E9&color=2E7D32&bold=true"
+                                                        src="{{ $row['avatarUrl'] ?? asset('upload/user-avatar/default-user-pic.png') }}"
                                                         alt=""
                                                         class="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white sm:h-10 sm:w-10"
                                                         width="40"
@@ -438,6 +443,7 @@
                         @endforeach
                     </div>
                 </div>
+                @if (false)
                 <div id="panel-profile" role="tabpanel" aria-labelledby="tab-profile" data-league-panel="profile" class="league-tab-panel hidden">
                     @php
                         $mp = $myProfile;
@@ -466,6 +472,7 @@
                                         />
                                         <button
                                             type="button"
+                                            data-profile-jump-upload
                                             class="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#62A351] text-white shadow-md transition hover:bg-[#5a9449]"
                                             aria-label="Edit profile photo"
                                         >
@@ -482,6 +489,12 @@
                                     <button type="button" data-profile-section="password" class="{{ $profileNavInactive }}">Password &amp; Security</button>
                                     <button type="button" data-profile-section="location" class="{{ $profileNavInactive }}">Add Location</button>
                                     <button type="button" data-profile-section="upload" class="{{ $profileNavInactive }}">Upload Image</button>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="w-full rounded-lg border border-red-200 bg-white px-4 py-3 text-center text-[14px] font-semibold leading-snug text-red-600 transition-colors hover:bg-red-50 sm:text-[15px]">
+                                            Logout
+                                        </button>
+                                    </form>
                                 </nav>
                             </div>
                         </aside>
@@ -493,27 +506,31 @@
                                 data-profile-section="personal"
                             >
                                 <h4 class="mb-6 text-[18px] font-bold leading-tight text-[#212121] sm:text-[20px]">Personal Information</h4>
-                                <form class="space-y-5" action="#" method="post" onsubmit="return false;">
+                                <form class="space-y-5" action="{{ route('player.profile.update') }}" method="post">
                                     @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="league_id" value="{{ $leagueId }}">
+                                    <input type="hidden" name="group_card_id" value="{{ $groupCardId }}">
                                     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                                         <div>
                                             <label for="mp-first" class="{{ $profileLabelClass }}">First Name</label>
-                                            <input id="mp-first" name="first_name" type="text" value="{{ $mp['firstName'] }}" placeholder="Enter first name" class="{{ $profileInputClass }}" autocomplete="given-name" />
+                                            <input id="mp-first" name="first_name" type="text" value="{{ old('first_name', $mp['firstName']) }}" placeholder="Enter first name" class="{{ $profileInputClass }}" autocomplete="given-name" />
                                         </div>
                                         <div>
                                             <label for="mp-last" class="{{ $profileLabelClass }}">Last Name</label>
-                                            <input id="mp-last" name="last_name" type="text" value="{{ $mp['lastName'] }}" placeholder="Enter last name" class="{{ $profileInputClass }}" autocomplete="family-name" />
+                                            <input id="mp-last" name="last_name" type="text" value="{{ old('last_name', $mp['lastName']) }}" placeholder="Enter last name" class="{{ $profileInputClass }}" autocomplete="family-name" />
                                         </div>
                                         <div>
                                             <label for="mp-dob" class="{{ $profileLabelClass }}">Date Of Birth</label>
-                                            <input id="mp-dob" name="dob" type="date" value="{{ $mp['dob'] }}" class="{{ $profileInputClass }}" />
+                                            <input id="mp-dob" name="date_of_birth" type="date" value="{{ old('date_of_birth', $mp['dob']) }}" class="{{ $profileInputClass }}" />
                                         </div>
                                         <div>
                                             <label for="mp-ntrp" class="{{ $profileLabelClass }}">NTRP Rating</label>
                                             <div class="relative">
                                                 <select id="mp-ntrp" name="ntrp" class="{{ $profileInputClass }} appearance-none pr-10">
+                                                    <option value="" @selected(old('ntrp', $mp['ntrp']) === '')>Select rating</option>
                                                     @foreach (['2.5', '3.0', '3.5', '4.0', '4.5', '5.0'] as $r)
-                                                        <option value="{{ $r }}" @selected($mp['ntrp'] === $r)>{{ $r }}</option>
+                                                        <option value="{{ $r }}" @selected(old('ntrp', $mp['ntrp']) === $r)>{{ $r }}</option>
                                                     @endforeach
                                                 </select>
                                                 <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#6B7280]">
@@ -525,15 +542,15 @@
                                         </div>
                                         <div>
                                             <label for="mp-email" class="{{ $profileLabelClass }}">Email Address</label>
-                                            <input id="mp-email" name="email" type="email" value="{{ $mp['email'] }}" placeholder="Enter email address" class="{{ $profileInputClass }}" autocomplete="email" />
+                                            <input id="mp-email" name="email" type="email" value="{{ old('email', $mp['email']) }}" placeholder="Enter email address" class="{{ $profileInputClass }}" autocomplete="email" required />
                                         </div>
                                         <div>
                                             <label for="mp-phone" class="{{ $profileLabelClass }}">Phone Number</label>
-                                            <input id="mp-phone" name="phone" type="tel" value="{{ $mp['phone'] }}" placeholder="Enter phone number" class="{{ $profileInputClass }}" autocomplete="tel" />
+                                            <input id="mp-phone" name="phone" type="tel" value="{{ old('phone', $mp['phone']) }}" placeholder="Enter phone number" class="{{ $profileInputClass }}" autocomplete="tel" />
                                         </div>
                                         <div>
                                             <label for="mp-city" class="{{ $profileLabelClass }}">City / Location</label>
-                                            <input id="mp-city" name="city" type="text" value="{{ $mp['city'] }}" placeholder="Enter city" class="{{ $profileInputClass }}" />
+                                            <input id="mp-city" name="city" type="text" value="{{ old('city', $mp['city']) }}" placeholder="Enter city" class="{{ $profileInputClass }}" />
                                         </div>
                                         <div>
                                             <label for="mp-division" class="{{ $profileLabelClass }}">Division</label>
@@ -545,7 +562,7 @@
                                         </div>
                                         <div>
                                             <label for="mp-court" class="{{ $profileLabelClass }}">Home Court</label>
-                                            <input id="mp-court" name="home_court" type="text" value="{{ $mp['homeCourt'] }}" placeholder="Home court" class="{{ $profileInputClass }}" />
+                                            <input id="mp-court" name="home_court" type="text" value="{{ old('home_court', $mp['homeCourt']) }}" placeholder="Home court" class="{{ $profileInputClass }}" />
                                         </div>
                                     </div>
                                     <div>
@@ -553,7 +570,7 @@
                                         <div class="relative max-w-full sm:max-w-md">
                                             <select id="mp-hand" name="dominant_hand" class="{{ $profileInputClass }} appearance-none pr-10">
                                                 @foreach (['Right', 'Left', 'Ambidextrous'] as $h)
-                                                    <option value="{{ $h }}" @selected($mp['dominantHand'] === $h)>{{ $h }}</option>
+                                                    <option value="{{ $h }}" @selected(old('dominant_hand', $mp['dominantHand']) === $h)>{{ $h }}</option>
                                                 @endforeach
                                             </select>
                                             <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#6B7280]">
@@ -596,11 +613,25 @@
                                 data-profile-section="upload"
                             >
                                 <h4 class="mb-2 text-[18px] font-bold text-[#212121] sm:text-[20px]">Upload Image</h4>
-                                <p class="text-[14px] text-[#757575]">Image upload will be available soon.</p>
+                                <p class="mb-5 text-[14px] text-[#757575]">Upload a JPG, PNG, or WebP profile photo up to 2MB.</p>
+                                <form class="space-y-4" action="{{ route('player.profile.update') }}" method="post" enctype="multipart/form-data">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="league_id" value="{{ $leagueId }}">
+                                    <input type="hidden" name="group_card_id" value="{{ $groupCardId }}">
+                                    <div>
+                                        <label for="mp-avatar" class="{{ $profileLabelClass }}">Profile Image</label>
+                                        <input id="mp-avatar" name="avatar" type="file" accept="image/*" class="{{ $profileInputClass }}">
+                                    </div>
+                                    <button type="submit" class="rounded-lg bg-[#62A351] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#569649] sm:text-[15px]">
+                                        Upload Image
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
                 </div>
+                @endif
             </div>
         </section>
     </main>
@@ -732,6 +763,7 @@
                         activate(btn.getAttribute('data-league-tab'));
                     });
                 });
+
             })();
         </script>
         <script>
@@ -759,6 +791,13 @@
                 buttons.forEach(function (btn) {
                     btn.addEventListener('click', function () {
                         showSection(btn.getAttribute('data-profile-section'));
+                    });
+                });
+
+                document.querySelectorAll('[data-profile-jump-upload]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        showSection('upload');
+                        document.getElementById('mp-avatar')?.click();
                     });
                 });
             })();

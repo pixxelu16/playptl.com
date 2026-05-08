@@ -1,7 +1,6 @@
 @csrf
 @php
     $today = now()->toDateString();
-    $selectedGroupIds = old('group_ids', $league->exists ? $league->groups->pluck('id')->all() : []);
     $selectedGroupCardIds = old('group_card_ids', $league->exists ? $league->groupCards->pluck('id')->all() : []);
 @endphp
 
@@ -34,21 +33,18 @@
 </div>
 
 <div class="admin-form-group">
-    <span class="admin-label">Assign Group Cards</span>
-    <p class="admin-field-hint">Select one or more group cards for this league listing section.</p>
+    <span class="admin-label">Assign Sub Groups</span>
+    <p class="admin-field-hint">Select one or more sub groups for this league listing section.</p>
     <div class="admin-checkbox-grid">
         @forelse ($groupCards ?? [] as $groupCard)
             <label class="admin-checkbox-inline">
                 <input type="checkbox" name="group_card_ids[]" value="{{ $groupCard->id }}" @checked(in_array($groupCard->id, $selectedGroupCardIds, true))>
                 <span>
                     {{ $groupCard->name }}
-                    <small class="admin-muted">
-                        ({{ strtoupper($groupCard->tag) }} · {{ $groupCard->players_count }} players · {{ $groupCard->groups_count }} groups · {{ ucfirst($groupCard->status) }})
-                    </small>
                 </span>
             </label>
         @empty
-            <p class="admin-muted">No group cards yet. Add them from the Group Cards section first.</p>
+            <p class="admin-muted">No sub groups yet. Add them from the Sub Groups section first.</p>
         @endforelse
     </div>
 </div>
@@ -67,19 +63,4 @@
         <option value="upcoming" @selected(old('stats', $league->stats) === 'upcoming')>Upcoming</option>
         <option value="completed" @selected(old('stats', $league->stats) === 'completed')>Completed</option>
     </select>
-</div>
-
-<div class="admin-form-group">
-    <span class="admin-label">Assign Groups</span>
-    <p class="admin-field-hint">Select one or more groups linked to this league.</p>
-    <div class="admin-checkbox-grid">
-        @forelse ($groups ?? [] as $group)
-            <label class="admin-checkbox-inline">
-                <input type="checkbox" name="group_ids[]" value="{{ $group->id }}" @checked(in_array($group->id, $selectedGroupIds, true))>
-                <span>{{ $group->name }} <small class="admin-muted">({{ $group->players_count }} players · {{ ucfirst($group->status) }})</small></span>
-            </label>
-        @empty
-            <p class="admin-muted">No groups yet. Add groups from the Groups section first.</p>
-        @endforelse
-    </div>
 </div>

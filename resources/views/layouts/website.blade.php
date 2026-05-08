@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Premier Tennis League')</title>
     <meta name="description" content="@yield('meta_description', 'Premier Tennis League official website.')">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @if (request()->routeIs('register'))
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://js.stripe.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://*.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://*.stripe.com;">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
@@ -59,15 +63,21 @@
     @php
         $headerLight = trim((string) $__env->yieldContent('header_theme')) === 'light';
         $navActive = trim((string) $__env->yieldContent('nav_active'));
+        $authHeaderBottomBorder = request()->routeIs(['login', 'register', 'password.request', 'password.reset']);
         $defaultHeaderClass = $headerLight
-            ? 'relative z-30 bg-[#E4F7E7] px-5 py-5 sm:px-8 lg:px-14 lg:py-6'
+            ? ($authHeaderBottomBorder
+                ? 'relative z-30 bg-[#E4F7E7] px-5 pt-5 pb-2 sm:px-8 sm:pt-5 sm:pb-2 lg:px-14 lg:pt-6 lg:pb-3'
+                : 'relative z-30 bg-[#E4F7E7] px-5 py-5 sm:px-8 lg:px-14 lg:py-6')
             : 'relative z-30 bg-[#0a0f18] px-5 py-5 sm:px-8 lg:px-14 lg:py-6';
         $headerLogoPath = trim((string) $__env->yieldContent('header_logo_path'));
-        $defaultHeaderLogo = $navActive === 'home' ? 'frontend/images/logo.png' : 'frontend/images/logo-2.png';
+        if ($headerLogoPath === '' && $authHeaderBottomBorder) {
+            $headerLogoPath = 'frontend/images/logo-2.png';
+        }
+        $defaultHeaderLogo = 'frontend/images/home-logo.png';
         $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : $defaultHeaderLogo;
         $activeLeagueMenuItems = \App\Helpers\LeagueMenuHelper::activeLeagues();
     @endphp
-    <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass)">
+    <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass){{ $authHeaderBottomBorder ? ' border-b border-solid border-[#ddd]' : '' }}">
         <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
             <a href="{{ url('/') }}" class="group flex items-center gap-3">
                 <img src="{{ asset($headerLogoSrc) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
@@ -123,7 +133,35 @@
 
             <div class="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-end">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="inline-flex min-w-[110px] items-center justify-center rounded-ui bg-brand px-5 py-2.5 text-[15px] font-bold text-white transition-opacity hover:opacity-95">Dashboard</a>
+                    @php
+                        $headerUser = auth()->user();
+                        $headerAvatar = asset($headerUser->avatar_path ?: 'upload/user-avatar/default-user-pic.png');
+                        $headerProfileUrl = $headerUser->role === \App\Enums\UserRole::Player
+                            ? route('player.my-profile')
+                            : ($headerUser->role === \App\Enums\UserRole::Admin ? route('admin.profile') : route('dashboard'));
+                    @endphp
+                    <div class="relative" data-dropdown>
+                        <button type="button" data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-controls="website-user-menu" @class([
+                            'inline-flex items-center gap-2 rounded-ui border px-3 py-2 text-[15px] font-bold transition-opacity hover:opacity-95',
+                            'border-[#55A64E] bg-white text-[#2d4a2d]' => $headerLight,
+                            'border-white/20 bg-white/10 text-white backdrop-blur-md' => ! $headerLight,
+                        ])>
+                            <img src="{{ $headerAvatar }}" alt="" class="h-9 w-9 rounded-full border border-white/70 object-cover">
+                            <span class="max-w-[150px] truncate">{{ $headerUser->name }}</span>
+                            <svg data-dropdown-chevron class="h-3.5 w-3.5 opacity-80 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="website-user-menu" role="menu" data-dropdown-panel class="invisible pointer-events-none absolute right-0 z-50 mt-3 min-w-[230px] translate-y-2 overflow-hidden rounded-ui border border-[#E0E0E0] bg-white/95 py-2 opacity-0 shadow-xl shadow-[#1f3d1f]/10 backdrop-blur-md transition-all duration-200 ease-out">
+                            <a href="{{ $headerProfileUrl }}" role="menuitem" class="block px-4 py-3 text-[14px] font-semibold text-[#424242] hover:bg-[#E8F5E9] hover:text-[#55A64E]">My Profile Settings</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" role="menuitem" class="block w-full px-4 py-3 text-left text-[14px] font-semibold text-[#424242] hover:bg-[#E8F5E9] hover:text-[#55A64E]">
+                                    Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 @else
                     <a href="{{ route('login') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-[#4CAF50] px-5 py-2.5 text-[16px] font-bold text-white transition-opacity hover:opacity-95">Login</a>
                     <a href="{{ route('register') }}" class="inline-flex min-w-[100px] items-center justify-center rounded-ui bg-[#C1D72E] px-5 py-2.5 text-[16px] font-bold text-[#1a1a1a] transition-opacity hover:opacity-95">Register</a>
@@ -132,24 +170,34 @@
         </div>
     </header>
 
-    @if ($errors->any())
-        <div class="mx-auto max-w-[520px] px-5 pt-10 sm:px-8 lg:px-14">
-            <div class="rounded-ui border border-red-500/35 bg-red-950/50 px-4 py-3 text-sm text-red-100">
-                <ul class="list-disc space-y-1 pl-5">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+    @hasSection('suppress_global_errors')
+    @elseif (request()->routeIs('password.reset'))
+        {{-- Reset-password view shows validation errors above the card --}}
+    @else
+        @if ($errors->any())
+            <div class="mx-auto max-w-[520px] px-5 pt-10 sm:px-8 lg:px-14">
+                <div class="rounded-ui border border-red-500/35 bg-red-950/50 px-4 py-3 text-sm text-red-100">
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
-        </div>
+        @endif
     @endif
 
-    @if (session('status'))
-        <div class="mx-auto max-w-[520px] px-5 pt-10 sm:px-8 lg:px-14">
-            <div class="rounded-ui border border-emerald-500/35 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-100">
-                {{ session('status') }}
+    @hasSection('suppress_global_status')
+    @elseif (request()->routeIs(['password.request', 'login']))
+        {{-- Auth views show flash above the card --}}
+    @else
+        @if (session('status'))
+            <div class="mx-auto max-w-[520px] px-5 pt-10 text-center sm:px-8 lg:px-14">
+                <div class="rounded-ui border border-emerald-500/35 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-100">
+                    {{ session('status') }}
+                </div>
             </div>
-        </div>
+        @endif
     @endif
 
     @yield('content')
@@ -159,7 +207,7 @@
             <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[130px]">
                 <div class="max-w-sm lg:max-w-none">
                     <a href="{{ url('/') }}" class="inline-block">
-                        <img src="{{ asset('frontend/images/logo.png') }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
+                        <img src="{{ asset('frontend/images/home-logo.png') }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
                     </a>
                     <p class="mt-6 text-[15px] leading-[1.65] text-[rgba(255,255,255,0.56)]">
                         The region's premier competitive tennis league. Forging champions, building community, raising funds for causes that matter.
@@ -214,6 +262,12 @@
     </footer>
 
     <script src="{{ asset('frontend/js/custom.js') }}"></script>
+    @if (request()->routeIs('register'))
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/validate.js/0.13.1/validate.min.js"></script>
+        <script src="https://js.stripe.com/v3/"></script>
+        <script src="{{ asset('frontend/js/customer-ajax.js') }}"></script>
+    @endif
     @stack('scripts')
 </body>
 </html>

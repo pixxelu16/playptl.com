@@ -18,6 +18,10 @@
                     <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                     <span>Back</span>
                 </a>
+                <a class="admin-link" href="{{ route('admin.league-management.show', $league) }}">
+                    <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
+                    <span>Manage Sub Groups/Players</span>
+                </a>
                 <a class="admin-button admin-button-link" href="{{ route('admin.leagues.edit', $league) }}">
                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
                     <span>Edit League</span>
@@ -51,19 +55,15 @@
                     <p>{{ $league->stats ? ucfirst($league->stats) : '-' }}</p>
                 </div>
                 <div>
-                    <span>Assigned Groups</span>
-                    @if ($league->groups->isEmpty())
-                        <p>-</p>
-                    @else
-                        <ul class="admin-group-tag-list">
-                            @foreach ($league->groups as $group)
-                                <li><span class="admin-badge">{{ $group->name }}</span></li>
-                            @endforeach
-                        </ul>
-                    @endif
+                    <span>Registrations</span>
+                    <p>
+                        <strong>Singles:</strong> {{ $singlesCount ?? 0 }}
+                        &nbsp;|&nbsp;
+                        <strong>Doubles:</strong> {{ $doublesCount ?? 0 }}
+                    </p>
                 </div>
                 <div>
-                    <span>Assigned Group Cards</span>
+                    <span>Assigned Sub Groups</span>
                     @if ($league->groupCards->isEmpty())
                         <p>-</p>
                     @else

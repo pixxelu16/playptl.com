@@ -1,5 +1,8 @@
 @extends('layouts.website')
 
+{{-- Flash (e.g. password reset) shown above the card, same as forgot-password --}}
+@section('suppress_global_status', '1')
+
 @section('header_theme', 'light')
 @section('header_logo_path', 'frontend/images/logo-2.png')
 
@@ -26,7 +29,13 @@
 @endpush
 
 @section('content')
-    <div class="login-page flex min-h-[calc(100vh-200px)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-[#E4F7E7]">
+    <div class="login-page flex min-h-[calc(100vh-200px)] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-[#E4F7E7]">
+        @if (session('status'))
+            <div class="mb-4 w-full max-w-[960px] rounded-[5px] border border-[#61a153]/30 bg-[#61a153]/10 px-4 py-3 text-center text-[13px] font-medium text-[#3d7a35]" role="status">
+                {{ session('status') }}
+            </div>
+        @endif
+
         <div class="w-full max-w-[960px] overflow-hidden rounded-[12px] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
             <div class="flex flex-col lg:flex-row">
                 {{-- Left: form --}}
@@ -37,10 +46,10 @@
                         @csrf
 
                         <div>
-                            <label class="mb-1.5 block text-[12px] font-bold text-black" for="email">Email ID/Mobile Number</label>
+                            <label class="mb-1.5 block text-[12px] font-bold text-black" for="email">Email</label>
                             <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
                                 autocomplete="username"
-                                placeholder="Enter Your ID"
+                                placeholder="Enter Your email"
                                 class="h-[45px] w-full rounded-[5px] border border-[#dddddd] bg-white px-3 text-[15px] text-[#333333]">
                         </div>
 
