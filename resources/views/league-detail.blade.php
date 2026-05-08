@@ -48,23 +48,23 @@
             </div>
         </section>
 
-        <section class="bg-[#E8F5E9] font-['Montserrat',ui-sans-serif,system-ui,sans-serif] text-[#2d4a2d] antialiased" aria-labelledby="league-detail-tabs-heading">
+        <section class="bg-[#e8f5e9] font-['Montserrat',ui-sans-serif,system-ui,sans-serif] text-[#2d4a2d] antialiased" aria-labelledby="league-detail-tabs-heading">
             <h2 id="league-detail-tabs-heading" class="sr-only">League group tabs</h2>
             <div class="mx-auto max-w-[1400px] px-5 py-10 sm:px-8 sm:py-12 lg:px-14 lg:py-16">
                 <div id="league-tablist" class="mb-8 flex flex-wrap gap-2 sm:mb-10 sm:gap-3" role="tablist" aria-label="Group section">
-                    <button type="button" id="tab-players" role="tab" aria-selected="true" aria-controls="panel-players" data-league-tab="players" class="league-tab-btn rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px] bg-[#62A351] text-white shadow-sm">
+                    <button type="button" id="tab-players" role="tab" aria-selected="true" aria-controls="panel-players" data-league-tab="players" class="league-tab-btn rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px] bg-[#5E9E52] text-white shadow-sm">
                         Players / Teams
                     </button>
-                    <button type="button" id="tab-schedules" role="tab" aria-selected="false" aria-controls="panel-schedules" data-league-tab="schedules" class="league-tab-btn rounded-lg border border-[#2E7D32] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#2E7D32] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#E8F5E9]">
+                    <button type="button" id="tab-schedules" role="tab" aria-selected="false" aria-controls="panel-schedules" data-league-tab="schedules" class="league-tab-btn rounded-lg border border-[#E0E0E0] bg-[#F1F8E9] px-4 py-2.5 text-[14px] font-semibold text-[#333333] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#e8f5e4]">
                         Schedules
                     </button>
-                    <button type="button" id="tab-standings-1" role="tab" aria-selected="false" aria-controls="panel-standings-1" data-league-tab="standings-1" class="league-tab-btn rounded-lg border border-[#2E7D32] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#2E7D32] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#E8F5E9]">
+                    <button type="button" id="tab-standings-1" role="tab" aria-selected="false" aria-controls="panel-standings-1" data-league-tab="standings-1" class="league-tab-btn rounded-lg border border-[#E0E0E0] bg-[#F1F8E9] px-4 py-2.5 text-[14px] font-semibold text-[#333333] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#e8f5e4]">
                         Standings
                     </button>
-                    <button type="button" id="tab-playoffs" role="tab" aria-selected="false" aria-controls="panel-playoffs" data-league-tab="playoffs" class="league-tab-btn rounded-lg border border-[#2E7D32] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#2E7D32] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#E8F5E9]">
+                    <button type="button" id="tab-playoffs" role="tab" aria-selected="false" aria-controls="panel-playoffs" data-league-tab="playoffs" class="league-tab-btn rounded-lg border border-[#E0E0E0] bg-[#F1F8E9] px-4 py-2.5 text-[14px] font-semibold text-[#333333] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#e8f5e4]">
                         Playoffs
                     </button>
-                    <button type="button" id="tab-profile" role="tab" aria-selected="false" aria-controls="panel-profile" data-league-tab="profile" class="league-tab-btn rounded-lg border border-[#2E7D32] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#2E7D32] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#E8F5E9]">
+                    <button type="button" id="tab-profile" role="tab" aria-selected="false" aria-controls="panel-profile" data-league-tab="profile" class="league-tab-btn rounded-lg border border-[#E0E0E0] bg-[#F1F8E9] px-4 py-2.5 text-[14px] font-semibold text-[#333333] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#e8f5e4]">
                         My Profile
                     </button>
                 </div>
@@ -442,18 +442,27 @@
                     @php
                         $mp = $myProfile;
                         $profileInputClass =
-                            'w-full rounded-md border border-[#D1D5DB] bg-white px-3.5 py-2.5 text-[15px] text-[#374151] shadow-sm placeholder:text-[#9CA3AF] focus:border-[#62A351] focus:outline-none focus:ring-1 focus:ring-[#62A351] sm:text-[16px]';
+                            'w-full rounded-[10px] border border-[#dddddd] bg-white px-3.5 py-2.5 text-[15px] text-[#333333] shadow-sm placeholder:text-[#9CA3AF] focus:border-[#5E9E52] focus:outline-none focus:ring-1 focus:ring-[#5E9E52] sm:text-[16px]';
                         $profileInputReadonlyClass =
                             'w-full cursor-not-allowed rounded-md border border-[#D1D5DB] bg-[#F9FAFB] px-3.5 py-2.5 text-[15px] text-[#6B7280] shadow-sm focus:border-[#D1D5DB] focus:ring-0 sm:text-[16px]';
                         $profileLabelClass = 'mb-1.5 block text-[12px] font-bold text-[#424242] sm:text-[13px]';
-                        $profileNavActive = 'w-full rounded-lg bg-[#62A351] px-4 py-3 text-center text-[14px] font-semibold leading-snug text-white shadow-sm transition-colors sm:text-[15px]';
+                        $profileNavActive = 'w-full rounded-[10px] bg-[#5E9E52] px-4 py-3 text-center text-[14px] font-semibold leading-snug text-white shadow-sm transition-colors sm:text-[15px]';
                         $profileNavInactive =
-                            'w-full rounded-lg border border-[#E0E0E0] bg-white px-4 py-3 text-center text-[14px] font-semibold leading-snug text-[#424242] transition-colors hover:bg-[#FAFAFA] sm:text-[15px]';
+                            'w-full rounded-[10px] border border-[#E0E0E0] bg-white px-4 py-3 text-center text-[14px] font-semibold leading-snug text-[#333333] transition-colors hover:bg-[#fafafa] sm:text-[15px]';
+                        $profilePwLabelClass = 'mb-1.5 block text-[14px] font-bold text-[#333333]';
+                        $profilePwInputClass =
+                            'w-full rounded-[10px] border border-[#dddddd] bg-white py-2.5 pl-3.5 pr-11 text-[15px] text-[#333333] shadow-sm placeholder:text-[#9CA3AF] focus:border-[#5E9E52] focus:outline-none focus:ring-1 focus:ring-[#5E9E52] sm:text-[16px]';
+                        $scheduleLabelClass = 'mb-1.5 block text-[14px] font-bold text-[#333333]';
+                        $scheduleFieldBase =
+                            'w-full rounded-[8px] border border-[#dddddd] bg-white text-[14px] font-normal leading-normal text-[#333333] shadow-sm placeholder:text-[#888888] focus:border-[#5E9E52] focus:outline-none focus:ring-1 focus:ring-[#5E9E52] min-h-[44px]';
+                        $scheduleInputClass = $scheduleFieldBase.' px-3.5 py-2.5';
+                        $scheduleInputIconClass = $scheduleFieldBase.' py-2.5 pl-10 pr-3.5';
+                        $scheduleSelectClass = $scheduleFieldBase.' appearance-none px-3.5 py-2.5 pr-10 text-[#888888]';
                     @endphp
                     <div class="flex flex-col gap-6 overflow-x-auto pb-1 lg:flex-row lg:items-start lg:gap-6">
                         <aside class="w-full shrink-0 lg:w-[450px] lg:min-w-[450px] lg:max-w-[450px]">
                             <div class="overflow-hidden rounded-[12px] bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] p-[5px]">
-                                <div class="bg-[#E1F0E1] px-5 py-6 text-center rounded-[5px]">
+                                <div class="bg-[#e1f0e4] px-5 py-6 text-center rounded-[8px]">
                                     <div class="relative mx-auto h-[100px] w-[100px]">
                                         <img
                                             src="{{ $mp['avatarUrl'] }}"
@@ -466,7 +475,7 @@
                                         />
                                         <button
                                             type="button"
-                                            class="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#62A351] text-white shadow-md transition hover:bg-[#5a9449]"
+                                            class="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#5E9E52] text-white shadow-md transition hover:bg-[#548948]"
                                             aria-label="Edit profile photo"
                                         >
                                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
@@ -474,7 +483,7 @@
                                             </svg>
                                         </button>
                                     </div>
-                                    <h3 class="mt-4 text-[18px] font-bold leading-tight text-[#212121]">{{ $mp['name'] }}</h3>
+                                    <h3 class="mt-4 text-[18px] font-bold leading-tight text-[#333333]">{{ $mp['name'] }}</h3>
                                     <p class="mt-1 text-[14px] font-medium text-[#757575]">{{ $mp['roleLine'] }}</p>
                                 </div>
                                 <nav id="profile-side-nav" class="space-y-2 p-4" aria-label="Profile sections">
@@ -489,7 +498,7 @@
                         <div class="min-w-0 w-full space-y-6 lg:w-[810px] lg:min-w-[810px] lg:max-w-[810px] lg:shrink-0">
                             <div
                                 id="profile-section-personal"
-                                class="profile-section-panel overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] sm:p-8"
+                                class="profile-section-panel overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#dddddd] sm:p-8"
                                 data-profile-section="personal"
                             >
                                 <h4 class="mb-6 text-[18px] font-bold leading-tight text-[#212121] sm:text-[20px]">Personal Information</h4>
@@ -564,10 +573,10 @@
                                         </div>
                                     </div>
                                     <div class="flex flex-wrap gap-3 pt-2">
-                                        <button type="button" class="rounded-lg border border-[#E0E0E0] bg-[#F3F4F6] px-6 py-2.5 text-[14px] font-semibold text-[#424242] transition hover:bg-[#E5E7EB] sm:text-[15px]">
+                                        <button type="button" class="rounded-[10px] bg-[#ececec] px-6 py-2.5 text-[14px] font-semibold text-[#333333] transition hover:bg-[#e0e0e0] sm:text-[15px]">
                                             Cancel
                                         </button>
-                                        <button type="submit" class="rounded-lg bg-[#62A351] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#569649] sm:text-[15px]">
+                                        <button type="submit" class="rounded-[10px] bg-[#5E9E52] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#548948] sm:text-[15px]">
                                             Save Change
                                         </button>
                                     </div>
@@ -576,27 +585,291 @@
 
                             <div
                                 id="profile-section-password"
-                                class="profile-section-panel hidden overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] sm:p-8"
+                                class="profile-section-panel hidden overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#dddddd] sm:p-8 font-['Inter',ui-sans-serif,system-ui,sans-serif]"
                                 data-profile-section="password"
                             >
-                                <h4 class="mb-2 text-[18px] font-bold text-[#212121] sm:text-[20px]">Password &amp; Security</h4>
-                                <p class="text-[14px] text-[#757575]">This section will be available soon.</p>
+                                <h4 class="mb-6 text-[18px] font-bold leading-tight text-[#333333]">Password &amp; Security</h4>
+                                <form class="space-y-5" action="#" method="post" onsubmit="return false;">
+                                    @csrf
+                                    <div class="space-y-5">
+                                        <div>
+                                            <label for="mp-pw-current" class="{{ $profilePwLabelClass }}">Current Password</label>
+                                            <div class="relative">
+                                                <input
+                                                    id="mp-pw-current"
+                                                    name="current_password"
+                                                    type="password"
+                                                    autocomplete="current-password"
+                                                    class="{{ $profilePwInputClass }}"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#999999] transition hover:text-[#555555] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5E9E52] focus-visible:ring-offset-2 rounded-r-[10px]"
+                                                    data-profile-pw-toggle="mp-pw-current"
+                                                    aria-label="Show password"
+                                                >
+                                                    <svg class="h-5 w-5 icon-eye-off" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    </svg>
+                                                    <svg class="hidden h-5 w-5 icon-eye" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="mp-pw-new" class="{{ $profilePwLabelClass }}">New Password</label>
+                                            <div class="relative">
+                                                <input
+                                                    id="mp-pw-new"
+                                                    name="password"
+                                                    type="password"
+                                                    autocomplete="new-password"
+                                                    class="{{ $profilePwInputClass }}"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#999999] transition hover:text-[#555555] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5E9E52] focus-visible:ring-offset-2 rounded-r-[10px]"
+                                                    data-profile-pw-toggle="mp-pw-new"
+                                                    aria-label="Show password"
+                                                >
+                                                    <svg class="h-5 w-5 icon-eye-off" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    </svg>
+                                                    <svg class="hidden h-5 w-5 icon-eye" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="mp-pw-confirm" class="{{ $profilePwLabelClass }}">Confirm New Password</label>
+                                            <div class="relative">
+                                                <input
+                                                    id="mp-pw-confirm"
+                                                    name="password_confirmation"
+                                                    type="password"
+                                                    autocomplete="new-password"
+                                                    class="{{ $profilePwInputClass }}"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#999999] transition hover:text-[#555555] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5E9E52] focus-visible:ring-offset-2 rounded-r-[10px]"
+                                                    data-profile-pw-toggle="mp-pw-confirm"
+                                                    aria-label="Show password"
+                                                >
+                                                    <svg class="h-5 w-5 icon-eye-off" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    </svg>
+                                                    <svg class="hidden h-5 w-5 icon-eye" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-3 pt-2">
+                                        <button type="button" class="rounded-[10px] bg-[#ececec] px-6 py-2.5 text-[14px] font-semibold text-[#333333] transition hover:bg-[#e0e0e0]">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="rounded-[10px] bg-[#5E9E52] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#548948]">
+                                            Update Password
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                             <div
                                 id="profile-section-location"
-                                class="profile-section-panel hidden overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] sm:p-8"
+                                class="profile-section-panel hidden overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#dddddd] sm:p-8 font-['Inter',ui-sans-serif,system-ui,sans-serif]"
                                 data-profile-section="location"
                             >
-                                <h4 class="mb-2 text-[18px] font-bold text-[#212121] sm:text-[20px]">Add Location</h4>
-                                <p class="text-[14px] text-[#757575]">Location tools will be available soon.</p>
+                                <h4 class="mb-6 text-[20px] font-bold leading-tight text-[#333333]">Players Schedule</h4>
+                                <form class="space-y-5" action="#" method="post" onsubmit="return false;">
+                                    @csrf
+                                    <div>
+                                        <label for="mp-schedule-match" class="{{ $scheduleLabelClass }}">Match Players</label>
+                                        <div class="relative">
+                                            <select id="mp-schedule-match" name="schedule_match" class="{{ $scheduleSelectClass }}">
+                                                @foreach ($mp['scheduleMatchOptions'] as $opt)
+                                                    <option value="{{ $opt }}" @selected($mp['scheduleMatch'] === $opt)>{{ $opt }}</option>
+                                                @endforeach
+                                            </select>
+                                            <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#888888]">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                        <div>
+                                            <label for="mp-schedule-date" class="{{ $scheduleLabelClass }}">
+                                                Date <span class="font-bold text-red-600">*</span>
+                                            </label>
+                                            <div class="relative">
+                                                <span class="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center text-[#888888]" aria-hidden="true">
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                </span>
+                                                <input
+                                                    id="mp-schedule-date"
+                                                    name="schedule_date"
+                                                    type="date"
+                                                    value="{{ $mp['scheduleDate'] }}"
+                                                    class="{{ $scheduleInputIconClass }}"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="mp-schedule-time" class="{{ $scheduleLabelClass }}">
+                                                Time <span class="font-bold text-red-600">*</span>
+                                            </label>
+                                            <div class="relative">
+                                                <span class="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center text-[#888888]" aria-hidden="true">
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </span>
+                                                <input
+                                                    id="mp-schedule-time"
+                                                    name="schedule_time"
+                                                    type="time"
+                                                    value="{{ $mp['scheduleTime'] }}"
+                                                    class="{{ $scheduleInputIconClass }}"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="mp-schedule-venue" class="{{ $scheduleLabelClass }}">Venue / Club</label>
+                                        <input
+                                            id="mp-schedule-venue"
+                                            name="schedule_venue"
+                                            type="text"
+                                            value="{{ $mp['scheduleVenue'] }}"
+                                            placeholder=""
+                                            autocomplete="off"
+                                            class="{{ $scheduleInputClass }}"
+                                        />
+                                    </div>
+                                    <div class="flex flex-wrap gap-3 pt-2">
+                                        <button type="button" class="rounded-[8px] bg-[#eeeeee] px-6 py-2.5 text-[14px] font-semibold text-[#333333] transition hover:bg-[#e4e4e4]">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="rounded-[8px] bg-[#5E9E52] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#548948]">
+                                            Save Change
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                             <div
                                 id="profile-section-upload"
-                                class="profile-section-panel hidden overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] sm:p-8"
+                                class="profile-section-panel hidden overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] sm:p-8 font-['Inter',ui-sans-serif,system-ui,sans-serif]"
                                 data-profile-section="upload"
                             >
-                                <h4 class="mb-2 text-[18px] font-bold text-[#212121] sm:text-[20px]">Upload Image</h4>
-                                <p class="text-[14px] text-[#757575]">Image upload will be available soon.</p>
+                                <h4 class="mb-6 text-[18px] font-bold leading-tight text-[#333333] sm:text-[20px]">Upload Match Images</h4>
+                                <div class="mb-6">
+                                    <label for="mp-upload-match" class="mb-1.5 block text-[14px] font-bold text-[#333333]">Match Players</label>
+                                    <div class="relative">
+                                        <select
+                                            id="mp-upload-match"
+                                            name="upload_match_players"
+                                            class="w-full appearance-none rounded-[8px] border border-[#E0E0E0] bg-white px-3.5 py-2.5 pr-10 text-[14px] font-normal text-[#333333] shadow-sm focus:border-[#5E9E52] focus:outline-none focus:ring-1 focus:ring-[#5E9E52] min-h-[44px]"
+                                        >
+                                            @foreach ($mp['scheduleMatchOptions'] as $opt)
+                                                <option value="{{ $opt }}" @selected($mp['scheduleMatch'] === $opt)>{{ $opt }}</option>
+                                            @endforeach
+                                        </select>
+                                        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[#757575]">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {{-- Step 1: gallery grid + wide upload trigger (first image) --}}
+                                <div id="upload-match-step-1" data-upload-flow-step="1">
+                                    <div class="mb-6 grid grid-cols-3 gap-3 sm:gap-4">
+                                        @foreach ($mp['uploadMatchGallery'] as $src)
+                                            <img
+                                                src="{{ $src }}"
+                                                alt=""
+                                                class="aspect-square w-full rounded-[8px] object-cover ring-1 ring-black/[0.04]"
+                                                loading="lazy"
+                                                decoding="async"
+                                                width="400"
+                                                height="400"
+                                            />
+                                        @endforeach
+                                    </div>
+                                    <button
+                                        type="button"
+                                        id="upload-match-open-uploader"
+                                        class="flex w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#E0E0E0] bg-[#F5F5F5] px-4 py-3.5 text-[14px] font-semibold text-[#78909C] transition hover:bg-[#eeeeee]"
+                                    >
+                                        <svg class="h-5 w-5 shrink-0 text-[#78909C]" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        Upload Image
+                                    </button>
+                                </div>
+
+                                {{-- Step 2: drag-drop + notes + Cancel / Add (after clicking Upload Image) --}}
+                                <div id="upload-match-step-2" class="hidden space-y-5" data-upload-flow-step="2">
+                                    <form class="space-y-5" action="#" method="post" onsubmit="return false;">
+                                        @csrf
+                                        <div>
+                                            <label
+                                                for="upload-match-files"
+                                                class="flex cursor-pointer flex-col items-center justify-center rounded-[8px] border-2 border-dashed border-[#E0E0E0] bg-[#F5F5F5] px-4 py-12 text-center transition hover:bg-[#f0f0f0]"
+                                                id="upload-match-dropzone"
+                                            >
+                                                <input
+                                                    id="upload-match-files"
+                                                    type="file"
+                                                    name="match_images[]"
+                                                    class="sr-only"
+                                                    accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                                                    multiple
+                                                />
+                                                <svg class="mb-3 h-10 w-10 text-[#757575]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                                <span class="text-[15px] font-medium text-[#333333]">Drag &amp; drop images here, or browse file</span>
+                                                <span class="mt-2 text-[13px] text-[#757575]">JPG, PNG, WEBP - max 10 MB each</span>
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label for="upload-match-notes" class="mb-1.5 block text-[14px] font-bold text-[#333333]">
+                                                Match Notes <span class="font-normal text-[#757575]">(Optional)</span>
+                                            </label>
+                                            <textarea
+                                                id="upload-match-notes"
+                                                name="match_notes"
+                                                rows="4"
+                                                placeholder="Type here..."
+                                                class="w-full resize-y rounded-[8px] border border-[#E0E0E0] bg-white px-3.5 py-2.5 text-[14px] text-[#333333] placeholder:text-[#757575] shadow-sm focus:border-[#5E9E52] focus:outline-none focus:ring-1 focus:ring-[#5E9E52]"
+                                            ></textarea>
+                                        </div>
+                                        <div class="flex flex-wrap gap-3 pt-1">
+                                            <button
+                                                type="button"
+                                                id="upload-match-step2-cancel"
+                                                class="rounded-[8px] bg-[#eeeeee] px-6 py-2.5 text-[14px] font-semibold text-[#333333] transition hover:bg-[#e4e4e4]"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button type="submit" class="rounded-[8px] bg-[#5E9E52] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:bg-[#548948]">
+                                                Add
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -617,9 +890,9 @@
                 var playerDash = document.getElementById('league-player-dashboard');
                 var profiles = window.PLAYER_PROFILES || {};
                 var inactiveCls =
-                    'league-tab-btn rounded-lg border border-[#2E7D32] bg-white px-4 py-2.5 text-[14px] font-semibold text-[#2E7D32] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#E8F5E9]';
+                    'league-tab-btn rounded-lg border border-[#E0E0E0] bg-[#F1F8E9] px-4 py-2.5 text-[14px] font-semibold text-[#333333] transition-colors sm:px-5 sm:text-[15px] hover:bg-[#e8f5e4]';
                 var activeCls =
-                    'league-tab-btn rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px] bg-[#62A351] text-white shadow-sm';
+                    'league-tab-btn rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px] bg-[#5E9E52] text-white shadow-sm';
 
                 function setAllTabsInactive() {
                     tabs.forEach(function (btn) {
@@ -739,11 +1012,22 @@
                 var nav = document.getElementById('profile-side-nav');
                 if (!nav) return;
                 var activeNav =
-                    'w-full rounded-lg bg-[#62A351] px-4 py-3 text-center text-[14px] font-semibold leading-snug text-white shadow-sm transition-colors sm:text-[15px]';
+                    'w-full rounded-[10px] bg-[#5E9E52] px-4 py-3 text-center text-[14px] font-semibold leading-snug text-white shadow-sm transition-colors sm:text-[15px]';
                 var inactiveNav =
-                    'w-full rounded-lg border border-[#E0E0E0] bg-white px-4 py-3 text-center text-[14px] font-semibold leading-snug text-[#424242] transition-colors hover:bg-[#FAFAFA] sm:text-[15px]';
+                    'w-full rounded-[10px] border border-[#E0E0E0] bg-white px-4 py-3 text-center text-[14px] font-semibold leading-snug text-[#333333] transition-colors hover:bg-[#fafafa] sm:text-[15px]';
                 var buttons = nav.querySelectorAll('[data-profile-section]');
                 var panels = document.querySelectorAll('.profile-section-panel');
+
+                function resetUploadMatchFlow() {
+                    var s1 = document.getElementById('upload-match-step-1');
+                    var s2 = document.getElementById('upload-match-step-2');
+                    if (s1) s1.classList.remove('hidden');
+                    if (s2) s2.classList.add('hidden');
+                    var fi = document.getElementById('upload-match-files');
+                    if (fi) fi.value = '';
+                    var notes = document.getElementById('upload-match-notes');
+                    if (notes) notes.value = '';
+                }
 
                 function showSection(sectionId) {
                     panels.forEach(function (el) {
@@ -754,11 +1038,79 @@
                         var on = btn.getAttribute('data-profile-section') === sectionId;
                         btn.className = on ? activeNav : inactiveNav;
                     });
+                    if (sectionId === 'upload') {
+                        resetUploadMatchFlow();
+                    }
                 }
 
                 buttons.forEach(function (btn) {
                     btn.addEventListener('click', function () {
                         showSection(btn.getAttribute('data-profile-section'));
+                    });
+                });
+            })();
+        </script>
+        <script>
+            (function () {
+                var openBtn = document.getElementById('upload-match-open-uploader');
+                var step1 = document.getElementById('upload-match-step-1');
+                var step2 = document.getElementById('upload-match-step-2');
+                var cancelBtn = document.getElementById('upload-match-step2-cancel');
+
+                function showUploadStep2() {
+                    if (!step1 || !step2) return;
+                    step1.classList.add('hidden');
+                    step2.classList.remove('hidden');
+                }
+
+                function showUploadStep1() {
+                    if (!step1 || !step2) return;
+                    step2.classList.add('hidden');
+                    step1.classList.remove('hidden');
+                    var fi = document.getElementById('upload-match-files');
+                    if (fi) fi.value = '';
+                    var notes = document.getElementById('upload-match-notes');
+                    if (notes) notes.value = '';
+                }
+
+                if (openBtn) openBtn.addEventListener('click', showUploadStep2);
+                if (cancelBtn) cancelBtn.addEventListener('click', showUploadStep1);
+
+                var dz = document.getElementById('upload-match-dropzone');
+                var fileInput = document.getElementById('upload-match-files');
+                if (dz && fileInput) {
+                    ;['dragenter', 'dragover'].forEach(function (ev) {
+                        dz.addEventListener(ev, function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        });
+                    });
+                    dz.addEventListener('drop', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var dt = e.dataTransfer;
+                        if (!dt || !dt.files || !dt.files.length) return;
+                        try {
+                            fileInput.files = dt.files;
+                        } catch (err) {}
+                    });
+                }
+            })();
+        </script>
+        <script>
+            (function () {
+                document.querySelectorAll('[data-profile-pw-toggle]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var id = btn.getAttribute('data-profile-pw-toggle');
+                        var input = document.getElementById(id);
+                        if (!input) return;
+                        input.type = input.type === 'password' ? 'text' : 'password';
+                        var revealed = input.type === 'text';
+                        btn.setAttribute('aria-label', revealed ? 'Hide password' : 'Show password');
+                        var off = btn.querySelector('.icon-eye-off');
+                        var on = btn.querySelector('.icon-eye');
+                        if (off) off.classList.toggle('hidden', revealed);
+                        if (on) on.classList.toggle('hidden', !revealed);
                     });
                 });
             })();
