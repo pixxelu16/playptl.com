@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRole;
 use App\Models\GroupCard;
 use App\Models\Group;
 use App\Models\League;
@@ -85,7 +84,6 @@ class LeagueController extends Controller
             (int) $detail['statGroups'],
             $playerGroups,
         );
-        $detail['myProfile'] = $this->playerMyProfile($league, $groupCard, $detail['breadcrumbGroup']);
 
         return view('league-detail', $detail);
     }
@@ -118,99 +116,6 @@ class LeagueController extends Controller
             'scheduleDays' => $this->sampleScheduleDays(),
             'standingsRows' => $this->sampleStandingsTable(),
             'playoffColumns' => $this->samplePlayoffBracket(),
-            'myProfile' => $this->sampleMyProfile($breadcrumbGroup),
-        ];
-    }
-
-    /**
-     * Demo “My Profile” form payload — replace with authenticated user later.
-     *
-     * @return array<string, mixed>
-     */
-    protected function sampleMyProfile(string $breadcrumbGroup): array
-    {
-        $divisionLabel = Str::title(Str::lower($breadcrumbGroup));
-
-        return [
-            'name' => 'Arjun Kumar',
-            'roleLine' => 'Player · Group A',
-            'avatarUrl' => 'https://ui-avatars.com/api/?name='.rawurlencode('Arjun Kumar').'&size=256&background=E8F5E9&color=2E7D32&bold=true',
-            'firstName' => 'Arjun',
-            'lastName' => 'Kumar',
-            'dob' => '1995-08-14',
-            'ntrp' => '4.0',
-            'email' => 'arjun.kumar@gmail.com',
-            'phone' => '+91 98765 43210',
-            'city' => 'Chandigarh',
-            'division' => $divisionLabel,
-            'group' => 'Group A',
-            'homeCourt' => 'Highland Country Club · Court 3',
-            'dominantHand' => 'Right',
-            /** Demo “Players Schedule” / Add Location — replace with persisted data later. */
-            'scheduleMatchOptions' => [
-                'Arjun Kumar Vs Rahul Singh',
-                'Arjun Kumar Vs Vikram Mehta',
-                'Rahul Singh Vs Karan Joshi',
-            ],
-            'scheduleMatch' => 'Arjun Kumar Vs Rahul Singh',
-            'scheduleDate' => '2026-05-10',
-            'scheduleTime' => '10:00',
-            'scheduleVenue' => 'Highland Country Club · Court 3',
-            /**
-             * Upload Match Images grid (3×4): same 6 thumbnails as the design, Row3–4 repeat Row1–2.
-             * Filenames with spaces are URL-encoded so images load reliably on all hosts.
-             *
-             * @see public/frontend/images/
-             */
-            'uploadMatchGallery' => $this->uploadMatchGalleryUrls(),
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function playerMyProfile(League $league, GroupCard $groupCard, string $breadcrumbGroup): array
-    {
-        $user = auth()->user();
-        if (! $user || $user->role !== UserRole::Player) {
-            return $this->sampleMyProfile($breadcrumbGroup);
-        }
-
-        $registration = $user->leagueRegistrations()
-            ->where('league_id', $league->id)
-            ->where(function ($q) use ($groupCard) {
-                $q->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
-            })
-            ->with('group')
-            ->latest('id')
-            ->first();
-
-        $firstName = trim((string) ($user->first_name ?? ''));
-        $lastName = trim((string) ($user->last_name ?? ''));
-        if ($firstName === '' && $lastName === '') {
-            $parts = preg_split('/\s+/', trim((string) $user->name), 2) ?: [];
-            $firstName = $parts[0] ?? '';
-            $lastName = $parts[1] ?? '';
-        }
-
-        $groupName = (string) ($registration?->group?->name ?? '—');
-        $divisionLabel = Str::title(Str::lower($breadcrumbGroup));
-
-        return [
-            'name' => trim((string) $user->name) !== '' ? (string) $user->name : trim($firstName.' '.$lastName),
-            'roleLine' => 'Player - '.$groupName,
-            'avatarUrl' => asset($user->avatar_path ?: 'upload/user-avatar/default-user-pic.png'),
-            'firstName' => $firstName,
-            'lastName' => $lastName,
-            'dob' => $user->date_of_birth?->format('Y-m-d') ?? '',
-            'ntrp' => (string) ($registration?->skill_level ?? ''),
-            'email' => (string) $user->email,
-            'phone' => (string) ($user->phone ?? ''),
-            'city' => (string) ($user->city ?? ''),
-            'division' => $divisionLabel,
-            'group' => $groupName,
-            'homeCourt' => (string) ($user->home_court ?? ''),
-            'dominantHand' => (string) ($user->dominant_hand ?? 'Right'),
         ];
     }
 
