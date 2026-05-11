@@ -26,6 +26,8 @@ use Illuminate\Notifications\Notifiable;
     'city',
     'state',
     'home_court',
+    'preferred_play_date',
+    'preferred_play_time',
     'dominant_hand',
     'sex',
     'registration_type',
@@ -67,6 +69,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'date_of_birth' => 'date',
+            'preferred_play_date' => 'date',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];

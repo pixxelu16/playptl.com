@@ -20,22 +20,33 @@ class PlayerProfileController extends Controller
     {
         $user = $request->user();
 
+        if (! $request->filled('preferred_play_time')) {
+            $request->merge(['preferred_play_time' => null]);
+        }
+        if (! $request->filled('preferred_play_date')) {
+            $request->merge(['preferred_play_date' => null]);
+        }
+
         $validated = $request->validate([
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
             'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string', 'max:64'],
             'date_of_birth' => ['nullable', 'date'],
             'ntrp' => ['nullable', 'string', 'max:32', 'regex:/^$|^not-sure$|^[0-9]+(\.[0-9]+)?$/'],
             'home_court' => ['nullable', 'string', 'max:255'],
+            'preferred_play_date' => ['nullable', 'date'],
+            'preferred_play_time' => ['nullable', 'string', 'max:16'],
             'dominant_hand' => ['nullable', 'in:Right,Left,Ambidextrous'],
             'league_id' => ['nullable', 'integer'],
             'group_card_id' => ['nullable', 'integer'],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            '_section' => ['nullable', 'string', 'max:32'],
         ]);
 
         $updates = [];
-        foreach (['first_name', 'last_name', 'phone', 'city'] as $column) {
+        foreach (['first_name', 'last_name', 'phone', 'city', 'state'] as $column) {
             if (array_key_exists($column, $validated)) {
                 $updates[$column] = $validated[$column] ?? null;
             }
@@ -49,6 +60,16 @@ class PlayerProfileController extends Controller
         foreach (['date_of_birth', 'home_court', 'dominant_hand'] as $column) {
             if (array_key_exists($column, $validated) && Schema::hasColumn('users', $column)) {
                 $updates[$column] = $validated[$column] ?? null;
+            }
+        }
+
+        foreach (['preferred_play_date', 'preferred_play_time'] as $column) {
+            if (array_key_exists($column, $validated) && Schema::hasColumn('users', $column)) {
+                $val = $validated[$column] ?? null;
+                if ($column === 'preferred_play_time' && is_string($val) && $val !== '') {
+                    $val = preg_match('/(\d{2}:\d{2})/', $val, $m) ? $m[1] : null;
+                }
+                $updates[$column] = ($val === '' || $val === null) ? null : $val;
             }
         }
 
@@ -82,7 +103,18 @@ class PlayerProfileController extends Controller
             $registration->update(['skill_level' => $validated['ntrp'] ?: null]);
         }
 
-        return redirect()->route('player.my-profile')->with('status', 'Profile updated successfully.');
+        $section = $request->input('_section');
+        $allowedSections = ['personal', 'location', 'upload'];
+        $flashSection = in_array($section, $allowedSections, true) ? $section : null;
+
+        $redirect = redirect()
+            ->route('player.my-profile')
+            ->with('status', 'Profile updated successfully.');
+        if ($flashSection !== null) {
+            $redirect->with('profile_section', $flashSection);
+        }
+
+        return $redirect;
     }
 
     /**
@@ -118,9 +150,12 @@ class PlayerProfileController extends Controller
                 'email' => (string) $user->email,
                 'phone' => (string) ($user->phone ?? ''),
                 'city' => (string) ($user->city ?? ''),
+                'state' => (string) ($user->state ?? ''),
                 'division' => $division,
                 'group' => $group,
                 'homeCourt' => (string) ($user->home_court ?? ''),
+                'preferredPlayDate' => $user->preferred_play_date?->format('Y-m-d') ?? '',
+                'preferredPlayTime' => (string) ($user->preferred_play_time ?? ''),
                 'dominantHand' => (string) ($user->dominant_hand ?? 'Right'),
             ],
         ];
