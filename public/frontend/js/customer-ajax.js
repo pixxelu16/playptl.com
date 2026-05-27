@@ -89,7 +89,7 @@
     var registerUrl = $form.data('register-url') || $form.attr('action') || '';
     var csrf = $form.data('csrf') || '';
 
-    var stripe = stripeKey && window.Stripe ? Stripe(stripeKey) : null;
+    var stripe = stripeKey && window.Stripe ? Stripe(stripeKey, { advancedFraudSignals: false }) : null;
     var elements = stripe ? stripe.elements() : null;
     var card = null;
     var cardComplete = false;

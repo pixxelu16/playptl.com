@@ -15,6 +15,12 @@ class RegisterStripePaymentIntentController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        if (! class_exists(StripeClient::class)) {
+            return response()->json([
+                'message' => 'Payments are temporarily unavailable. Please try again later.',
+            ], 503);
+        }
+
         $validated = $request->validate([
             'league_id' => ['required', 'integer', 'exists:leagues,id'],
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
