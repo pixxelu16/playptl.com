@@ -39,6 +39,10 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): Response
     {
+        if (! class_exists(StripeClient::class)) {
+            return $this->fail($request, 'Payments are temporarily unavailable. Please try again later.');
+        }
+
         $base = $request->validate([
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
             'name' => ['required', 'string', 'max:255'],

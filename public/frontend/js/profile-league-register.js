@@ -182,7 +182,7 @@
     var registerUrl = $form.data('register-url') || '';
     var csrf = $form.data('csrf') || $('meta[name="csrf-token"]').attr('content') || '';
 
-    var stripe = stripeKey && window.Stripe ? Stripe(stripeKey) : null;
+    var stripe = stripeKey && window.Stripe ? Stripe(stripeKey, { advancedFraudSignals: false }) : null;
     var elements = stripe ? stripe.elements() : null;
     var card = null;
     var cardComplete = false;
