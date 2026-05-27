@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\League;
 use App\Models\User;
+use App\Support\LeagueEntryFee;
 use App\Support\LeagueRegistrationGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,9 +46,7 @@ class RegisterStripePaymentIntentController extends Controller
             ], 422);
         }
 
-        $amountCents = (int) ($validated['registration_tab'] === 'doubles'
-            ? config('services.stripe.doubles_amount_cents', 4500)
-            : config('services.stripe.singles_amount_cents', 3000));
+        $amountCents = LeagueEntryFee::centsForTab($league, (string) $validated['registration_tab']);
         $currency = (string) config('services.stripe.currency', 'USD');
 
         $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));

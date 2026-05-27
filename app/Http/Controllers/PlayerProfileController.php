@@ -132,9 +132,7 @@ class PlayerProfileController extends Controller
             return response()->json(['message' => $registrationClosed], 422);
         }
 
-        $amountCents = (int) ($tab === 'doubles'
-            ? config('services.stripe.doubles_amount_cents', 4500)
-            : config('services.stripe.singles_amount_cents', 3000));
+        $amountCents = \App\Support\LeagueEntryFee::centsForTab($league, $tab);
         $currency = (string) config('services.stripe.currency', 'USD');
 
         $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));
@@ -243,9 +241,7 @@ class PlayerProfileController extends Controller
         $stripe = new StripeClient($secret);
         $intent = $stripe->paymentIntents->retrieve($base['payment_intent_id'], []);
 
-        $expectedAmountCents = (int) ($tab === 'doubles'
-            ? config('services.stripe.doubles_amount_cents', 4500)
-            : config('services.stripe.singles_amount_cents', 3000));
+        $expectedAmountCents = \App\Support\LeagueEntryFee::centsForTab($league, $tab);
         $expectedCurrency = strtolower((string) config('services.stripe.currency', 'USD'));
         $intentEmail = strtolower((string) ($intent->metadata['email'] ?? ''));
         $intentLeagueId = (string) ($intent->metadata['league_id'] ?? '');
@@ -1663,9 +1659,12 @@ class PlayerProfileController extends Controller
      */
     protected function chooseLeaguePanelData(): array
     {
+        $registrationLeagues = LeagueMenuHelper::activeLeagues();
+
         return [
-            'registrationLeagues' => LeagueMenuHelper::activeLeagues(),
+            'registrationLeagues' => $registrationLeagues,
             'registrationClosedDivisions' => \App\Support\LeagueRegistrationGate::closedSelectionKeys(),
+            'leagueEntryFees' => \App\Support\LeagueEntryFee::mapForLeagues($registrationLeagues),
             'stripePublishableKey' => (string) (config('services.stripe.key') ?: env('STRIPE_PUBLISHABLE_KEY', '')),
         ];
     }

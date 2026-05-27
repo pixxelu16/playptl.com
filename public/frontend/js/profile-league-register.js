@@ -168,6 +168,34 @@
     return !!closedDivisionSet()[key];
   }
 
+  function leagueFeesMap() {
+    var raw = $('#profile-league-registration').attr('data-league-fees');
+    if (!raw) return { default: { singles: '0.00', doubles: '0.00' } };
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        return { default: { singles: '0.00', doubles: '0.00' } };
+      }
+    }
+    return raw || { default: { singles: '0.00', doubles: '0.00' } };
+  }
+
+  function entryFeeForLeague(leagueId, tab) {
+    var fees = leagueFeesMap();
+    var key = leagueId ? String(leagueId) : '';
+    var row = key && fees[key] ? fees[key] : fees.default || { singles: '0.00', doubles: '0.00' };
+    return tab === 'doubles' ? row.doubles || '0.00' : row.singles || '0.00';
+  }
+
+  function syncProfileEntryFee($form) {
+    if (!$form || !$form.length) return;
+    var tab = $form.data('registration-tab') || 'singles';
+    var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
+    var amount = entryFeeForLeague(leagueId, tab);
+    $form.find('.entry-fee-amount').text(amount);
+  }
+
   function initProfileLeagueForm(formSelector) {
     var $form = $(formSelector);
     if (!$form.length) return;
@@ -356,5 +384,14 @@
     setTabUI(initial);
     initProfileLeagueForm('#profile-singles-league-form');
     initProfileLeagueForm('#profile-doubles-league-form');
+
+    $('#profile-singles-league-form select[name="tournament_singles"]').on('change', function () {
+      syncProfileEntryFee($('#profile-singles-league-form'));
+    });
+    $('#profile-doubles-league-form select[name="tournament_doubles"]').on('change', function () {
+      syncProfileEntryFee($('#profile-doubles-league-form'));
+    });
+    syncProfileEntryFee($('#profile-singles-league-form'));
+    syncProfileEntryFee($('#profile-doubles-league-form'));
   });
 })(window.jQuery);

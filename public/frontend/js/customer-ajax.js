@@ -75,6 +75,35 @@
     return !!closedDivisionSet()[leagueId + ':' + tab + ':' + skill];
   }
 
+  function leagueFeesMap() {
+    var raw = $('#register-league-gate').attr('data-league-fees');
+    if (!raw) return { default: { singles: '0.00', doubles: '0.00' } };
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        return { default: { singles: '0.00', doubles: '0.00' } };
+      }
+    }
+    return raw || { default: { singles: '0.00', doubles: '0.00' } };
+  }
+
+  function entryFeeForLeague(leagueId, tab) {
+    var fees = leagueFeesMap();
+    var key = leagueId ? String(leagueId) : '';
+    var row = key && fees[key] ? fees[key] : fees.default || { singles: '0.00', doubles: '0.00' };
+    return tab === 'doubles' ? row.doubles || '0.00' : row.singles || '0.00';
+  }
+
+  function syncRegisterEntryFee($form) {
+    if (!$form || !$form.length) return;
+    var tab = $form.data('registration-tab') || 'singles';
+    var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
+    var amount = entryFeeForLeague(leagueId, tab);
+    $form.find('.entry-fee-amount').text(amount);
+    $form.data('fee', amount);
+  }
+
   function initRegisterForm(formSelector) {
     var $form = $(formSelector);
     if (!$form.length) return;
@@ -375,6 +404,15 @@
     // Init both forms (independent validation + ajax)
     initRegisterForm('#singles-register-form');
     initRegisterForm('#doubles-register-form');
+
+    $('#singles-register-form select[name="tournament_singles"]').on('change', function () {
+      syncRegisterEntryFee($('#singles-register-form'));
+    });
+    $('#doubles-register-form select[name="tournament_doubles"]').on('change', function () {
+      syncRegisterEntryFee($('#doubles-register-form'));
+    });
+    syncRegisterEntryFee($('#singles-register-form'));
+    syncRegisterEntryFee($('#doubles-register-form'));
   });
 })(window.jQuery);
 

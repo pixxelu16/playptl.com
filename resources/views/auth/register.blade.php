@@ -10,8 +10,17 @@
     $heroRegisterImg = 'frontend/images/front-view-couple-tennis-court 1.png';
     $accentSingles = '#5DA44E';
     $accentDoubles = '#5FA252';
-    $feeSingles = number_format((int) config('services.stripe.singles_amount_cents', 3000) / 100, 2);
-    $feeDoubles = number_format((int) config('services.stripe.doubles_amount_cents', 4500) / 100, 2);
+    $leagueEntryFees = $leagueEntryFees ?? [];
+    $feeSingles = $leagueEntryFees['default']['singles'] ?? \App\Support\LeagueEntryFee::formatDollars(\App\Support\LeagueEntryFee::defaultSinglesCents());
+    $feeDoubles = $leagueEntryFees['default']['doubles'] ?? \App\Support\LeagueEntryFee::formatDollars(\App\Support\LeagueEntryFee::defaultDoublesCents());
+    $selectedSinglesLeague = old('tournament_singles');
+    $selectedDoublesLeague = old('tournament_doubles');
+    if ($selectedSinglesLeague && isset($leagueEntryFees[(string) $selectedSinglesLeague])) {
+        $feeSingles = $leagueEntryFees[(string) $selectedSinglesLeague]['singles'];
+    }
+    if ($selectedDoublesLeague && isset($leagueEntryFees[(string) $selectedDoublesLeague])) {
+        $feeDoubles = $leagueEntryFees[(string) $selectedDoublesLeague]['doubles'];
+    }
     $initialFee = $isDoubles ? $feeDoubles : $feeSingles;
     $registrationAgeBrackets = [
         'under-18' => 'Under 18',
@@ -55,7 +64,12 @@
                             </button>
                         </div>
 
-                        <div id="register-league-gate" data-closed-divisions='@json($registrationClosedDivisions ?? [])' hidden></div>
+                        <div
+                            id="register-league-gate"
+                            data-closed-divisions='@json($registrationClosedDivisions ?? [])'
+                            data-league-fees='@json($leagueEntryFees ?? [])'
+                            hidden
+                        ></div>
 
                         {{-- Singles form --}}
                         <form id="singles-register-form"
@@ -187,7 +201,7 @@
 
                             {{-- Singles payment --}}
                             <div class="mt-4 rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-3">
-                                <p class="text-[13px] font-semibold text-[#333]">Entry Fee: <span class="font-bold">${{ $feeSingles }}</span></p>
+                                <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeSingles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
                                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
@@ -364,7 +378,7 @@
                             </div>
 
                             <div class="mt-4 rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-3">
-                                <p class="text-[13px] font-semibold text-[#333]">Entry Fee: <span class="font-bold">${{ $feeDoubles }}</span></p>
+                                <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeDoubles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
                                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
