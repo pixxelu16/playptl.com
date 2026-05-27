@@ -90,7 +90,11 @@
     var csrf = $form.data('csrf') || '';
 
     var stripe = stripeKey && window.Stripe ? Stripe(stripeKey, { advancedFraudSignals: false }) : null;
-    var elements = stripe ? stripe.elements() : null;
+    var elements = stripe
+      ? stripe.elements({
+          wallets: { applePay: 'never', googlePay: 'never' },
+        })
+      : null;
     var card = null;
     var cardComplete = false;
     var pendingSuccessRedirect = false;
@@ -113,6 +117,7 @@
       if (!mount) return;
       card = elements.create('card', {
         hidePostalCode: true,
+        wallets: { applePay: 'never', googlePay: 'never' },
         style: {
           base: {
             color: '#111827',

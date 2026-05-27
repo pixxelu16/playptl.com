@@ -191,7 +191,7 @@
 @push('profile_scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
-    <script src="{{ asset('frontend/js/profile-league-register.js') }}"></script>
+    <script src="{{ asset('frontend/js/profile-league-register.js') }}?v={{ @filemtime(public_path('frontend/js/profile-league-register.js')) ?: time() }}"></script>
 @endpush
 
 

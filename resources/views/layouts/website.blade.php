@@ -7,7 +7,7 @@
     <meta name="description" content="@yield('meta_description', 'Premier Tennis League official website.')">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @if (request()->routeIs('register'))
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://js.stripe.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://cdn.tailwindcss.com https://api.stripe.com https://*.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://*.stripe.com;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://js.stripe.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://api.stripe.com https://js.stripe.com https://r.stripe.com https://m.stripe.com https://merchant-ui-api.stripe.com https://q.stripe.com https://hooks.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://*.stripe.com;">
     @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -266,7 +266,7 @@
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/validate.js/0.13.1/validate.min.js"></script>
         <script src="https://js.stripe.com/v3/"></script>
-        <script src="{{ asset('frontend/js/customer-ajax.js') }}"></script>
+        <script src="{{ asset('frontend/js/customer-ajax.js') }}?v={{ @filemtime(public_path('frontend/js/customer-ajax.js')) ?: time() }}"></script>
     @endif
     @stack('scripts')
 </body>
