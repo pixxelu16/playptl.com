@@ -27,17 +27,17 @@
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gauge-high"></i></span>
                         <span>Dashboard</span>
                     </a>
-                    <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
+                    <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*', 'admin.league-management.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span>
                         <span>Leagues</span>
                     </a>
-                    <a class="admin-nav-link {{ request()->routeIs('admin.groups.*') ? 'is-active' : '' }}" href="{{ route('admin.groups.index') }}">
-                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
-                        <span>Groups</span>
-                    </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.group-cards.*') ? 'is-active' : '' }}" href="{{ route('admin.group-cards.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
-                        <span>Sub Groups</span>
+                        <span>Groups</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.groups.*') ? 'is-active' : '' }}" href="{{ route('admin.groups.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
+                        <span>Subgroups</span>
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.players.*') ? 'is-active' : '' }}" href="{{ route('admin.players.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
@@ -107,6 +107,25 @@
             </main>
         </div>
     </div>
+    <div id="admin-confirm-modal" class="admin-modal" hidden aria-hidden="true">
+        <button type="button" class="admin-modal-backdrop" data-admin-confirm-cancel aria-label="Close"></button>
+        <div class="admin-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
+            <h2 id="admin-confirm-title" class="admin-modal-title">Are you sure?</h2>
+            <p id="admin-confirm-message" class="admin-modal-footer-note"></p>
+            <div class="admin-modal-actions">
+                <button type="button" class="admin-modal-btn-cancel" data-admin-confirm-cancel>Cancel</button>
+                <button type="button" class="admin-modal-btn-primary" id="admin-confirm-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
+    @php
+        $adminJsV = max(
+            @filemtime(public_path('admin/js/admin-form-submit-lock.js')) ?: 0,
+            @filemtime(public_path('admin/js/admin-confirm.js')) ?: 0
+        );
+    @endphp
+    <script src="{{ asset('admin/js/admin-form-submit-lock.js') }}?v={{ $adminJsV }}" defer></script>
+    <script src="{{ asset('admin/js/admin-confirm.js') }}?v={{ $adminJsV }}" defer></script>
     <script>
         document.querySelector('[data-sidebar-toggle]')?.addEventListener('click', function () {
             const shell = document.querySelector('[data-admin-shell]');

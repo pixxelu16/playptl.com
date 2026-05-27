@@ -58,9 +58,8 @@
                 </h2>
 
                 <div class="mb-4 hidden items-center lg:grid lg:grid-cols-2 lg:gap-8">
-                    <div class="flex min-w-0 items-center justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-4">
                         <p class="m-0 shrink-0 text-[13px] font-bold uppercase tracking-[0.12em] text-[#1a1a1a] sm:text-sm">Announcements</p>
-                        <a href="#" class="whitespace-nowrap text-[14px] font-semibold text-[#55A64E] underline decoration-[#55A64E] underline-offset-[3px] hover:opacity-90">View All</a>
                     </div>
                     <div class="min-w-0 text-center">
                         <p class="m-0 text-[13px] font-bold uppercase tracking-[0.12em] text-[#1a1a1a] sm:text-sm">Schedule</p>
@@ -69,28 +68,30 @@
 
                 <div class="grid gap-8 lg:grid-cols-2">
                     <div>
-                        <div class="mb-4 flex items-center justify-between gap-4 lg:hidden">
+                        <div class="mb-4 flex items-center gap-4 lg:hidden">
                             <p class="m-0 text-[13px] font-bold uppercase tracking-[0.12em] text-[#1a1a1a] sm:text-sm">Announcements</p>
-                            <a href="#" class="text-[13px] font-semibold text-[#55A64E] underline decoration-[#55A64E] underline-offset-[3px] hover:opacity-90 sm:text-[14px]">View All</a>
                         </div>
 
-                        <div class="mb-4 rounded-xl border border-[#efefef] bg-white p-5 shadow-[0_2px_16px_rgba(15,40,20,0.07)] sm:p-6">
-                            <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
-                                <span class="inline-flex items-center rounded border border-[#55A64E] bg-[#E4F7E7] px-3 py-1.5 text-sm font-semibold uppercase tracking-[0.08em] text-[#55A64E]">Featured - News</span>
-                                <time class="shrink-0 text-xs font-medium text-[#757575]" datetime="2026-04-28">Apr 28, 2026</time>
+                        @php
+                            $homeFeaturedAnnouncement = $homeFeaturedAnnouncement ?? null;
+                            $homeAnnouncementRows = $homeAnnouncementRows ?? [];
+                        @endphp
+
+                        @if ($homeFeaturedAnnouncement)
+                            <div class="mb-4 rounded-xl border border-[#efefef] bg-white p-5 shadow-[0_2px_16px_rgba(15,40,20,0.07)] sm:p-6">
+                                <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+                                    <span class="{{ $homeFeaturedAnnouncement['badgeClass'] }}">{{ $homeFeaturedAnnouncement['badgeLabel'] }}</span>
+                                    <time class="shrink-0 text-xs font-medium text-[#757575]" datetime="{{ $homeFeaturedAnnouncement['datetime'] }}">{{ $homeFeaturedAnnouncement['dateHuman'] }}</time>
+                                </div>
+                                <h3 class="mb-2 mt-[17px] text-lg font-bold leading-snug text-[#333333]">{{ $homeFeaturedAnnouncement['title'] }}</h3>
+                                <p class="m-0 text-[16px] leading-relaxed text-[#757575]">
+                                    {{ $homeFeaturedAnnouncement['description'] }}
+                                </p>
                             </div>
-                            <h3 class="mb-2 mt-[17px] text-lg font-bold leading-snug text-[#333333]">PTL Spring 2026 Registration Open</h3>
-                            <p class="m-0 text-[16px] leading-relaxed text-[#757575]">
-                                All divisions now open. Voyagers, Challengers, Warriors and Mixed Doubles brackets accepting entries until May 15.
-                            </p>
-                        </div>
+                        @endif
 
                         <div class="space-y-3">
-                            @foreach ([
-                                ['day' => '25', 'month' => 'Apr', 'title' => 'Match Deadlines Reminder', 'text' => 'Please complete all pending Group A matches by this Sunday to remain eligible for playoffs.', 'tag' => 'Notice', 'tagClass' => 'border-[rgba(198,40,40,0.2)] bg-[rgba(211,47,47,0.12)] text-[#c62828]'],
-                                ['day' => '22', 'month' => 'Apr', 'title' => 'Court Maintenance - Block B', 'text' => 'Courts 3-4 will be resurfaced Apr 29-30. Matches scheduled there are moved to Venue B.', 'tag' => 'Update', 'tagClass' => 'border-[rgba(21,101,192,0.2)] bg-[rgba(25,118,210,0.12)] text-[#1565c0]'],
-                                ['day' => '18', 'month' => 'Apr', 'title' => 'Charity Exhibition Night', 'text' => 'Join us for the charity exhibition, themed games, raffles, and juniors showcase from 6 PM.', 'tag' => 'Event', 'tagClass' => 'border-[rgba(106,27,154,0.18)] bg-[rgba(106,27,154,0.1)] text-[#6a1b9a]'],
-                            ] as $announcement)
+                            @forelse ($homeAnnouncementRows as $announcement)
                                 <article class="flex items-stretch rounded-[10px] bg-white py-4 pl-[1.125rem] pr-4 shadow-[0_2px_16px_rgba(15,40,20,0.07)]">
                                     <div class="flex w-[2.625rem] shrink-0 flex-col items-center justify-center text-center" aria-hidden="true">
                                         <span class="text-[22px] font-extrabold leading-none text-[#55A64E]">{{ $announcement['day'] }}</span>
@@ -103,7 +104,13 @@
                                     </div>
                                     <span class="{{ $announcement['tagClass'] }} shrink-0 self-center whitespace-nowrap rounded-md border px-2.5 py-1.5 text-[12px] font-bold uppercase leading-tight tracking-[0.07em]">{{ $announcement['tag'] }}</span>
                                 </article>
-                            @endforeach
+                            @empty
+                                @unless ($homeFeaturedAnnouncement)
+                                    <p class="m-0 rounded-lg border border-[#efefef] bg-white px-4 py-10 text-center text-[14px] font-medium leading-relaxed text-[#757575] sm:text-[15px]">
+                                        No announcements yet. Admins can add them from the dashboard.
+                                    </p>
+                                @endunless
+                            @endforelse
                         </div>
                     </div>
 
@@ -113,38 +120,40 @@
                         </div>
 
                         <div class="rounded-xl border border-[#e8e8e8] bg-white p-5 shadow-[0_2px_16px_rgba(15,40,20,0.07)] sm:p-6">
-                            @foreach ([
-                                ['date' => 'Tue - Apr 28', 'matches' => [['time' => '5:30 PM', 'court' => 'Court 1', 'players' => 'R. Sharma Vs M. Patel'], ['time' => '7:00 PM', 'court' => 'Court 2', 'players' => 'A. Khan Vs S. Verma']]],
-                                ['date' => 'Wed - Apr 29', 'matches' => [['time' => '6:30 PM', 'court' => 'Court 1', 'players' => 'R. Sharma Vs M. Patel'], ['time' => '8:00 PM', 'court' => 'Court 1', 'players' => 'R. Sharma Vs M. Patel']]],
-                            ] as $day)
-                                <div class="@if (! $loop->first) mt-[30px] @endif">
-                                    <div class="mb-2.5 flex items-baseline justify-between gap-3">
-                                        <span class="m-0 text-base font-bold leading-tight text-[#1a1a1a]">Today</span>
-                                        <span class="text-xs font-medium leading-tight text-[#666666] sm:text-[13px]">{{ $day['date'] }}</span>
-                                    </div>
-                                    <div class="divide-y divide-gray-200 overflow-hidden rounded-ui border border-gray-200 bg-[#F8F8F8]">
-                                        @foreach ($day['matches'] as $match)
-                                            <div class="px-4 py-3.5">
-                                                <div class="mb-2 flex items-center justify-between gap-3">
-                                                    <span class="text-[14px] font-medium text-[#666666]">{{ $match['time'] }}</span>
-                                                    <span class="inline-flex items-center gap-1 text-[13px] font-medium text-[#666666]">
-                                                        <svg class="h-4 w-4 shrink-0 text-[#9ca3af]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        </svg>
-                                                        {{ $match['court'] }}
-                                                    </span>
+                            @php
+                                $homeScheduleDays = $homeScheduleDays ?? [];
+                            @endphp
+                            @if ($homeScheduleDays === [])
+                                <p class="m-0 rounded-lg border border-[#e8e8e8] bg-[#F8F8F8] px-4 py-10 text-center text-[14px] font-medium leading-relaxed text-[#666666] sm:text-[15px]">
+                                    No matches to show yet. Check back after the schedule is published.
+                                </p>
+                            @else
+                                @foreach ($homeScheduleDays as $day)
+                                    <div class="@if (! $loop->first) mt-[30px] @endif">
+                                        <div class="mb-2.5 flex items-baseline justify-between gap-3">
+                                            <span class="m-0 text-base font-bold leading-tight text-[#1a1a1a]">{{ $day['dayBadge'] }}</span>
+                                            <span class="text-xs font-medium leading-tight text-[#666666] sm:text-[13px]">{{ $day['dateLine'] }}</span>
+                                        </div>
+                                        <div class="divide-y divide-gray-200 overflow-hidden rounded-ui border border-gray-200 bg-[#F8F8F8]">
+                                            @foreach ($day['matches'] as $match)
+                                                <div class="px-4 py-3.5">
+                                                    <div class="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                                                        <span class="text-[14px] font-medium text-[#666666]">{{ $match['time'] }}</span>
+                                                        <span class="inline-flex max-w-[min(100%,14rem)] items-center gap-1.5 text-[13px] font-medium text-[#666666] sm:max-w-[18rem]" aria-label="{{ ($match['location'] ?? 'TBA') === 'TBA' ? 'Location not set' : 'Venue and court: '.($match['location'] ?? '') }}">
+                                                            <svg class="h-4 w-4 shrink-0 text-[#9ca3af]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            </svg>
+                                                            <span class="min-w-0 truncate sm:whitespace-normal sm:break-words">{{ $match['location'] ?? 'TBA' }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <p class="m-0 text-sm font-bold leading-snug text-[#1a1a1a] sm:text-[18px]">{{ $match['players'] }}</p>
                                                 </div>
-                                                <p class="m-0 text-sm font-bold leading-snug text-[#1a1a1a] sm:text-[18px]">{{ $match['players'] }}</p>
-                                            </div>
-                                        @endforeach
+                                            @endforeach
+                                        </div>
                                     </div>
-                                </div>
-                            @endforeach
-
-                            <a href="#" class="mt-6 flex w-full items-center justify-center rounded-xl bg-[#55A64E] py-3 text-[14px] font-bold text-white shadow-sm transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#55A64E] sm:py-3.5 sm:text-[15px]">
-                                View Full Schedule
-                            </a>
+                                @endforeach
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -224,7 +233,16 @@
             </div>
         </section>
 
+        @push('styles')
+            @include('partials.gallery-photo-styles')
+        @endpush
+
         <section id="gallery" class="relative overflow-x-hidden bg-[#e9f5e9] py-12 font-sans antialiased sm:py-16 lg:py-20" aria-labelledby="gallery-heading">
+            @php
+                $homeToday = $homeGalleryToday ?? collect();
+                $homeYesterday = $homeGalleryYesterday ?? collect();
+                $homeGalleryDef = $homeGalleryDefaultTab ?? 'today';
+            @endphp
             <div class="mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-14">
                 <h2 id="gallery-heading" class="league-1 mb-8 text-center text-xl font-bold uppercase tracking-[0.12em] text-[#111827] sm:mb-10 sm:text-2xl md:text-[66px] md:tracking-[0.14em]">
                     <span class="text-[#111827]">Explore our </span><span class="text-[#619B4B]">gallery</span>
@@ -232,54 +250,111 @@
 
                 <div class="mb-10 flex justify-center">
                     <div class="inline-flex rounded-[10px] border border-[#d1e7d3] bg-white p-1 shadow-[0_2px_14px_rgba(97,155,75,0.12)]" role="tablist" aria-label="Gallery by day">
-                        <button type="button" id="gallery-tab-today" role="tab" aria-controls="gallery-panel-today" aria-selected="false" data-gallery-tab="today" class="rounded-[10px] bg-white px-7 py-2.5 text-sm font-semibold text-[#374151] transition-colors duration-200 aria-selected:bg-[#619B4B] aria-selected:text-white sm:px-12 sm:py-3 sm:text-[15px]">Today</button>
-                        <button type="button" id="gallery-tab-yesterday" role="tab" aria-controls="gallery-panel-yesterday" aria-selected="true" data-gallery-tab="yesterday" class="rounded-[10px] bg-white px-7 py-2.5 text-sm font-semibold text-[#374151] transition-colors duration-200 aria-selected:bg-[#619B4B] aria-selected:text-white sm:px-12 sm:py-3 sm:text-[15px]">Yesterday</button>
+                        <button
+                            type="button"
+                            id="gallery-tab-today"
+                            role="tab"
+                            aria-controls="gallery-panel-today"
+                            aria-selected="{{ $homeGalleryDef === 'today' ? 'true' : 'false' }}"
+                            data-gallery-tab="today"
+                            class="rounded-[10px] bg-white px-7 py-2.5 text-sm font-semibold text-[#374151] transition-colors duration-200 aria-selected:bg-[#619B4B] aria-selected:text-white sm:px-12 sm:py-3 sm:text-[15px]"
+                        >
+                            Today
+                        </button>
+                        <button
+                            type="button"
+                            id="gallery-tab-yesterday"
+                            role="tab"
+                            aria-controls="gallery-panel-yesterday"
+                            aria-selected="{{ $homeGalleryDef === 'yesterday' ? 'true' : 'false' }}"
+                            data-gallery-tab="yesterday"
+                            class="rounded-[10px] bg-white px-7 py-2.5 text-sm font-semibold text-[#374151] transition-colors duration-200 aria-selected:bg-[#619B4B] aria-selected:text-white sm:px-12 sm:py-3 sm:text-[15px]"
+                        >
+                            Yesterday
+                        </button>
                     </div>
                 </div>
             </div>
 
-            @foreach (['today' => true, 'yesterday' => false] as $panel => $hidden)
-                <div id="gallery-panel-{{ $panel }}" role="tabpanel" aria-labelledby="gallery-tab-{{ $panel }}" data-gallery-panel="{{ $panel }}" class="{{ $hidden ? 'hidden ' : '' }}w-full min-w-0 focus:outline-none" tabindex="0" @if ($hidden) hidden @endif>
+            <div
+                id="gallery-panel-today"
+                role="tabpanel"
+                aria-labelledby="gallery-tab-today"
+                data-gallery-panel="today"
+                class="w-full min-w-0 focus:outline-none @if ($homeGalleryDef !== 'today') hidden @endif"
+                tabindex="0"
+                @if ($homeGalleryDef !== 'today') hidden @endif
+            >
+                @if ($homeToday->isEmpty())
+                    <div class="mx-auto max-w-[1600px] px-5 pb-4 sm:px-8 lg:px-14">
+                        <p class="rounded-2xl border border-[#d1e7d3] bg-white/90 py-14 text-center text-[15px] font-medium text-[#6B7280]">
+                            No images uploaded today yet.
+                            <a href="{{ route('gallery') }}" class="ml-1 font-semibold text-[#619B4B] underline decoration-[#619B4B] underline-offset-2 hover:opacity-90">View full gallery</a>
+                        </p>
+                    </div>
+                @else
                     <div class="relative w-full min-w-0 overflow-x-hidden">
                         <div class="flex w-max select-none will-change-transform motion-reduce:animate-none animate-marquee-gallery">
                             <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="list">
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/man-focused-tennis-game 2.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/person-playing-tennis-game-winter-time 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/tennis-player-serving-hard 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/young-man-tennis-player-court 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
+                                @foreach ($homeToday as $photo)
+                                    <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md">
+                                        <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] ?? 'Match photo' }}" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
+                                    </li>
+                                @endforeach
                             </ul>
                             <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="presentation" aria-hidden="true">
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/man-focused-tennis-game 2.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/person-playing-tennis-game-winter-time 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/tennis-player-serving-hard 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
-                                <li class="shrink-0">
-                                    <img src="{{ asset('frontend/images/young-man-tennis-player-court 1.png') }}" alt="Gallery photo" width="360" height="540" class="h-[540px] w-[360px] shrink-0 rounded-2xl object-cover shadow-md" loading="lazy" decoding="async">
-                                </li>
+                                @foreach ($homeToday as $photo)
+                                    <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md" aria-hidden="true">
+                                        <img src="{{ $photo['url'] }}" alt="" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
+                                    </li>
+                                @endforeach
                             </ul>
                         </div>
                     </div>
-                </div>
-            @endforeach
+                @endif
+            </div>
+
+            <div
+                id="gallery-panel-yesterday"
+                role="tabpanel"
+                aria-labelledby="gallery-tab-yesterday"
+                data-gallery-panel="yesterday"
+                class="w-full min-w-0 focus:outline-none @if ($homeGalleryDef !== 'yesterday') hidden @endif"
+                tabindex="0"
+                @if ($homeGalleryDef !== 'yesterday') hidden @endif
+            >
+                @if ($homeYesterday->isEmpty())
+                    <div class="mx-auto max-w-[1600px] px-5 pb-4 sm:px-8 lg:px-14">
+                        <p class="rounded-2xl border border-[#d1e7d3] bg-white/90 py-14 text-center text-[15px] font-medium text-[#6B7280]">
+                            No images uploaded yesterday.
+                            <a href="{{ route('gallery') }}" class="ml-1 font-semibold text-[#619B4B] underline decoration-[#619B4B] underline-offset-2 hover:opacity-90">View full gallery</a>
+                        </p>
+                    </div>
+                @else
+                    <div class="relative w-full min-w-0 overflow-x-hidden">
+                        <div class="flex w-max select-none will-change-transform motion-reduce:animate-none animate-marquee-gallery">
+                            <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="list">
+                                @foreach ($homeYesterday as $photo)
+                                    <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md">
+                                        <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] ?? 'Match photo' }}" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
+                                    </li>
+                                @endforeach
+                            </ul>
+                            <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="presentation" aria-hidden="true">
+                                @foreach ($homeYesterday as $photo)
+                                    <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md" aria-hidden="true">
+                                        <img src="{{ $photo['url'] }}" alt="" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                @endif
+            </div>
         </section>
     </main>
 @endsection

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Group;
 use App\Models\League;
 use App\Models\LeagueRegistration;
+use App\Support\LeagueRegistrationRoster;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
@@ -21,6 +23,17 @@ class AdminLeagueManagementController extends Controller
         ]);
     }
 
+    public function finish(League $league): RedirectResponse
+    {
+        if ($league->isFinished()) {
+            return back()->with('status', 'This league is already marked as finished.');
+        }
+
+        $league->update(['finished_at' => now()]);
+
+        return back()->with('status', 'League marked as finished.');
+    }
+
     public function show(League $league): View
     {
         $league->load(['groupCards' => fn ($q) => $q->orderBy('display_order')->orderBy('name')]);
@@ -31,16 +44,21 @@ class AdminLeagueManagementController extends Controller
                 ->whereHas('groupCards', fn ($q) => $q->whereKey($card->id))
                 ->count();
 
-            $registrationsCount = LeagueRegistration::query()
-                ->where('league_id', $league->id)
-                ->where('group_card_id', $card->id)
-                ->count();
+            $isDoublesCard = in_array(strtolower((string) ($card->tag ?? '')), ['double', 'doubles'], true);
 
-            $assignedCount = LeagueRegistration::query()
+            $registrationsQuery = LeagueRegistration::query()
                 ->where('league_id', $league->id)
-                ->where('group_card_id', $card->id)
-                ->whereNotNull('group_id')
-                ->count();
+                ->where('group_card_id', $card->id);
+
+            $assignedQuery = (clone $registrationsQuery)->whereNotNull('group_id');
+
+            $registrationsCount = $isDoublesCard
+                ? LeagueRegistrationRoster::countSlots($registrationsQuery)
+                : $registrationsQuery->count();
+
+            $assignedCount = $isDoublesCard
+                ? LeagueRegistrationRoster::countSlots($assignedQuery)
+                : $assignedQuery->count();
 
             $cardStats[$card->id] = [
                 'groups_count' => $groupsCount,

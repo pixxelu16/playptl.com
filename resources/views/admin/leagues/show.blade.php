@@ -20,7 +20,7 @@
                 </a>
                 <a class="admin-link" href="{{ route('admin.league-management.show', $league) }}">
                     <i class="fa-solid fa-sitemap" aria-hidden="true"></i>
-                    <span>Manage Sub Groups/Players</span>
+                    <span>Manage Groups/Players</span>
                 </a>
                 <a class="admin-button admin-button-link" href="{{ route('admin.leagues.edit', $league) }}">
                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
@@ -63,7 +63,7 @@
                     </p>
                 </div>
                 <div>
-                    <span>Assigned Sub Groups</span>
+                    <span>Assigned Groups</span>
                     @if ($league->groupCards->isEmpty())
                         <p>-</p>
                     @else

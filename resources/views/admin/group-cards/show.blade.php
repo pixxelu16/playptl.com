@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
 @section('title', $groupCard->name.' | '.config('app.name', 'playptl'))
-@section('meta_description', 'View sub group details from the admin dashboard.')
+@section('meta_description', 'View group details from the admin dashboard.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">{{ $groupCard->name }}</h1>
-                <p class="admin-card-text">Sub group details and visibility status.</p>
+                <p class="admin-card-text">Group details and visibility status.</p>
             </div>
             <div class="admin-header-actions">
                 <a class="admin-link" href="{{ route('admin.group-cards.index') }}">
@@ -17,7 +17,7 @@
                 </a>
                 <a class="admin-button admin-button-link" href="{{ route('admin.group-cards.edit', $groupCard) }}">
                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                    <span>Edit Sub Group</span>
+                    <span>Edit Group</span>
                 </a>
             </div>
         </div>
@@ -31,12 +31,22 @@
                 <span>Skill level match</span>
                 <strong>{{ $groupCard->skill_level_match ?? '—' }}</strong>
             </div>
+            @php($playoffCfg = \App\Support\GroupPlayoffConfig::fromGroupCard($groupCard))
+            <div>
+                <span>Playoff format</span>
+                <strong>{{ $playoffCfg->format->label() }}</strong>
+                <ul class="admin-muted" style="margin:0.35rem 0 0;padding-left:1.1rem;font-size:0.9rem;">
+                    @foreach ($playoffCfg->summaryLines() as $line)
+                        <li>{{ $line }}</li>
+                    @endforeach
+                </ul>
+            </div>
             <div>
                 <span>Tag</span>
                 <strong>{{ strtoupper($groupCard->tag) }}</strong>
             </div>
             <div>
-                <span>Assigned Groups</span>
+                <span>Assigned Subgroups</span>
                 @php($assignedGroups = $groupCard->relationLoaded('groups') ? $groupCard->groups : $groupCard->groups()->orderBy('name')->get())
                 @if ($assignedGroups->isEmpty())
                     <strong>—</strong>

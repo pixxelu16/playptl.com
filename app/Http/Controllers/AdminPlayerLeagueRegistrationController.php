@@ -7,6 +7,7 @@ use App\Models\Group;
 use App\Models\GroupCard;
 use App\Models\League;
 use App\Models\LeagueRegistration;
+use App\Support\LeagueRegistrationRoster;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,18 +48,6 @@ class AdminPlayerLeagueRegistrationController extends Controller
 
         $league = League::query()->findOrFail((int) $validated['league_id']);
 
-        $alreadyRegistered = LeagueRegistration::query()
-            ->where('user_id', $player->id)
-            ->where('league_id', $league->id)
-            ->exists();
-        if ($alreadyRegistered) {
-            return back()
-                ->withErrors([
-                    'league_id' => 'This player is already added to the selected league.',
-                ])
-                ->withInput();
-        }
-
         $registrationType = (string) ($player->registration_type ?? 'singles');
 
         $tagCandidates = $registrationType === 'doubles'
@@ -74,7 +63,35 @@ class AdminPlayerLeagueRegistrationController extends Controller
         if (! $groupCard instanceof GroupCard) {
             return back()
                 ->withErrors([
-                    'skill_level' => 'No matching Group Card found for this league + skill level. Please ensure a Group Card is assigned to the league with the same Skill Level Match.',
+                    'skill_level' => 'No matching group found for this league + skill level. Please ensure a group is assigned to the league with the same Skill Level Match.',
+                ])
+                ->withInput();
+        }
+
+        $alreadyInSubGroup = LeagueRegistration::query()
+            ->where('user_id', $player->id)
+            ->where('league_id', $league->id)
+            ->where('group_card_id', $groupCard->id)
+            ->exists();
+        if ($alreadyInSubGroup) {
+            return back()
+                ->withErrors([
+                    'league_id' => 'This player is already registered in this league group.',
+                ])
+                ->withInput();
+        }
+
+        if (LeagueRegistrationRoster::isInAnotherLeagueSubGroupForType(
+            $player->id,
+            $league->id,
+            $groupCard->id,
+            $registrationType,
+        )) {
+            $formatLabel = $registrationType === 'doubles' ? 'doubles' : 'singles';
+
+            return back()
+                ->withErrors([
+                    'league_id' => "This player is already in another {$formatLabel} group for this league.",
                 ])
                 ->withInput();
         }
@@ -98,12 +115,15 @@ class AdminPlayerLeagueRegistrationController extends Controller
                 $bestCount = null;
 
                 foreach ($candidateGroups as $candidate) {
-                    $currentCount = LeagueRegistration::query()
+                    $countQuery = LeagueRegistration::query()
                         ->where('league_id', $league->id)
                         ->where('group_card_id', $groupCard->id)
                         ->where('group_id', $candidate->id)
-                        ->where('registration_type', $registrationType)
-                        ->count();
+                        ->where('registration_type', $registrationType);
+
+                    $currentCount = $registrationType === 'doubles'
+                        ? LeagueRegistrationRoster::countSlots($countQuery)
+                        : $countQuery->count();
 
                     if ($bestCount === null || $currentCount < $bestCount) {
                         $bestCount = $currentCount;
@@ -129,7 +149,7 @@ class AdminPlayerLeagueRegistrationController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.league-management.show', $league)
+            ->route('admin.players.index', ['tab' => $registrationType])
             ->with('status', 'Player added to league successfully.');
     }
 

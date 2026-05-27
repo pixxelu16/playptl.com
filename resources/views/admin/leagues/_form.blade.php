@@ -12,12 +12,8 @@
 
     <div class="admin-form-group">
         <label class="admin-label" for="start_date">League Start Date</label>
-        <input class="admin-input" id="start_date" type="date" name="start_date" min="{{ $today }}" value="{{ old('start_date', optional($league->start_date)->format('Y-m-d')) }}">
-    </div>
-
-    <div class="admin-form-group">
-        <label class="admin-label" for="end_date">League End Date</label>
-        <input class="admin-input" id="end_date" type="date" name="end_date" min="{{ $today }}" value="{{ old('end_date', optional($league->end_date)->format('Y-m-d')) }}">
+        <input class="admin-input" id="start_date" type="date" name="start_date" @if (! $league->exists) min="{{ $today }}" @endif value="{{ old('start_date', optional($league->start_date)->format('Y-m-d')) }}">
+        <p class="admin-field-hint">Optional — set on the Matches page to auto-schedule. Weeks end on Sunday.</p>
     </div>
 </div>
 
@@ -33,8 +29,8 @@
 </div>
 
 <div class="admin-form-group">
-    <span class="admin-label">Assign Sub Groups</span>
-    <p class="admin-field-hint">Select one or more sub groups for this league listing section.</p>
+    <span class="admin-label">Assign Groups</span>
+    <p class="admin-field-hint">Select one or more groups for this league listing section.</p>
     <div class="admin-checkbox-grid">
         @forelse ($groupCards ?? [] as $groupCard)
             <label class="admin-checkbox-inline">
@@ -44,7 +40,7 @@
                 </span>
             </label>
         @empty
-            <p class="admin-muted">No sub groups yet. Add them from the Sub Groups section first.</p>
+            <p class="admin-muted">No groups yet. Add them from the Groups section first.</p>
         @endforelse
     </div>
 </div>

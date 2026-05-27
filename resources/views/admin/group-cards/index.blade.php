@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'Manage Sub Groups | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage sub groups from the admin dashboard.')
+@section('title', 'Manage Groups | '.config('app.name', 'playptl'))
+@section('meta_description', 'Manage groups from the admin dashboard.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
-                <h1 class="admin-card-title">Manage Sub Groups</h1>
-                <p class="admin-card-text">Create, edit, view, and delete sub groups.</p>
+                <h1 class="admin-card-title">Manage Groups</h1>
+                <p class="admin-card-text">Create, edit, view, and delete groups.</p>
             </div>
             <a class="admin-button admin-button-link" href="{{ route('admin.group-cards.create') }}">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                <span>Add Sub Group</span>
+                <span>Add Group</span>
             </a>
         </div>
 
@@ -44,7 +44,7 @@
                                 <div class="admin-table-actions">
                                     <a href="{{ route('admin.group-cards.show', $groupCard) }}" title="View"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
                                     <a href="{{ route('admin.group-cards.edit', $groupCard) }}" title="Edit"><i class="fa-solid fa-pen" aria-hidden="true"></i></a>
-                                    <form method="POST" action="{{ route('admin.group-cards.destroy', $groupCard) }}" onsubmit="return confirm('Delete this sub group?')">
+                                    <form method="POST" action="{{ route('admin.group-cards.destroy', $groupCard) }}" onsubmit="return confirm('Delete this group?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" title="Delete"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
@@ -57,7 +57,7 @@
                             <td colspan="6">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
-                                    <p>No sub groups found. Create your first one.</p>
+                                    <p>No groups found. Create your first one.</p>
                                 </div>
                             </td>
                         </tr>

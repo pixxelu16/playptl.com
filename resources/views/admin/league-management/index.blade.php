@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
 @section('title', 'League Management | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage leagues, group cards, groups, and players from the admin dashboard.')
+@section('meta_description', 'Manage leagues, groups, subgroups, and players from the admin dashboard.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">League Management</h1>
-                <p class="admin-card-text">Pick a league to manage its group cards, age brackets, groups, and player assignments.</p>
+                <p class="admin-card-text">Pick a league to manage its groups, age brackets, subgroups, and player assignments.</p>
             </div>
             <a class="admin-link" href="{{ route('admin.leagues.index') }}">
                 <i class="fa-solid fa-trophy" aria-hidden="true"></i>

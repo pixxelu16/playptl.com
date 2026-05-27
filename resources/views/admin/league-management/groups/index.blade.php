@@ -1,84 +1,31 @@
 @extends('layouts.admin')
 
-@section('title', 'Groups & players | '.$league->name.' | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage groups and player assignments for a league sub group.')
+@section('title', 'Subgroups & players | '.$league->name.' | '.config('app.name', 'playptl'))
+@section('meta_description', 'Manage subgroups and player assignments for a league group.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
-                <h1 class="admin-card-title">Groups &amp; players — {{ $league->name }}</h1>
+                <h1 class="admin-card-title">Subgroups &amp; players — {{ $league->name }}</h1>
                 <p class="admin-card-text">
-                    Sub group: <strong>{{ $groupCard->name }}</strong>
+                    Group: <strong>{{ $groupCard->name }}</strong>
                     @if ($ageGroupKey)
                         · Age: <strong>{{ $ageGroupKey }}</strong>
                     @endif
                 </p>
             </div>
-            <div class="admin-header-actions">
-                <a class="admin-link" href="{{ route('admin.league-management.show', $league) }}">
-                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                    <span>Back</span>
-                </a>
-                @if ($playerSchemaReady)
-                    <a class="admin-link" href="{{ route('admin.league-management.players.index', ['league' => $league, 'groupCard' => $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : [])) }}">
-                        <i class="fa-solid fa-list" aria-hidden="true"></i>
-                        <span>All players</span>
-                    </a>
-                @endif
-            </div>
+            @include('admin.league-management.partials.group-card-header-actions', [
+                'league' => $league,
+                'groupCard' => $groupCard,
+                'ageGroupKey' => $ageGroupKey,
+                'activeGroupId' => $activeGroupId,
+                'playerSchemaReady' => $playerSchemaReady,
+                'active' => 'groups',
+            ])
         </div>
 
         <style>
-            .admin-group-tabs {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-                margin: 18px 0 14px;
-            }
-            .admin-group-tab {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                border-radius: 999px;
-                border: 1px solid #d7ead9;
-                background: #ffffff;
-                color: #1a1a1a;
-                padding: 10px 14px;
-                text-decoration: none;
-                font-size: 14px;
-                font-weight: 800;
-                transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-            }
-            .admin-group-tab:hover {
-                transform: translateY(-1px);
-                border-color: #55A64E;
-            }
-            .admin-group-tab.is-active {
-                background: #5cb85c;
-                border-color: #5cb85c;
-                color: #ffffff;
-                box-shadow: 0 10px 22px rgba(85, 166, 78, 0.18);
-            }
-            .admin-group-pill {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                min-width: 26px;
-                border-radius: 999px;
-                padding: 4px 9px;
-                font-size: 11px;
-                font-weight: 900;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                background: rgba(85, 166, 78, 0.12);
-                color: #2f7a2a;
-            }
-            .admin-group-tab.is-active .admin-group-pill {
-                background: rgba(255, 255, 255, 0.18);
-                color: rgba(255, 255, 255, 0.92);
-            }
-
             .admin-assign {
                 display: flex;
                 align-items: center;
@@ -117,7 +64,7 @@
                 @if ($activeGroupId)
                     <input type="hidden" name="group" value="{{ $activeGroupId }}">
                 @endif
-                <input class="admin-input" type="text" name="q" value="{{ $groupSearch ?? '' }}" placeholder="Search groups..." style="max-width: 320px; padding: 10px 12px;">
+                <input class="admin-input" type="text" name="q" value="{{ $groupSearch ?? '' }}" placeholder="Search subgroups..." style="max-width: 320px; padding: 10px 12px;">
                 <button class="admin-button admin-button-secondary" type="submit" style="padding: 10px 14px;">Filter</button>
                 @if (! empty($groupSearch))
                     <a class="admin-link" href="{{ route('admin.league-management.groups.index', ['league' => $league, 'groupCard' => $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []) + ($activeGroupId ? ['group' => $activeGroupId] : [])) }}">Clear</a>
@@ -143,7 +90,7 @@
             @endif
         </div>
 
-        <div class="admin-group-tabs" aria-label="Groups tabs">
+        <div class="admin-group-tabs" aria-label="Subgroup tabs">
             @foreach ($groups as $g)
                 <a class="admin-group-tab {{ (int) $g->id === (int) $activeGroupId ? 'is-active' : '' }}"
                    href="{{ route('admin.league-management.groups.index', ['league' => $league, 'groupCard' => $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []) + ['group' => $g->id]) }}#group-{{ $g->id }}">
@@ -157,7 +104,7 @@
 
         @if (! $schemaReady)
             <div class="admin-alert admin-alert-error">
-                Groups table not ready. Run migrations first.
+                Subgroups table not ready. Run migrations first.
             </div>
         @endif
 
@@ -175,7 +122,7 @@
             <div class="admin-card" style="margin: 1.5rem 0; padding: 1.25rem 1.5rem; box-shadow: none; border: 1px solid rgba(0,0,0,0.08);">
                 <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">
                     {{ $activeGroup->name }}
-                    <span class="admin-badge" style="margin-left: 0.5rem;">{{ $activeGroup->roster_count }} {{ $activeGroup->roster_count === 1 ? 'player' : 'players' }}</span>
+                    <span class="admin-badge" style="margin-left: 0.5rem;">{{ $activeGroup->roster_count }} {{ $activeGroup->roster_count === 1 ? 'entry' : 'entries' }}</span>
                 </h2>
                 <div class="admin-table-wrap">
                     <table class="admin-table">
@@ -184,22 +131,19 @@
                                 <th>Player</th>
                                 <th>Photo</th>
                                 <th>Payment</th>
-                                <th>Group</th>
+                                <th>Subgroup</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($activeGroup->leagueRegistrations as $reg)
+                            @forelse ($activeGroupRoster as $entry)
+                                @php $reg = $entry['registration']; @endphp
                                 <tr>
                                     <td>
-                                        @php
-                                            $rawName = (string) ($reg->user?->name ?? '');
-                                            $displayName = trim(preg_split('/\s*&\s*/', $rawName)[0] ?? $rawName);
-                                        @endphp
-                                        <strong>{{ $displayName !== '' ? $displayName : '—' }}</strong>
-                                        <div style="font-size: 0.85rem; opacity: 0.85;">{{ $reg->user?->email ?? '—' }}</div>
+                                        <strong>{{ $entry['display_name'] }}</strong>
+                                        <div style="font-size: 0.85rem; opacity: 0.85;">{{ $entry['display_subtitle'] !== '' ? $entry['display_subtitle'] : '—' }}</div>
                                     </td>
                                     <td>
-                                        @php $avatarSrc = $reg->user?->avatar_path ?: 'upload/user-avatar/default-user-pic.png'; @endphp
+                                        @php $avatarSrc = $entry['user']?->avatar_path ?: 'upload/user-avatar/default-user-pic.png'; @endphp
                                         <img src="{{ asset($avatarSrc) }}" alt="Avatar" width="48" height="48" style="width:48px;height:48px;border-radius:999px;object-fit:cover;border:1px solid #d7ead9;">
                                     </td>
                                     <td>
@@ -209,7 +153,7 @@
                                         <form method="POST" action="{{ route('admin.league-management.players.update-group', [$league, $groupCard, $reg]) }}" class="admin-assign">
                                             @csrf
                                             @method('PUT')
-                                            <select class="admin-input" name="group_id" aria-label="Assign group">
+                                            <select class="admin-input" name="group_id" aria-label="Assign subgroup">
                                                 <option value="">Unassigned</option>
                                                 @foreach ($allGroups as $g)
                                                     <option value="{{ $g->id }}" @selected(($reg->group_id ?? null) == $g->id)>{{ $g->name }}</option>
@@ -222,7 +166,7 @@
                             @empty
                                 <tr>
                                     <td>
-                                        <p class="admin-card-text" style="margin:0;">No players in this group yet. Assign them from <strong>Unassigned</strong> below or <strong>All players</strong>.</p>
+                                        <p class="admin-card-text" style="margin:0;">No players in this subgroup yet. Assign them from <strong>Unassigned</strong> below or <strong>All players</strong>.</p>
                                     </td>
                                     <td><span style="opacity:.6;">—</span></td>
                                     <td><span style="opacity:.6;">—</span></td>
@@ -236,17 +180,22 @@
         @elseif ($groups->count() === 0)
             <div class="admin-empty-state" style="margin-top: 20px;">
                 <i class="fa-solid fa-users-line" aria-hidden="true"></i>
-                <p>No groups found for this sub group.</p>
+                <p>No subgroups found for this group.</p>
             </div>
         @endif
 
-        @if ($playerSchemaReady && $unassignedRegistrations->isNotEmpty())
+        @if ($playerSchemaReady && $unassignedRoster->isNotEmpty())
             <div class="admin-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; box-shadow: none; border: 1px dashed rgba(0,0,0,0.15);" id="unassigned-players">
                 <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 0.75rem;">
                     Unassigned
-                    <span class="admin-badge" style="margin-left: 0.5rem;">{{ $unassignedRegistrations->count() }}</span>
+                    <span class="admin-badge" style="margin-left: 0.5rem;">{{ $unassignedRoster->count() }}</span>
                 </h2>
-                <p class="admin-card-text" style="margin-bottom: 1rem;">These players registered for this sub group but are not in a group yet.</p>
+                <p class="admin-card-text" style="margin-bottom: 1rem;">
+                    These players are in this group but not in a subgroup yet.
+                    @if ($otherGroupCards->isNotEmpty())
+                        Use <strong>Move to group</strong> to send them to another division (they will disappear from this list).
+                    @endif
+                </p>
                 <div class="admin-table-wrap">
                     <table class="admin-table">
                         <thead>
@@ -254,22 +203,22 @@
                                 <th>Player</th>
                                 <th>Photo</th>
                                 <th>Payment</th>
-                                <th>Assign to group</th>
+                                <th>Assign to subgroup</th>
+                                @if ($otherGroupCards->isNotEmpty())
+                                    <th>Move to group</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($unassignedRegistrations as $reg)
+                            @foreach ($unassignedRoster as $entry)
+                                @php $reg = $entry['registration']; @endphp
                                 <tr>
                                     <td>
-                                        @php
-                                            $rawName = (string) ($reg->user?->name ?? '');
-                                            $displayName = trim(preg_split('/\s*&\s*/', $rawName)[0] ?? $rawName);
-                                        @endphp
-                                        <strong>{{ $displayName !== '' ? $displayName : '—' }}</strong>
-                                        <div style="font-size: 0.85rem; opacity: 0.85;">{{ $reg->user?->email ?? '—' }}</div>
+                                        <strong>{{ $entry['display_name'] }}</strong>
+                                        <div style="font-size: 0.85rem; opacity: 0.85;">{{ $entry['display_subtitle'] !== '' ? $entry['display_subtitle'] : '—' }}</div>
                                     </td>
                                     <td>
-                                        @php $avatarSrc = $reg->user?->avatar_path ?: 'upload/user-avatar/default-user-pic.png'; @endphp
+                                        @php $avatarSrc = $entry['user']?->avatar_path ?: 'upload/user-avatar/default-user-pic.png'; @endphp
                                         <img src="{{ asset($avatarSrc) }}" alt="Avatar" width="48" height="48" style="width:48px;height:48px;border-radius:999px;object-fit:cover;border:1px solid #d7ead9;">
                                     </td>
                                     <td>
@@ -279,7 +228,7 @@
                                         <form method="POST" action="{{ route('admin.league-management.players.update-group', [$league, $groupCard, $reg]) }}" class="admin-assign">
                                             @csrf
                                             @method('PUT')
-                                            <select class="admin-input" name="group_id" aria-label="Assign group">
+                                            <select class="admin-input" name="group_id" aria-label="Assign subgroup">
                                                 <option value="">Unassigned</option>
                                                 @foreach ($allGroups as $g)
                                                     <option value="{{ $g->id }}">{{ $g->name }}</option>
@@ -288,6 +237,21 @@
                                             <button class="admin-button" type="submit">Update</button>
                                         </form>
                                     </td>
+                                    @if ($otherGroupCards->isNotEmpty())
+                                        <td>
+                                            <form method="POST" action="{{ route('admin.league-management.players.update-subgroup', [$league, $groupCard, $reg]) }}" class="admin-assign">
+                                                @csrf
+                                                @method('PUT')
+                                                <select class="admin-input" name="target_group_card_id" aria-label="Target group" required>
+                                                    <option value="">Choose group</option>
+                                                    @foreach ($otherGroupCards as $card)
+                                                        <option value="{{ $card->id }}">{{ $card->name }} ({{ ucfirst($card->tag ?? 'mixed') }})</option>
+                                                    @endforeach
+                                                </select>
+                                                <button class="admin-button admin-button-secondary" type="submit">Move</button>
+                                            </form>
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>

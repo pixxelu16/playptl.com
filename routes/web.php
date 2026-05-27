@@ -1,41 +1,45 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Http\Controllers\AdminAnnouncementController;
 use App\Http\Controllers\AdminGroupCardController;
 use App\Http\Controllers\AdminGroupController;
-use App\Http\Controllers\AdminLeagueGroupCardGroupController;
-use App\Http\Controllers\AdminLeagueGroupCardPlayerController;
+use App\Http\Controllers\AdminGroupMatchController;
 use App\Http\Controllers\AdminLeagueController;
+use App\Http\Controllers\AdminLeagueGroupCardGroupController;
+use App\Http\Controllers\AdminLeagueGroupCardAssignPlayerController;
+use App\Http\Controllers\AdminLeagueGroupCardPlayerController;
+use App\Http\Controllers\AdminLeagueGroupCardPointsController;
+use App\Http\Controllers\AdminLeagueGroupCardQualifierController;
 use App\Http\Controllers\AdminLeagueManagementController;
 use App\Http\Controllers\AdminPaymentHistoryController;
 use App\Http\Controllers\AdminPlayerController;
 use App\Http\Controllers\AdminPlayerLeagueRegistrationController;
+use App\Http\Controllers\AdminPlayoffMatchController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisterStripePaymentIntentController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\RegisterStripePaymentIntentController;
 use App\Http\Controllers\DashboardRedirectController;
+use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeagueController;
 use App\Http\Controllers\PlayerProfileController;
 use App\Models\Announcement;
-use App\Models\PaymentHistory;
-use App\Models\User;
 use App\Models\Group;
 use App\Models\GroupCard;
 use App\Models\League;
+use App\Models\PaymentHistory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
-Route::get('/', function () {
-    return view('home');
-});
+Route::get('/', HomeController::class);
 
-Route::get('/gallery', function () {
-    return view('gallery');
-})->name('gallery');
+Route::get('/gallery', GalleryController::class)->name('gallery');
 
 Route::get('/charity', function () {
     return view('charity');
@@ -72,7 +76,7 @@ Route::middleware('auth')->group(function () {
                 'announcementsCount' => Announcement::query()->count(),
                 'groupsCount' => Group::query()->count(),
                 'groupCardsCount' => GroupCard::query()->count(),
-                'playersCount' => User::query()->where('role', \App\Enums\UserRole::Player)->count(),
+                'playersCount' => User::query()->where('role', UserRole::Player)->count(),
                 'paymentsCount' => PaymentHistory::query()->count(),
             ]);
         })->name('dashboard');
@@ -80,13 +84,38 @@ Route::middleware('auth')->group(function () {
         Route::resource('leagues', AdminLeagueController::class);
         Route::get('league-management', [AdminLeagueManagementController::class, 'index'])->name('league-management.index');
         Route::get('league-management/{league}', [AdminLeagueManagementController::class, 'show'])->name('league-management.show');
+        Route::post('league-management/{league}/finish', [AdminLeagueManagementController::class, 'finish'])->name('league-management.finish');
 
         Route::get('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'index'])->name('league-management.groups.index');
         Route::get('league-management/{league}/group-cards/{groupCard}/groups/create', [AdminLeagueGroupCardGroupController::class, 'create'])->name('league-management.groups.create');
         Route::post('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'store'])->name('league-management.groups.store');
 
+        Route::get('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'index'])->name('league-management.assign-players.index');
+        Route::post('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'store'])->name('league-management.assign-players.store');
+
         Route::get('league-management/{league}/group-cards/{groupCard}/players', [AdminLeagueGroupCardPlayerController::class, 'index'])->name('league-management.players.index');
         Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}', [AdminLeagueGroupCardPlayerController::class, 'updateGroup'])->name('league-management.players.update-group');
+        Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}/sub-group', [AdminLeagueGroupCardPlayerController::class, 'updateSubGroup'])->name('league-management.players.update-subgroup');
+
+        Route::get('league-management/{league}/group-cards/{groupCard}/points', [AdminLeagueGroupCardPointsController::class, 'index'])->name('league-management.points.index');
+        Route::get('league-management/{league}/group-cards/{groupCard}/qualifier', [AdminLeagueGroupCardQualifierController::class, 'index'])->name('league-management.qualifier.index');
+        Route::put('league-management/{league}/group-cards/{groupCard}/qualifier', [AdminLeagueGroupCardQualifierController::class, 'update'])->name('league-management.qualifier.update');
+        Route::post('league-management/{league}/group-cards/{groupCard}/qualifier/clear', [AdminLeagueGroupCardQualifierController::class, 'clearAll'])->name('league-management.qualifier.clear');
+        Route::get('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'index'])->name('league-management.matches.index');
+        Route::post('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'store'])->name('league-management.matches.store');
+        Route::post('league-management/{league}/group-cards/{groupCard}/matches/schedule-dates', [AdminGroupMatchController::class, 'saveScheduleDates'])->name('league-management.matches.save-schedule-dates');
+        Route::post('league-management/{league}/group-cards/{groupCard}/matches/generate-round-robin', [AdminGroupMatchController::class, 'generateRoundRobin'])->name('league-management.matches.generate-round-robin');
+        Route::put('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'update'])->name('league-management.matches.update');
+        Route::delete('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'destroy'])->name('league-management.matches.destroy');
+
+        Route::get('league-management/{league}/group-cards/{groupCard}/playoffs', [AdminPlayoffMatchController::class, 'index'])->name('league-management.playoffs.index');
+        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/dates', [AdminPlayoffMatchController::class, 'savePlayoffDates'])->name('league-management.playoffs.dates');
+        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/start', [AdminPlayoffMatchController::class, 'startPlayoffs'])->name('league-management.playoffs.start');
+        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/close', [AdminPlayoffMatchController::class, 'closePlayoffs'])->name('league-management.playoffs.close');
+        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/bracket', [AdminPlayoffMatchController::class, 'storeBracket'])->name('league-management.playoffs.store-bracket');
+        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/rebuild', [AdminPlayoffMatchController::class, 'rebuildFromQualifier'])->name('league-management.playoffs.rebuild');
+        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/pull-winners', [AdminPlayoffMatchController::class, 'pullWinners'])->name('league-management.playoffs.pull-winners');
+        Route::put('league-management/{league}/group-cards/{groupCard}/playoffs/{playoffMatch}', [AdminPlayoffMatchController::class, 'update'])->name('league-management.playoffs.update');
         Route::resource('announcements', AdminAnnouncementController::class);
         Route::resource('groups', AdminGroupController::class);
         Route::resource('group-cards', AdminGroupCardController::class);
@@ -174,10 +203,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', function (Request $request) {
             return redirect()->to($request->user()->playerProfileUrl());
         })->name('dashboard');
+        Route::get('/my-profile/password', [PlayerProfileController::class, 'showPassword'])->name('profile.password');
+        Route::get('/my-profile/location', [PlayerProfileController::class, 'showLocation'])->name('profile.location');
+        Route::post('/my-profile/location', [PlayerProfileController::class, 'updateMatchLocation'])->name('profile.location.update');
+        Route::post('/my-profile/match-result', [PlayerProfileController::class, 'updateMatchResult'])->name('profile.match.result');
+        Route::get('/my-profile/upload', [PlayerProfileController::class, 'showUpload'])->name('profile.upload');
+        Route::post('/my-profile/upload', [PlayerProfileController::class, 'storeMatchUpload'])->name('profile.upload.store');
+        Route::delete('/my-profile/upload/{upload}', [PlayerProfileController::class, 'destroyMatchUpload'])->name('profile.upload.destroy');
+        Route::delete('/my-profile/playoff-upload/{upload}', [PlayerProfileController::class, 'destroyPlayoffMatchUpload'])->name('profile.playoff-upload.destroy');
         Route::get('/my-profile', [PlayerProfileController::class, 'show'])->name('my-profile');
+        Route::get('/my-profile/choose-league', [PlayerProfileController::class, 'showChooseLeague'])->name('profile.league');
+        Route::get('/my-profile/choose-league/partner-lookup', [PlayerProfileController::class, 'lookupLeaguePartner'])->name('profile.league.partner-lookup');
+        Route::post('/my-profile/choose-league/payment-intent', [PlayerProfileController::class, 'createLeaguePaymentIntent'])->name('profile.league.payment-intent');
+        Route::post('/my-profile/choose-league', [PlayerProfileController::class, 'storeLeagueRegistration'])->name('profile.league.store');
         Route::put('/profile', [PlayerProfileController::class, 'update'])->name('profile.update');
         Route::get('/change-password', function () {
-            return view('player.change-password');
+            return redirect()->route('player.profile.password');
         })->name('password.edit');
         Route::put('/change-password', function (Request $request) {
             $validated = $request->validate([

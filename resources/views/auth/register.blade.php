@@ -55,6 +55,8 @@
                             </button>
                         </div>
 
+                        <div id="register-league-gate" data-closed-divisions='@json($registrationClosedDivisions ?? [])' hidden></div>
+
                         {{-- Singles form --}}
                         <form id="singles-register-form"
                             class="mt-6 space-y-0 {{ $isDoubles ? 'hidden' : '' }}"

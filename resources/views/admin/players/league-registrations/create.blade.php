@@ -43,7 +43,7 @@
                         @endforeach
                     </select>
                     <p class="admin-card-text" style="margin-top: 8px; font-size: 13px; opacity: .8;">
-                        Note: Group Card is auto-selected by matching this player’s type + the skill level.
+                        Note: Group is auto-selected by matching this player’s type + the skill level.
                     </p>
                 </div>
 

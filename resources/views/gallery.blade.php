@@ -7,27 +7,11 @@
 
 @section('header_class', 'absolute inset-x-0 top-0 z-[100] bg-transparent px-5 pb-4 pt-6 sm:px-8 lg:px-14')
 
-@section('content')
-    @php
-        $galleryPhotos = [
-            'frontend/images/portrait-beautiful-woman-playing-tennis-outdoor 1.png',
-            'frontend/images/tennis-player-serving-hard 1.png',
-            'frontend/images/young-man-tennis-player-court 1.png',
-            'frontend/images/person-playing-tennis-game-winter-time 1.png',
-            'frontend/images/man-focused-tennis-game 2.png',
-            'frontend/images/front-view-couple-tennis-court 1.png',
-        ];
-        $galleryDateFilters = [
-            ['key' => 'all', 'label' => 'All'],
-            ['key' => 'today', 'label' => 'Today May 1'],
-            ['key' => 'yesterday', 'label' => 'Yesterday Apr 30'],
-            ['key' => 'apr29', 'label' => 'Apr 29'],
-            ['key' => 'apr27', 'label' => 'Apr 27'],
-            ['key' => 'apr25', 'label' => 'Apr 25'],
-            ['key' => 'earlier', 'label' => 'Earlier'],
-        ];
-    @endphp
+@push('styles')
+    @include('partials.gallery-photo-styles')
+@endpush
 
+@section('content')
     <main>
         <section class="relative flex h-[685px] min-h-[685px] flex-col overflow-hidden">
             <video class="absolute inset-0 z-0 h-full min-h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
@@ -58,132 +42,172 @@
                         <span class="text-[#B4F000]">&#8226;</span>
                         <span class="mx-2">All Divisions</span>
                         <span class="text-[#B4F000]">&#8226;</span>
-                        <span class="mx-2">Season: May – Aug 2026</span>
+                        <span class="mx-2">Player uploads</span>
                         <span class="text-[#B4F000]">&#8226;</span>
-                        <span class="mx-2">48 Photos</span>
+                        <span class="mx-2">{{ number_format($galleryPhotoCount ?? 0) }} {{ ($galleryPhotoCount ?? 0) === 1 ? 'Photo' : 'Photos' }}</span>
                     </p>
                 </header>
             </div>
         </section>
 
-        <section class="bg-[#E8F5E9] py-10 font-sans antialiased sm:py-12 lg:py-14" aria-labelledby="gallery-explore-heading">
+        <section
+            class="bg-[#E8F5E9] py-10 font-sans antialiased sm:py-12 lg:py-14"
+            aria-labelledby="gallery-explore-heading"
+            data-gallery-root
+        >
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <h2 id="gallery-explore-heading" class="league-1 mb-6 text-left text-[clamp(2rem,5.5vw,4rem)] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[#111827] sm:mb-8">
                     <span class="text-[#111827]">EXPLORE OUR </span><span class="text-[#5DA44E]">GALLERY</span>
                 </h2>
 
+                @php
+                    $activeGalleryTab = $galleryActiveTab ?? 'all';
+                @endphp
+
                 <div class="mb-8 flex flex-wrap gap-2.5 sm:mb-9 sm:gap-3" role="toolbar" aria-label="Filter photos by date">
-                    @foreach ($galleryDateFilters as $fi => $filter)
-                        <button
-                            type="button"
-                            data-gallery-filter="{{ $filter['key'] }}"
+                    @foreach ($galleryTabs ?? [['key' => 'all', 'label' => 'All']] as $filter)
+                        @php
+                            $tabHref = $filter['key'] === 'all'
+                                ? route('gallery')
+                                : route('gallery', ['tab' => $filter['key']]);
+                            $tabIsActive = $activeGalleryTab === $filter['key'];
+                        @endphp
+                        <a
+                            href="{{ $tabHref }}"
                             @class([
-                                'rounded-md px-4 py-2 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px]',
-                                'bg-[#5DA44E] text-white shadow-sm' => $fi === 0,
-                                'border border-[#E0E0E0] bg-white text-[#424242] hover:bg-[#FAFAFA]' => $fi !== 0,
+                                'inline-flex items-center justify-center rounded-md px-4 py-2 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px]',
+                                'bg-[#5DA44E] text-white shadow-sm' => $tabIsActive,
+                                'border border-[#E0E0E0] bg-white text-[#424242] hover:bg-[#FAFAFA]' => ! $tabIsActive,
                             ])
+                            @if ($tabIsActive) aria-current="page" @endif
                         >
                             {{ $filter['label'] }}
-                        </button>
+                        </a>
                     @endforeach
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-[18px] lg:grid-cols-4 lg:gap-5">
-                    @for ($gi = 0; $gi < 16; $gi++)
-                        @php $src = $galleryPhotos[$gi % count($galleryPhotos)]; @endphp
-                        <div class="overflow-hidden rounded-[10px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]">
-                            <img
-                                src="{{ asset($src) }}"
-                                alt="Premier Tennis League match photo"
-                                width="400"
-                                height="300"
-                                class="aspect-[4/3] h-full w-full object-cover"
-                                loading="lazy"
-                                decoding="async"
-                            />
-                        </div>
-                    @endfor
+                <div id="gallery-grid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-[18px] lg:grid-cols-4 lg:gap-5">
+                    @forelse ($galleryItems ?? [] as $item)
+                        <figure
+                            class="gallery-item overflow-hidden rounded-[10px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]"
+                        >
+                            <div class="relative aspect-[4/3] w-full overflow-hidden bg-[#111827]">
+                                <img
+                                    src="{{ $item['url'] }}"
+                                    alt="{{ $item['alt'] ?? 'Match photo' }}"
+                                    width="400"
+                                    height="300"
+                                    class="absolute inset-0 h-full w-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                                @include('partials.gallery-photo-meta', ['item' => $item, 'overlay' => true])
+                            </div>
+                            @if (! empty($item['notes']))
+                                <figcaption class="border-t border-[#EEEEEE] px-3 py-2 text-[12px] leading-snug text-[#4B5563] line-clamp-2">
+                                    {{ $item['notes'] }}
+                                </figcaption>
+                            @endif
+                        </figure>
+                    @empty
+                        @if (($galleryPhotoCount ?? 0) > 0)
+                            <div
+                                class="col-span-full rounded-lg border border-[#E0E0E0] bg-white px-5 py-10 text-center text-[15px] font-medium text-[#6B7280]"
+                                role="status"
+                            >
+                                @if ($activeGalleryTab === 'earlier')
+                                    There are no images for older dates.
+                                @else
+                                    There are no images for this date.
+                                @endif
+                            </div>
+                        @else
+                            <div
+                                id="gallery-global-empty"
+                                class="col-span-full rounded-lg border border-[#E0E0E0] bg-white px-5 py-12 text-center text-[15px] font-medium text-[#6B7280]"
+                            >
+                                Abhi gallery mein koi match photo upload nahi hui. Players apni profile se upload kar sakte hain.
+                            </div>
+                        @endif
+                    @endforelse
                 </div>
 
-                <nav class="mt-10 flex justify-center sm:mt-12" aria-label="Gallery pagination">
-                    <div class="inline-flex items-center gap-2 sm:gap-2.5">
-                        <button
-                            type="button"
-                            data-gallery-page="prev"
-                            class="gallery-page-btn flex h-9 w-9 items-center justify-center rounded-md border border-[#E0E0E0] bg-white text-[15px] font-semibold text-[#6B7280] transition-colors hover:bg-[#FAFAFA]"
-                            aria-label="Previous page"
-                        >
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                        </button>
-                        <button
-                            type="button"
-                            data-gallery-page-num="1"
-                            class="gallery-page-num flex h-9 min-w-[2.25rem] items-center justify-center rounded-md bg-[#5DA44E] px-3 text-[14px] font-semibold text-white shadow-sm sm:text-[15px]"
-                            aria-current="page"
-                        >
-                            1
-                        </button>
-                        <button
-                            type="button"
-                            data-gallery-page-num="2"
-                            class="gallery-page-num flex h-9 min-w-[2.25rem] items-center justify-center rounded-md border border-[#E0E0E0] bg-white px-3 text-[14px] font-semibold text-[#6B7280] transition-colors hover:bg-[#FAFAFA] sm:text-[15px]"
-                        >
-                            2
-                        </button>
-                        <button
-                            type="button"
-                            data-gallery-page-num="3"
-                            class="gallery-page-num flex h-9 min-w-[2.25rem] items-center justify-center rounded-md border border-[#E0E0E0] bg-white px-3 text-[14px] font-semibold text-[#6B7280] transition-colors hover:bg-[#FAFAFA] sm:text-[15px]"
-                        >
-                            3
-                        </button>
-                        <button
-                            type="button"
-                            data-gallery-page="next"
-                            class="gallery-page-btn flex h-9 w-9 items-center justify-center rounded-md border border-[#E0E0E0] bg-white text-[15px] font-semibold text-[#6B7280] transition-colors hover:bg-[#FAFAFA]"
-                            aria-label="Next page"
-                        >
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
-                </nav>
+                @if (isset($galleryItems) && $galleryItems->hasPages())
+                    @php
+                        $gLast = $galleryItems->lastPage();
+                        $gCur = $galleryItems->currentPage();
+                        $galleryPageNumbers = [];
+                        if ($gLast <= 12) {
+                            for ($gi = 1; $gi <= $gLast; $gi++) {
+                                $galleryPageNumbers[] = $gi;
+                            }
+                        } else {
+                            $galleryPageNumbers[] = 1;
+                            $winLo = max(2, $gCur - 1);
+                            $winHi = min($gLast - 1, $gCur + 1);
+                            if ($winLo > 2) {
+                                $galleryPageNumbers[] = null;
+                            }
+                            for ($gi = $winLo; $gi <= $winHi; $gi++) {
+                                $galleryPageNumbers[] = $gi;
+                            }
+                            if ($winHi < $gLast - 1) {
+                                $galleryPageNumbers[] = null;
+                            }
+                            if ($gLast > 1) {
+                                $galleryPageNumbers[] = $gLast;
+                            }
+                        }
+                    @endphp
+                    <nav class="mt-8 flex justify-center sm:mt-10" aria-label="Gallery pagination">
+                        <div class="inline-flex flex-wrap items-center justify-center gap-2">
+                            @if ($galleryItems->onFirstPage())
+                                <span
+                                    class="inline-flex h-10 w-10 select-none items-center justify-center rounded-md border border-[#E0E0E0] bg-white text-[18px] font-semibold leading-none text-[#C4C4C4]"
+                                    aria-disabled="true"
+                                >&lsaquo;</span>
+                            @else
+                                <a
+                                    href="{{ $galleryItems->previousPageUrl() }}"
+                                    rel="prev"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-[#E0E0E0] bg-white text-[18px] font-semibold leading-none text-[#424242] transition hover:bg-[#FAFAFA]"
+                                    aria-label="Previous page"
+                                >&lsaquo;</a>
+                            @endif
+
+                            @foreach ($galleryPageNumbers as $gPage)
+                                @if ($gPage === null)
+                                    <span class="inline-flex h-10 min-w-[2.5rem] select-none items-center justify-center px-1 text-[15px] font-semibold text-[#9CA3AF]" aria-hidden="true">&hellip;</span>
+                                @elseif ($gPage === $gCur)
+                                    <span
+                                        class="inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-md bg-[#5DA44E] px-3 text-[15px] font-semibold text-white shadow-sm"
+                                        aria-current="page"
+                                    >{{ $gPage }}</span>
+                                @else
+                                    <a
+                                        href="{{ $galleryItems->url($gPage) }}"
+                                        class="inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-md border border-[#E0E0E0] bg-white px-3 text-[15px] font-semibold text-[#424242] transition hover:bg-[#FAFAFA]"
+                                    >{{ $gPage }}</a>
+                                @endif
+                            @endforeach
+
+                            @if ($galleryItems->hasMorePages())
+                                <a
+                                    href="{{ $galleryItems->nextPageUrl() }}"
+                                    rel="next"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-[#E0E0E0] bg-white text-[18px] font-semibold leading-none text-[#424242] transition hover:bg-[#FAFAFA]"
+                                    aria-label="Next page"
+                                >&rsaquo;</a>
+                            @else
+                                <span
+                                    class="inline-flex h-10 w-10 select-none items-center justify-center rounded-md border border-[#E0E0E0] bg-white text-[18px] font-semibold leading-none text-[#C4C4C4]"
+                                    aria-disabled="true"
+                                >&rsaquo;</span>
+                            @endif
+                        </div>
+                    </nav>
+                @endif
             </div>
         </section>
     </main>
-
-    @push('scripts')
-        <script>
-            (function () {
-                var activeFilterCls = 'rounded-md px-4 py-2 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px] bg-[#5DA44E] text-white shadow-sm';
-                var inactiveFilterCls =
-                    'rounded-md px-4 py-2 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px] border border-[#E0E0E0] bg-white text-[#424242] hover:bg-[#FAFAFA]';
-                var activePageCls =
-                    'gallery-page-num flex h-9 min-w-[2.25rem] items-center justify-center rounded-md bg-[#5DA44E] px-3 text-[14px] font-semibold text-white shadow-sm sm:text-[15px]';
-                var inactivePageCls =
-                    'gallery-page-num flex h-9 min-w-[2.25rem] items-center justify-center rounded-md border border-[#E0E0E0] bg-white px-3 text-[14px] font-semibold text-[#6B7280] transition-colors hover:bg-[#FAFAFA] sm:text-[15px]';
-
-                document.querySelectorAll('[data-gallery-filter]').forEach(function (btn) {
-                    btn.addEventListener('click', function () {
-                        document.querySelectorAll('[data-gallery-filter]').forEach(function (b) {
-                            b.className = inactiveFilterCls;
-                            b.removeAttribute('aria-pressed');
-                        });
-                        btn.className = activeFilterCls;
-                        btn.setAttribute('aria-pressed', 'true');
-                    });
-                });
-
-                document.querySelectorAll('[data-gallery-page-num]').forEach(function (btn) {
-                    btn.addEventListener('click', function () {
-                        document.querySelectorAll('[data-gallery-page-num]').forEach(function (b) {
-                            b.className = inactivePageCls;
-                            b.removeAttribute('aria-current');
-                        });
-                        btn.className = activePageCls;
-                        btn.setAttribute('aria-current', 'page');
-                    });
-                });
-            })();
-        </script>
-    @endpush
 @endsection

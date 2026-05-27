@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\League;
 use App\Models\User;
+use App\Support\LeagueRegistrationGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Stripe\Exception\ApiErrorException;
@@ -17,10 +18,19 @@ class RegisterStripePaymentIntentController extends Controller
         $validated = $request->validate([
             'league_id' => ['required', 'integer', 'exists:leagues,id'],
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
+            'skill_level' => ['required', 'string', 'max:32'],
             'email' => ['required', 'string', 'email', 'max:255'],
         ]);
 
         $league = League::query()->findOrFail((int) $validated['league_id']);
+        $registrationClosed = LeagueRegistrationGate::closedReasonForSelection(
+            $league,
+            (string) $validated['registration_tab'],
+            (string) $validated['skill_level'],
+        );
+        if ($registrationClosed !== null) {
+            return response()->json(['message' => $registrationClosed], 422);
+        }
 
         $email = strtolower((string) $validated['email']);
         if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {

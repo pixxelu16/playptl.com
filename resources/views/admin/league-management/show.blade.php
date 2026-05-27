@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
 @section('title', $league->name.' Management | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage group cards, groups and players for a league.')
+@section('meta_description', 'Manage groups, subgroups and players for a league.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">{{ $league->name }} — Management</h1>
-                <p class="admin-card-text">League → Sub Groups → Groups → Players.</p>
+                <p class="admin-card-text">League → Groups → Subgroups → Players.</p>
             </div>
             <div class="admin-header-actions">
                 <a class="admin-link" href="{{ route('admin.league-management.index') }}">
@@ -32,7 +32,7 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>Sub Group</th>
+                        <th>Group</th>
                         <th>Tag</th>
                         <th>Registered</th>
                         <th>Assigned</th>
@@ -53,7 +53,12 @@
                             <td>{{ $s['assigned_count'] }}</td>
                             <td>
                                 <div class="admin-table-actions">
-                                    <a href="{{ route('admin.league-management.groups.index', [$league, $groupCard]) }}" title="Groups &amp; players"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></a>
+                                    <a href="{{ route('admin.league-management.assign-players.index', [$league, $groupCard]) }}" title="Assign player">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    </a>
+                                    <a href="{{ route('admin.league-management.groups.index', [$league, $groupCard]) }}" title="Subgroups &amp; players">
+                                        <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -62,7 +67,7 @@
                             <td colspan="5">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
-                                    <p>No group cards are assigned to this league. Edit the league and assign group cards.</p>
+                                    <p>No groups are assigned to this league. Edit the league and assign groups.</p>
                                 </div>
                             </td>
                         </tr>

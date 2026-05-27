@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
 use App\Helpers\LeagueMenuHelper;
+use App\Support\LeagueRegistrationGate;
 use App\Http\Controllers\Controller;
 use App\Models\GroupCard;
 use App\Models\League;
@@ -31,6 +32,7 @@ class RegisteredUserController extends Controller
     {
         return view('auth.register', [
             'registrationLeagues' => LeagueMenuHelper::activeLeagues(),
+            'registrationClosedDivisions' => LeagueRegistrationGate::closedSelectionKeys(),
             'stripePublishableKey' => (string) (config('services.stripe.key') ?: env('STRIPE_PUBLISHABLE_KEY', '')),
         ]);
     }
@@ -130,6 +132,13 @@ class RegisteredUserController extends Controller
             ->whereIn('group_cards.tag', $tab === 'singles' ? ['single', 'singles'] : ['double', 'doubles'])
             ->where('group_cards.skill_level_match', $skillLevel)
             ->first();
+
+        if ($groupCard instanceof GroupCard) {
+            $registrationClosed = LeagueRegistrationGate::closedReasonForSelection($league, $tab, $skillLevel, $ageGroup);
+            if ($registrationClosed !== null) {
+                return $this->fail($request, $registrationClosed);
+            }
+        }
 
         $groupId = null;
         if (

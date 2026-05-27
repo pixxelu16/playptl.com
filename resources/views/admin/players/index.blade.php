@@ -77,9 +77,6 @@
                                     <a href="{{ route('admin.players.edit', ['player' => $player, 'tab' => $tab]) }}" title="Edit player">
                                         <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                     </a>
-                                    <a href="{{ route('admin.players.league-registrations.create', $player) }}" title="Add to league">
-                                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                                    </a>
                                     <form method="POST" action="{{ route('admin.players.destroy', ['player' => $player, 'tab' => $tab]) }}" onsubmit="return confirm('Delete this player? This will also remove their registrations and payments history.');" style="display:inline;">
                                         @csrf
                                         @method('DELETE')
@@ -123,4 +120,3 @@
         @endif
     </section>
 @endsection
-

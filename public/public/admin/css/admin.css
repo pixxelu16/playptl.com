@@ -341,6 +341,100 @@ body.admin-body {
     text-decoration: none;
 }
 
+/* League management: group / playoffs pill tabs (matches + playoffs + groups) */
+.admin-group-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 18px 0 14px;
+}
+
+.admin-group-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    border: 1px solid #d7ead9;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 10px 14px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 800;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-group-tab:hover {
+    transform: translateY(-1px);
+    border-color: #55A64E;
+}
+
+.admin-group-tab.is-active {
+    background: #5cb85c;
+    border-color: #5cb85c;
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(85, 166, 78, 0.18);
+}
+
+.admin-group-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgba(85, 166, 78, 0.12);
+    color: #2f7a2a;
+}
+
+.admin-group-tab.is-active .admin-group-pill {
+    background: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.92);
+}
+
+/* Match schedule + playoffs: shared “add” panel tokens */
+.match-schedule-page {
+    --match-green: #55A64E;
+    --match-green-soft: #e8f6ea;
+    --match-card-bg: #ffffff;
+}
+
+.match-add-form {
+    background: var(--match-green-soft);
+    border: 1px solid #d7ead9;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.match-add-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.match-add-form label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #2f7a2a;
+    margin-bottom: 0.35rem;
+}
+
+.match-winner-line {
+    margin: 0.65rem 0 0;
+    text-align: center;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1a5fb4;
+}
+
 .admin-form {
     margin-top: 26px;
     max-width: 640px;

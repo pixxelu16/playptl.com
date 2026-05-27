@@ -51,6 +51,30 @@
     }
   }
 
+  function closedDivisionSet() {
+    var raw = $('#register-league-gate').data('closed-divisions');
+    if (!raw) return {};
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        return {};
+      }
+    }
+    var set = {};
+    if (Array.isArray(raw)) {
+      raw.forEach(function (key) {
+        set[key] = true;
+      });
+    }
+    return set;
+  }
+
+  function isDivisionClosed(leagueId, tab, skill) {
+    if (!leagueId || !skill) return false;
+    return !!closedDivisionSet()[leagueId + ':' + tab + ':' + skill];
+  }
+
   function initRegisterForm(formSelector) {
     var $form = $(formSelector);
     if (!$form.length) return;
@@ -250,11 +274,18 @@
       $form.find('.computed_name').val(computed);
 
       var leagueId = tab === 'singles' ? $form.find('select[name="tournament_singles"]').val() : $form.find('select[name="tournament_doubles"]').val();
+      var skill = tab === 'singles' ? $form.find('select[name="skill_singles"]').val() : $form.find('select[name="skill_doubles"]').val();
       var email = tab === 'singles' ? $form.find('#singles_email').val() : $form.find('#doubles_email').val();
 
       if (!leagueId) {
         setCardError('Please select a tournament before payment.');
         $form.find('select[name="' + (tab === 'singles' ? 'tournament_singles' : 'tournament_doubles') + '"]').addClass('border-red-500');
+        $btn.prop('disabled', false);
+        if ($loader.length) $loader.addClass('hidden');
+        return;
+      }
+      if (isDivisionClosed(leagueId, tab, skill)) {
+        renderResponse($responseBox, 'error', 'This group has started. Registration is closed for this skill level.');
         $btn.prop('disabled', false);
         if ($loader.length) $loader.addClass('hidden');
         return;
@@ -268,7 +299,12 @@
         contentType: 'application/json',
         dataType: 'json',
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf },
-        data: JSON.stringify({ league_id: leagueId, registration_tab: tab, email: email }),
+        data: JSON.stringify({
+          league_id: leagueId,
+          registration_tab: tab,
+          skill_level: skill,
+          email: email,
+        }),
       })
         .then(function (pi) {
           return stripe.confirmCardPayment(pi.client_secret, {

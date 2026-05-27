@@ -28,7 +28,7 @@ class AdminGroupController extends Controller
     {
         Group::create($this->validatedData($request));
 
-        return redirect()->route('admin.groups.index')->with('status', 'Group created successfully.');
+        return redirect()->route('admin.groups.index')->with('status', 'Subgroup created successfully.');
     }
 
     public function show(Group $group): View
@@ -49,14 +49,14 @@ class AdminGroupController extends Controller
     {
         $group->update($this->validatedData($request));
 
-        return redirect()->route('admin.groups.index')->with('status', 'Group updated successfully.');
+        return redirect()->route('admin.groups.index')->with('status', 'Subgroup updated successfully.');
     }
 
     public function destroy(Group $group): RedirectResponse
     {
         $group->delete();
 
-        return redirect()->route('admin.groups.index')->with('status', 'Group deleted successfully.');
+        return redirect()->route('admin.groups.index')->with('status', 'Subgroup deleted successfully.');
     }
 
     /**
@@ -67,7 +67,6 @@ class AdminGroupController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'players_count' => ['required', 'integer', 'min:0'],
             'status' => ['required', Rule::in(['active', 'deactive'])],
         ]);
     }

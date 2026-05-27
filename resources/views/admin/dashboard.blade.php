@@ -36,9 +36,9 @@
             <a class="admin-stat-card admin-stat-card--groups" href="{{ route('admin.league-management.index') }}">
                 <span class="admin-stat-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
                 <div class="admin-stat-body">
-                    <span class="admin-stat-label">Total Groups</span>
+                    <span class="admin-stat-label">Total Subgroups</span>
                     <strong class="admin-stat-value">{{ $groupsCount ?? 0 }}</strong>
-                    <span class="admin-stat-hint">Assign groups to leagues</span>
+                    <span class="admin-stat-hint">Manage subgroups (A, B, C, D…)</span>
                 </div>
                 <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
             </a>
@@ -46,9 +46,9 @@
             <a class="admin-stat-card admin-stat-card--groups" href="{{ route('admin.group-cards.index') }}">
                 <span class="admin-stat-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
                 <div class="admin-stat-body">
-                    <span class="admin-stat-label">Total Group Cards</span>
+                    <span class="admin-stat-label">Total Groups</span>
                     <strong class="admin-stat-value">{{ $groupCardsCount ?? 0 }}</strong>
-                    <span class="admin-stat-hint">Manage group cards</span>
+                    <span class="admin-stat-hint">Manage groups (Voyagers, Challengers…)</span>
                 </div>
                 <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
             </a>

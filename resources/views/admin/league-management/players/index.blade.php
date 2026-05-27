@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Players | '.$league->name.' | '.config('app.name', 'playptl'))
-@section('meta_description', 'View players/registrations and assign them to groups.')
+@section('meta_description', 'View players/registrations and assign them to subgroups.')
 
 @section('content')
     <section class="admin-card">
@@ -9,22 +9,20 @@
             <div>
                 <h1 class="admin-card-title">Players — {{ $league->name }}</h1>
                 <p class="admin-card-text">
-                    Sub Groups: <strong>{{ $groupCard->name }}</strong>
+                    Group: <strong>{{ $groupCard->name }}</strong>
                     @if ($ageGroupKey)
                         · Age: <strong>{{ $ageGroupKey }}</strong>
                     @endif
                 </p>
             </div>
-            <div class="admin-header-actions">
-                <a class="admin-link" href="{{ route('admin.league-management.groups.index', ['league' => $league, 'groupCard' => $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : [])) }}">
-                    <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
-                    <span>Sub Groups</span>
-                </a>
-                <a class="admin-link" href="{{ route('admin.league-management.show', $league) }}">
-                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                    <span>Back</span>
-                </a>
-            </div>
+            @include('admin.league-management.partials.group-card-header-actions', [
+                'league' => $league,
+                'groupCard' => $groupCard,
+                'ageGroupKey' => $ageGroupKey,
+                'activeGroupId' => 0,
+                'playerSchemaReady' => $schemaReady,
+                'active' => 'players',
+            ])
         </div>
 
         <style>
@@ -75,22 +73,19 @@
                         <th>Player</th>
                         <th>Photo</th>
                         <th>Payment</th>
-                        <th>Assigned Group</th>
+                        <th>Assigned Subgroup</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($registrations as $reg)
+                    @forelse ($rosterEntries as $entry)
+                        @php $reg = $entry['registration']; @endphp
                         <tr>
                             <td>
-                                @php
-                                    $rawName = (string) ($reg->user?->name ?? '');
-                                    $displayName = trim(preg_split('/\s*&\s*/', $rawName)[0] ?? $rawName);
-                                @endphp
-                                <strong>{{ $displayName !== '' ? $displayName : '—' }}</strong>
-                                <span>{{ $reg->user?->email ?? '—' }}</span>
+                                <strong>{{ $entry['display_name'] }}</strong>
+                                <span>{{ $entry['display_subtitle'] !== '' ? $entry['display_subtitle'] : '—' }}</span>
                             </td>
                             <td>
-                                @php $avatarSrc = $reg->user?->avatar_path ?: 'upload/user-avatar/default-user-pic.png'; @endphp
+                                @php $avatarSrc = $entry['user']?->avatar_path ?: 'upload/user-avatar/default-user-pic.png'; @endphp
                                 <img src="{{ asset($avatarSrc) }}" alt="Avatar" width="48" height="48" style="width:48px;height:48px;border-radius:999px;object-fit:cover;border:1px solid #d7ead9;">
                             </td>
                             <td>
@@ -100,7 +95,7 @@
                                 <form method="POST" action="{{ route('admin.league-management.players.update-group', [$league, $groupCard, $reg]) }}" class="admin-assign">
                                     @csrf
                                     @method('PUT')
-                                    <select class="admin-input" name="group_id" aria-label="Assign group">
+                                    <select class="admin-input" name="group_id" aria-label="Assign subgroup">
                                         <option value="">Unassigned</option>
                                         @foreach ($groups as $g)
                                             <option value="{{ $g->id }}" @selected(($reg->group_id ?? null) == $g->id)>{{ $g->name }}</option>
@@ -124,18 +119,18 @@
             </table>
         </div>
 
-        @if ($registrations->hasPages())
+        @if ($rosterEntries->hasPages())
             <div class="admin-pagination">
-                @if ($registrations->onFirstPage())
+                @if ($rosterEntries->onFirstPage())
                     <span>Previous</span>
                 @else
-                    <a href="{{ $registrations->previousPageUrl() }}">Previous</a>
+                    <a href="{{ $rosterEntries->previousPageUrl() }}">Previous</a>
                 @endif
 
-                <strong>Page {{ $registrations->currentPage() }} of {{ $registrations->lastPage() }}</strong>
+                <strong>Page {{ $rosterEntries->currentPage() }} of {{ $rosterEntries->lastPage() }}</strong>
 
-                @if ($registrations->hasMorePages())
-                    <a href="{{ $registrations->nextPageUrl() }}">Next</a>
+                @if ($rosterEntries->hasMorePages())
+                    <a href="{{ $rosterEntries->nextPageUrl() }}">Next</a>
                 @else
                     <span>Next</span>
                 @endif

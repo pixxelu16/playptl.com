@@ -78,7 +78,7 @@
                         <div class="md:col-span-2">
                             <div class="rounded-xl border border-[#d7ead9] bg-white px-6 py-10 text-center shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
                                 <p class="text-[22px] font-bold uppercase tracking-[0.08em] text-[#333333]">No List Found</p>
-                                <p class="mt-3 text-[16px] text-[#6f7f72]">No group cards are available for this league right now.</p>
+                                <p class="mt-3 text-[16px] text-[#6f7f72]">No groups are available for this league right now.</p>
                             </div>
                         </div>
                     @endforelse

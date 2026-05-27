@@ -23,4 +23,5 @@ class LeagueMenuHelper
             ->orderBy('name')
             ->get();
     }
+
 }

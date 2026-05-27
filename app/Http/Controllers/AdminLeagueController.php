@@ -37,6 +37,7 @@ class AdminLeagueController extends Controller
         $validated['slug'] = $this->generateUniqueSlug($validated['name']);
         $validated['logo_path'] = $this->storeLogo($request);
 
+        /** @var League $league */
         $league = League::create($validated);
         $league->groupCards()->sync($groupCardIds);
 
@@ -74,7 +75,7 @@ class AdminLeagueController extends Controller
 
     public function update(Request $request, League $league): RedirectResponse
     {
-        $validated = $this->validatedData($request);
+        $validated = $this->validatedData($request, $league);
         $groupCardIds = $this->normalizeGroupIds($validated['group_card_ids'] ?? []);
         unset($validated['group_card_ids']);
         $validated['type'] = $validated['type'] ?? $league->type;
@@ -103,15 +104,20 @@ class AdminLeagueController extends Controller
     /**
      * @return array<string, mixed>
      */
-    protected function validatedData(Request $request): array
+    protected function validatedData(Request $request, ?League $existing = null): array
     {
+        $startRules = ['nullable', 'date'];
+        if ($existing === null) {
+            $startRules[] = 'after_or_equal:today';
+        }
+
         return $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'logo'        => ['nullable', 'image', 'max:2048'],
             'description' => ['nullable', 'string'],
             'stats' => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
-            'start_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:today', 'after_or_equal:start_date'],
+            'start_date' => $startRules,
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'type' => ['nullable', Rule::in(['single', 'doubles'])],
             'group_card_ids' => ['nullable', 'array'],
             'group_card_ids.*' => ['integer', 'exists:group_cards,id'],
