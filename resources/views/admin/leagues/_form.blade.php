@@ -23,13 +23,13 @@
     </div>
 
     <div class="admin-form-group" id="league-entry-fee-block">
-        <label class="admin-label" for="entry_fee_player_type">Player type</label>
-        <select class="admin-input" id="entry_fee_player_type" name="entry_fee_player_type">
+        <label class="admin-label" for="entry_fee_player_type">Entry fees</label>
+        <select class="admin-input" id="entry_fee_player_type" name="entry_fee_player_type" aria-label="Entry fees — Singles or Doubles">
             <option value="singles" @selected($entryFeePlayerType === 'singles')>Singles</option>
             <option value="doubles" @selected($entryFeePlayerType === 'doubles')>Doubles</option>
         </select>
 
-        <label class="admin-label" for="entry_fee_visible" style="margin-top: 0.75rem; display: block;">Entry fee (USD)</label>
+        <label class="admin-label" for="entry_fee_visible" style="margin-top: 0.75rem; display: block;">Amount (USD)</label>
         <input
             class="admin-input"
             id="entry_fee_visible"
