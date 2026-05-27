@@ -149,5 +149,6 @@
             userMenuToggle?.setAttribute('aria-expanded', 'false');
         });
     </script>
+    @stack('scripts')
 </body>
 </html>

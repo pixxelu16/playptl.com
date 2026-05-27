@@ -55,6 +55,14 @@
                     <p>{{ $league->stats ? ucfirst($league->stats) : '-' }}</p>
                 </div>
                 <div>
+                    <span>Entry fees</span>
+                    <p>
+                        <strong>Singles:</strong> ${{ \App\Support\LeagueEntryFee::formatDollars(\App\Support\LeagueEntryFee::singlesCents($league)) }}
+                        &nbsp;|&nbsp;
+                        <strong>Doubles:</strong> ${{ \App\Support\LeagueEntryFee::formatDollars(\App\Support\LeagueEntryFee::doublesCents($league)) }}
+                    </p>
+                </div>
+                <div>
                     <span>Registrations</span>
                     <p>
                         <strong>Singles:</strong> {{ $singlesCount ?? 0 }}

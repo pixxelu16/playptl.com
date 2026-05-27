@@ -1,8 +1,17 @@
 @php
     $tab = old('registration_tab', 'singles');
     $isDoubles = $tab === 'doubles';
-    $feeSingles = number_format((int) config('services.stripe.singles_amount_cents', 3000) / 100, 2);
-    $feeDoubles = number_format((int) config('services.stripe.doubles_amount_cents', 4500) / 100, 2);
+    $leagueEntryFees = $leagueEntryFees ?? [];
+    $feeSingles = $leagueEntryFees['default']['singles'] ?? \App\Support\LeagueEntryFee::formatDollars(\App\Support\LeagueEntryFee::defaultSinglesCents());
+    $feeDoubles = $leagueEntryFees['default']['doubles'] ?? \App\Support\LeagueEntryFee::formatDollars(\App\Support\LeagueEntryFee::defaultDoublesCents());
+    $selectedSinglesLeague = old('tournament_singles');
+    $selectedDoublesLeague = old('tournament_doubles');
+    if ($selectedSinglesLeague && isset($leagueEntryFees[(string) $selectedSinglesLeague])) {
+        $feeSingles = $leagueEntryFees[(string) $selectedSinglesLeague]['singles'];
+    }
+    if ($selectedDoublesLeague && isset($leagueEntryFees[(string) $selectedDoublesLeague])) {
+        $feeDoubles = $leagueEntryFees[(string) $selectedDoublesLeague]['doubles'];
+    }
     $registrationSkillLevelValues = ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
 @endphp
 
@@ -17,6 +26,7 @@
         id="profile-league-registration"
         data-initial-tab="{{ $tab }}"
         data-closed-divisions='@json($registrationClosedDivisions ?? [])'
+        data-league-fees='@json($leagueEntryFees ?? [])'
     >
         
         <div class="flex gap-3 sm:gap-4">
@@ -85,7 +95,7 @@
             </div>
 
             <div class="rounded-lg border border-[#EEEEEE] bg-[#FAFAFA] px-4 py-3">
-                <p class="text-[13px] font-semibold text-[#333333]">Entry Fee: <span class="font-bold">${{ $feeSingles }}</span></p>
+                <p class="text-[13px] font-semibold text-[#333333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeSingles }}</span></p>
                 <label class="{{ $profileLabelClass }} mt-2">Payment card <span class="text-red-600">*</span></label>
                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-lg border border-[#D7E6D7] bg-white px-3 py-3 shadow-sm"></div>
                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
@@ -173,7 +183,7 @@
             </div>
 
             <div class="rounded-lg border border-[#EEEEEE] bg-[#FAFAFA] px-4 py-3">
-                <p class="text-[13px] font-semibold text-[#333333]">Entry Fee: <span class="font-bold">${{ $feeDoubles }}</span></p>
+                <p class="text-[13px] font-semibold text-[#333333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeDoubles }}</span></p>
                 <label class="{{ $profileLabelClass }} mt-2">Payment card <span class="text-red-600">*</span></label>
                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-lg border border-[#D7E6D7] bg-white px-3 py-3 shadow-sm"></div>
                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
