@@ -268,6 +268,10 @@
         <script src="https://js.stripe.com/v3/"></script>
         <script src="{{ asset('frontend/js/customer-ajax.js') }}?v={{ @filemtime(public_path('frontend/js/customer-ajax.js')) ?: time() }}"></script>
     @endif
+    @if (request()->routeIs('charity'))
+        <script src="https://js.stripe.com/v3/"></script>
+        <script src="{{ asset('frontend/js/charity-donate.js') }}?v={{ @filemtime(public_path('frontend/js/charity-donate.js')) ?: time() }}"></script>
+    @endif
     @stack('scripts')
 </body>
 </html>
