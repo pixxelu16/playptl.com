@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <title>@yield('title', 'Admin Dashboard')</title>
     <meta name="description" content="@yield('meta_description', 'Admin dashboard for managing '.config('app.name', 'playptl').'.')">
     <link rel="preconnect" href="https://fonts.googleapis.com">

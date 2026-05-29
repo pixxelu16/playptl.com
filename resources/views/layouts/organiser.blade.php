@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <title>@yield('title', 'Organiser Dashboard')</title>
     <meta name="description" content="@yield('meta_description', 'Organiser dashboard for managing events and player activity.')">
     <style>
