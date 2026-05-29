@@ -4,11 +4,6 @@
     $selectedGroupCardIds = old('group_card_ids', $league->exists ? $league->groupCards->pluck('id')->all() : []);
     $singlesEntryFee = old('singles_entry_fee', \App\Support\LeagueEntryFee::dollarsInputValue($league->exists ? $league : null, 'singles'));
     $doublesEntryFee = old('doubles_entry_fee', \App\Support\LeagueEntryFee::dollarsInputValue($league->exists ? $league : null, 'doubles'));
-    $entryFeePlayerType = old('entry_fee_player_type', 'singles');
-    if (! in_array($entryFeePlayerType, ['singles', 'doubles'], true)) {
-        $entryFeePlayerType = 'singles';
-    }
-    $visibleEntryFee = $entryFeePlayerType === 'doubles' ? $doublesEntryFee : $singlesEntryFee;
 @endphp
 
 <div class="admin-form-grid">
@@ -17,73 +12,41 @@
         <input class="admin-input" id="name" type="text" name="name" value="{{ old('name', $league->name) }}" required>
     </div>
 
-    <div class="admin-form-group">
+    <div class="admin-form-group" style="grid-column: 1 / -1;">
         <label class="admin-label" for="start_date">League Start Date</label>
         <input class="admin-input" id="start_date" type="date" name="start_date" @if (! $league->exists) min="{{ $today }}" @endif value="{{ old('start_date', optional($league->start_date)->format('Y-m-d')) }}">
     </div>
 
-    <div class="admin-form-group" id="league-entry-fee-block">
-        <label class="admin-label" for="entry_fee_player_type">Entry fees</label>
-        <select class="admin-input" id="entry_fee_player_type" name="entry_fee_player_type" aria-label="Entry fees — Singles or Doubles">
-            <option value="singles" @selected($entryFeePlayerType === 'singles')>Singles</option>
-            <option value="doubles" @selected($entryFeePlayerType === 'doubles')>Doubles</option>
-        </select>
-
-        <label class="admin-label" for="entry_fee_visible" style="margin-top: 0.75rem; display: block;">Amount (USD)</label>
+    <div class="admin-form-group">
+        <label class="admin-label" for="singles_entry_fee">Singles entry fee (USD)</label>
         <input
             class="admin-input"
-            id="entry_fee_visible"
+            id="singles_entry_fee"
             type="number"
+            name="singles_entry_fee"
             min="0"
             step="0.01"
             inputmode="decimal"
-            value="{{ $visibleEntryFee }}"
+            value="{{ $singlesEntryFee }}"
             required
         >
+    </div>
 
-        <input type="hidden" name="singles_entry_fee" id="singles_entry_fee" value="{{ $singlesEntryFee }}">
-        <input type="hidden" name="doubles_entry_fee" id="doubles_entry_fee" value="{{ $doublesEntryFee }}">
+    <div class="admin-form-group">
+        <label class="admin-label" for="doubles_entry_fee">Doubles entry fee (USD)</label>
+        <input
+            class="admin-input"
+            id="doubles_entry_fee"
+            type="number"
+            name="doubles_entry_fee"
+            min="0"
+            step="0.01"
+            inputmode="decimal"
+            value="{{ $doublesEntryFee }}"
+            required
+        >
     </div>
 </div>
-
-@push('scripts')
-    <script>
-        (function () {
-            var typeSelect = document.getElementById('entry_fee_player_type');
-            var visibleInput = document.getElementById('entry_fee_visible');
-            var singlesHidden = document.getElementById('singles_entry_fee');
-            var doublesHidden = document.getElementById('doubles_entry_fee');
-            if (!typeSelect || !visibleInput || !singlesHidden || !doublesHidden) return;
-
-            function activeType() {
-                return typeSelect.value === 'doubles' ? 'doubles' : 'singles';
-            }
-
-            function hiddenFor(type) {
-                return type === 'doubles' ? doublesHidden : singlesHidden;
-            }
-
-            function syncVisibleToHidden() {
-                hiddenFor(activeType()).value = visibleInput.value;
-            }
-
-            function switchType() {
-                var next = activeType();
-                var prev = next === 'doubles' ? 'singles' : 'doubles';
-                hiddenFor(prev).value = visibleInput.value;
-                visibleInput.value = hiddenFor(next).value;
-            }
-
-            typeSelect.addEventListener('change', switchType);
-            visibleInput.addEventListener('input', syncVisibleToHidden);
-
-            var form = typeSelect.closest('form');
-            if (form) {
-                form.addEventListener('submit', syncVisibleToHidden);
-            }
-        })();
-    </script>
-@endpush
 
 <div class="admin-form-group">
     <label class="admin-label" for="logo">League Logo</label>
