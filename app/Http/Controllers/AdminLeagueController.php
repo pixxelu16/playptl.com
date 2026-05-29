@@ -33,7 +33,7 @@ class AdminLeagueController extends Controller
     {
         $validated = $this->validatedData($request);
         $groupCardIds = $this->normalizeGroupIds($validated['group_card_ids'] ?? []);
-        unset($validated['group_card_ids'], $validated['singles_entry_fee'], $validated['doubles_entry_fee'], $validated['entry_fee_player_type']);
+        unset($validated['group_card_ids'], $validated['singles_entry_fee'], $validated['doubles_entry_fee']);
         $validated['type'] = $validated['type'] ?? 'single';
         $validated['slug'] = $this->generateUniqueSlug($validated['name']);
         $validated['logo_path'] = $this->storeLogo($request);
@@ -78,7 +78,7 @@ class AdminLeagueController extends Controller
     {
         $validated = $this->validatedData($request, $league);
         $groupCardIds = $this->normalizeGroupIds($validated['group_card_ids'] ?? []);
-        unset($validated['group_card_ids'], $validated['singles_entry_fee'], $validated['doubles_entry_fee'], $validated['entry_fee_player_type']);
+        unset($validated['group_card_ids'], $validated['singles_entry_fee'], $validated['doubles_entry_fee']);
         $validated['type'] = $validated['type'] ?? $league->type;
         $validated['slug'] = $this->generateUniqueSlug($validated['name'], $league->id);
         $logoPath = $this->storeLogo($request);
@@ -120,7 +120,6 @@ class AdminLeagueController extends Controller
             'start_date' => $startRules,
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'type' => ['nullable', Rule::in(['single', 'doubles'])],
-            'entry_fee_player_type' => ['nullable', 'string', 'in:singles,doubles'],
             'singles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],
             'doubles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],
             'group_card_ids' => ['nullable', 'array'],
