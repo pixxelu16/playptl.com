@@ -43,4 +43,5 @@ return [
         'doubles_amount_cents' => (int) env('STRIPE_DOUBLES_AMOUNT_CENTS', 4500),
     ],
 
+
 ];
