@@ -9,18 +9,18 @@
 
 @section('content')
     <main>
-        <section class="relative flex min-h-[420px] flex-col overflow-hidden sm:min-h-[480px]">
+        <section class="relative h-[300px] overflow-hidden sm:h-[360px] lg:h-[400px]">
             <img
                 src="{{ asset($charityCause->image_path) }}"
-                alt=""
-                class="absolute inset-0 z-0 h-full w-full object-cover"
+                alt="{{ $charityCause->title }}"
+                class="absolute inset-0 z-0 h-full w-full object-cover object-center"
                 width="1600"
                 height="900"
             />
-            <div class="pointer-events-none absolute inset-0 z-[1] bg-[rgba(0,0,0,0.62)]" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/85 via-black/55 to-black/35" aria-hidden="true"></div>
 
-            <div class="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-end px-5 py-10 sm:px-8 sm:py-14 lg:px-14">
-                <nav class="mb-4 flex flex-wrap items-center gap-x-1 gap-y-2 text-[13px] font-semibold uppercase tracking-[0.24em] text-[#C1D72E]" aria-label="Breadcrumb">
+            <div class="relative z-10 mx-auto flex h-full w-full max-w-[1400px] flex-col justify-end px-5 pb-8 pt-24 sm:px-8 sm:pb-10 sm:pt-28 lg:px-14 lg:pb-12">
+                <nav class="mb-3 flex flex-wrap items-center gap-x-1 gap-y-2 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#C1D72E] sm:mb-4 sm:text-[13px] sm:tracking-[0.24em]" aria-label="Breadcrumb">
                     <a href="{{ url('/') }}" class="text-[#C1D72E] transition-opacity hover:opacity-90">Home</a>
                     <span class="mx-1">&gt;&gt;</span>
                     <a href="{{ route('charity') }}" class="text-[#C1D72E] transition-opacity hover:opacity-90">Charity</a>
@@ -28,12 +28,24 @@
                     <span class="text-[#C1D72E]">{{ $charityCause->title }}</span>
                 </nav>
 
-                <h1 class="max-w-4xl text-[clamp(2rem,5vw,3.25rem)] font-bold leading-tight text-white">{{ $charityCause->title }}</h1>
-                <p class="mt-4 max-w-3xl text-[15px] leading-relaxed text-white/90 sm:text-[16px]">{{ $charityCause->description }}</p>
+                <h1 class="max-w-4xl text-[clamp(1.75rem,4.5vw,3rem)] font-bold leading-tight text-white">{{ $charityCause->title }}</h1>
             </div>
         </section>
 
-        <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-16" aria-labelledby="charity-support-heading">
+        @if (filled($charityCause->description))
+            <section class="bg-[#E4F7E7] pt-8 font-sans antialiased sm:pt-10" aria-labelledby="charity-about-heading">
+                <div class="mx-auto max-w-[900px] px-5 sm:px-8 lg:px-14">
+                    <div class="rounded-[14px] bg-white p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.05] sm:p-8">
+                        <h2 id="charity-about-heading" class="text-[18px] font-bold text-[#1B3022] sm:text-[20px]">About This Cause</h2>
+                        <div class="mt-4 whitespace-pre-line text-[14px] leading-relaxed text-[#555555] sm:text-[15px] sm:leading-7">
+                            {{ $charityCause->description }}
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        <section class="bg-[#E4F7E7] pb-10 pt-8 font-sans antialiased sm:pb-12 sm:pt-10 lg:pb-16" aria-labelledby="charity-support-heading">
             <div class="mx-auto max-w-[900px] px-5 sm:px-8 lg:px-14">
                 <h2 id="charity-support-heading" class="text-center text-[clamp(1.125rem,2.5vw,1.5rem)] font-bold uppercase tracking-[0.08em] text-[#1B3022]">
                     How Would You Like To Help?
