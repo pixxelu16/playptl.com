@@ -1,4 +1,4 @@
-<section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-14 lg:pb-16" aria-labelledby="charity-goal-heading">
+<section class="bg-[#E4F7E7] pb-6 pt-10 font-sans antialiased sm:pb-8 sm:pt-12" aria-labelledby="charity-goal-heading">
     <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
         <h2 id="charity-goal-heading" class="sr-only">Total donations raised</h2>
         <div class="relative overflow-hidden rounded-[15px] bg-white p-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.05] sm:p-8 lg:p-10">
@@ -7,7 +7,7 @@
                 <div class="absolute inset-0 bg-[radial-gradient(ellipse_90%_78%_at_96%_48%,rgba(96,160,75,0.1)_0%,transparent_52%)]"></div>
             </div>
 
-            <div class="relative z-[1] flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+            <div class="relative z-[1] flex flex-col items-stretch gap-8 lg:flex-row lg:items-center lg:gap-10">
                 <div class="min-w-0 shrink-0 text-left lg:max-w-[280px]">
                     <p class="text-[13px] font-medium leading-snug text-[#60a04b] sm:text-[14px]">Total Donations Raised</p>
                     <p
@@ -39,17 +39,6 @@
                             style="width: {{ $progress_percent }}%"
                         ></div>
                     </div>
-                </div>
-
-                <div class="flex shrink-0 justify-start lg:justify-end">
-                    <button
-                        type="button"
-                        data-open-charity-donate
-                        data-donate-amount="25"
-                        class="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-[#60a04b] px-8 py-3 text-[15px] font-bold text-white shadow-sm transition-opacity hover:opacity-95 sm:min-h-[52px] sm:px-10 sm:text-[16px]"
-                    >
-                        Donate Now
-                    </button>
                 </div>
             </div>
         </div>
