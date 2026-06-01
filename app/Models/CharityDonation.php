@@ -9,13 +9,18 @@ class CharityDonation extends Model
 {
     protected $fillable = [
         'user_id',
+        'charity_cause_id',
+        'donation_type',
         'donor_name',
         'email',
+        'phone',
         'address',
         'city',
         'state',
         'zip',
         'amount',
+        'quantity',
+        'material_detail',
         'currency',
         'status',
         'transaction_id',
@@ -26,6 +31,7 @@ class CharityDonation extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'quantity' => 'decimal:2',
             'meta' => 'array',
         ];
     }
@@ -33,5 +39,10 @@ class CharityDonation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function charityCause(): BelongsTo
+    {
+        return $this->belongsTo(CharityCause::class);
     }
 }

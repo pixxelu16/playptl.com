@@ -12,8 +12,10 @@ use App\Http\Controllers\AdminLeagueGroupCardPlayerController;
 use App\Http\Controllers\AdminLeagueGroupCardPointsController;
 use App\Http\Controllers\AdminLeagueGroupCardQualifierController;
 use App\Http\Controllers\AdminLeagueManagementController;
+use App\Http\Controllers\AdminCharityCauseController;
 use App\Http\Controllers\AdminCharityDonationController;
 use App\Http\Controllers\AdminPaymentHistoryController;
+use App\Http\Controllers\CharityCauseContributionController;
 use App\Http\Controllers\CharityController;
 use App\Http\Controllers\CharityDonationController;
 use App\Http\Controllers\AdminPlayerController;
@@ -45,6 +47,8 @@ Route::get('/', HomeController::class);
 Route::get('/gallery', GalleryController::class)->name('gallery');
 
 Route::get('/charity', [CharityController::class, 'show'])->name('charity');
+Route::get('/charity/cause/{charityCause:slug}', [CharityController::class, 'showCause'])->name('charity.cause');
+Route::post('/charity/cause/{charityCause:slug}/contribute', [CharityCauseContributionController::class, 'store'])->name('charity.cause.contribute');
 Route::post('/charity/donation/payment-intent', [CharityDonationController::class, 'createPaymentIntent'])->name('charity.donation.payment-intent');
 Route::post('/charity/donation', [CharityDonationController::class, 'store'])->name('charity.donation.store');
 
@@ -127,6 +131,7 @@ Route::middleware('auth')->group(function () {
         Route::post('players/{player}/league-registrations', [AdminPlayerLeagueRegistrationController::class, 'store'])->name('players.league-registrations.store');
         Route::get('payment-histories', [AdminPaymentHistoryController::class, 'index'])->name('payment-histories.index');
         Route::get('charity-donations', [AdminCharityDonationController::class, 'index'])->name('charity-donations.index');
+        Route::resource('charity-causes', AdminCharityCauseController::class);
 
         Route::get('/profile', function () {
             return view('admin.profile');
