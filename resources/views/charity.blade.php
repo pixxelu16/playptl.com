@@ -42,6 +42,8 @@
             </div>
         </section>
 
+        @include('partials.charity-total-raised')
+
         @if ($charityCauses->isNotEmpty())
             <section class="bg-[#E4F7E7] py-10 font-sans antialiased sm:py-12 lg:py-16" aria-labelledby="charity-causes-heading">
                 <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
@@ -80,9 +82,5 @@
                 </div>
             </section>
         @endif
-
-        @include('partials.charity-total-raised')
     </main>
-
-    @include('partials.charity-donate-modal')
 @endsection
