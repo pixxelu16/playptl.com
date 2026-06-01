@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CharityCause;
 use App\Models\CharityDonation;
 use App\Support\CharityFundraisingStats;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ class CharityDonationController extends Controller
         }
 
         $validated = $request->validate([
+            'charity_cause_id' => ['nullable', 'integer', 'exists:charity_causes,id'],
             'amount' => ['required', 'numeric', 'min:1', 'max:100000'],
             'donor_name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255'],
@@ -42,6 +44,8 @@ class CharityDonationController extends Controller
 
         $stripe = new StripeClient($secret);
         $email = isset($validated['email']) ? strtolower((string) $validated['email']) : '';
+        $causeId = isset($validated['charity_cause_id']) ? (int) $validated['charity_cause_id'] : null;
+        $causeTitle = $causeId ? (string) (CharityCause::query()->whereKey($causeId)->value('title') ?? '') : '';
 
         try {
             $intent = $stripe->paymentIntents->create([
@@ -50,8 +54,8 @@ class CharityDonationController extends Controller
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
-                'description' => 'Charity donation',
-                'metadata' => [
+                'description' => $causeTitle !== '' ? 'Charity donation: '.$causeTitle : 'Charity donation',
+                'metadata' => array_filter([
                     'type' => 'charity_donation',
                     'donor_name' => (string) $validated['donor_name'],
                     'email' => $email,
@@ -59,7 +63,8 @@ class CharityDonationController extends Controller
                     'city' => (string) $validated['city'],
                     'state' => (string) $validated['state'],
                     'zip' => (string) ($validated['zip'] ?? ''),
-                ],
+                    'charity_cause_id' => $causeId ? (string) $causeId : null,
+                ]),
             ]);
         } catch (ApiErrorException) {
             return response()->json(['message' => 'Unable to create payment intent.'], 500);
@@ -83,6 +88,7 @@ class CharityDonationController extends Controller
 
         $validated = $request->validate([
             'payment_intent_id' => ['required', 'string', 'max:255'],
+            'charity_cause_id' => ['nullable', 'integer', 'exists:charity_causes,id'],
             'amount' => ['required', 'numeric', 'min:1', 'max:100000'],
             'donor_name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255'],
@@ -128,8 +134,16 @@ class CharityDonationController extends Controller
             return response()->json(['message' => 'Payment not completed or does not match donation details.'], 422);
         }
 
+        $causeId = isset($validated['charity_cause_id']) ? (int) $validated['charity_cause_id'] : null;
+        if (! $causeId && is_object($meta) && ! empty($meta->charity_cause_id)) {
+            $causeId = (int) $meta->charity_cause_id;
+        }
+        $causeTitle = $causeId ? (string) (CharityCause::query()->whereKey($causeId)->value('title') ?? '') : '';
+
         $donation = CharityDonation::create([
             'user_id' => $request->user()?->id,
+            'charity_cause_id' => $causeId ?: null,
+            'donation_type' => 'money',
             'donor_name' => (string) $validated['donor_name'],
             'email' => $email !== '' ? $email : null,
             'address' => (string) $validated['address'],
@@ -140,9 +154,11 @@ class CharityDonationController extends Controller
             'currency' => strtoupper($expectedCurrency),
             'status' => 'completed',
             'transaction_id' => (string) $validated['payment_intent_id'],
-            'meta' => [
+            'meta' => array_filter([
                 'payment_intent_status' => (string) $intent->status,
-            ],
+                'charity_cause_id' => $causeId ? (string) $causeId : null,
+                'charity_cause_title' => $causeTitle !== '' ? $causeTitle : null,
+            ]),
         ]);
 
         $stats = CharityFundraisingStats::current();

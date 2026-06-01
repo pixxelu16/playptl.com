@@ -99,11 +99,26 @@
     if (loader) loader.classList.toggle('hidden', !isLoading);
   }
 
-  function openModal(amount) {
+  function setCauseContext(causeId, causeTitle) {
+    var causeInput = document.getElementById('charity-donate-cause-id');
+    var subtitle = document.getElementById('charity-donate-modal-subtitle');
+    if (causeInput) {
+      causeInput.value = causeId != null && causeId !== '' ? String(causeId) : '';
+    }
+    if (subtitle) {
+      subtitle.textContent =
+        causeTitle && String(causeTitle).trim() !== ''
+          ? 'Supporting: ' + String(causeTitle).trim()
+          : 'Your contribution supports our charity programs.';
+    }
+  }
+
+  function openModal(amount, causeId, causeTitle) {
     hideAlert();
     setCardError('');
     if (form) form.reset();
     if (submitBtn) submitBtn.disabled = false;
+    setCauseContext(causeId, causeTitle);
     if (amountInput && amount != null && amount > 0) {
       amountInput.value = formatMoney(amount);
     }
@@ -115,6 +130,8 @@
     var firstField = form ? form.querySelector('input:not([type="hidden"])') : null;
     if (firstField) firstField.focus();
   }
+
+  window.openCharityDonateModal = openModal;
 
   function closeModal() {
     hideAlert();
@@ -148,8 +165,11 @@
 
   function collectPayload() {
     var amount = parseMoney(amountInput ? amountInput.value : '');
+    var causeInput = document.getElementById('charity-donate-cause-id');
+    var causeId = causeInput && causeInput.value ? parseInt(causeInput.value, 10) : null;
     return {
       amount: amount,
+      charity_cause_id: !isNaN(causeId) && causeId > 0 ? causeId : null,
       donor_name: (document.getElementById('charity-donate-name') || {}).value || '',
       email: (document.getElementById('charity-donate-email') || {}).value || '',
       address: (document.getElementById('charity-donate-address') || {}).value || '',

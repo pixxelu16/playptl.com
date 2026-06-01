@@ -19,6 +19,7 @@ class CharityFundraisingStats
     public static function current(): array
     {
         $totalRaised = (float) CharityDonation::query()
+            ->where('donation_type', 'money')
             ->where('status', 'completed')
             ->sum('amount');
 

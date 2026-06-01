@@ -48,6 +48,10 @@
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
                         <span>Payment History</span>
                     </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.charity-causes.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-causes.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-heart"></i></span>
+                        <span>Charity Causes</span>
+                    </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.charity-donations.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-donations.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-heart"></i></span>
                         <span>Charity Donations</span>
