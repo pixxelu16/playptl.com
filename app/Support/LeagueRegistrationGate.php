@@ -98,6 +98,36 @@ final class LeagueRegistrationGate
         return $leagueId.':'.($tab === 'doubles' ? 'doubles' : 'singles').':'.$skillLevel;
     }
 
+    /**
+     * Keys for client-side hints: "{leagueId}:{groupCardId}".
+     *
+     * @return list<string>
+     */
+    public static function closedGroupCardKeys(): array
+    {
+        if (! Schema::hasTable('group_matches')) {
+            return [];
+        }
+
+        $keys = [];
+
+        $pairs = GroupMatch::query()
+            ->select(['league_id', 'group_card_id'])
+            ->distinct()
+            ->get();
+
+        foreach ($pairs as $row) {
+            $keys[] = self::groupCardKey((int) $row->league_id, (int) $row->group_card_id);
+        }
+
+        return array_values(array_unique($keys));
+    }
+
+    public static function groupCardKey(int $leagueId, int $groupCardId): string
+    {
+        return $leagueId.':'.$groupCardId;
+    }
+
     private static function tabForGroupCardTag(string $tag): string
     {
         return in_array(strtolower($tag), ['double', 'doubles'], true) ? 'doubles' : 'singles';

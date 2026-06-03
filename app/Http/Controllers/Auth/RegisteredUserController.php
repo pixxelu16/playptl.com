@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\UserRole;
 use App\Helpers\LeagueMenuHelper;
 use App\Support\LeagueEntryFee;
+use App\Support\LeagueRegistrationFlow;
 use App\Support\LeagueRegistrationGate;
+use App\Support\TournamentRegistrationOptions;
 use App\Http\Controllers\Controller;
 use App\Models\GroupCard;
 use App\Models\League;
-use App\Models\Group;
 use App\Models\LeagueRegistration;
 use App\Models\PaymentHistory;
 use App\Models\User;
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -36,8 +36,10 @@ class RegisteredUserController extends Controller
         return view('auth.register', [
             'registrationLeagues' => $registrationLeagues,
             'registrationClosedDivisions' => LeagueRegistrationGate::closedSelectionKeys(),
+            'registrationClosedGroupCards' => LeagueRegistrationGate::closedGroupCardKeys(),
             'leagueEntryFees' => LeagueEntryFee::mapForLeagues($registrationLeagues),
             'stripePublishableKey' => (string) (config('services.stripe.key') ?: env('STRIPE_PUBLISHABLE_KEY', '')),
+            'tournamentGroupsUrl' => route('register.tournament-groups'),
         ]);
     }
 
@@ -66,6 +68,7 @@ class RegisteredUserController extends Controller
                 'skill_singles' => ['required', 'string', 'max:32'],
                 'sex_singles' => ['required', 'string', 'max:32'],
                 'tournament_singles' => ['required', 'integer', 'exists:leagues,id'],
+                'group_card_singles' => ['required', 'integer', 'exists:group_cards,id'],
                 'singles_first' => ['nullable'],
                 'singles_last' => ['nullable'],
             ]);
@@ -78,6 +81,7 @@ class RegisteredUserController extends Controller
                 'skill_doubles' => ['required', 'string', 'max:32'],
                 'sex_doubles' => ['required', 'string', 'max:32'],
                 'tournament_doubles' => ['required', 'integer', 'exists:leagues,id'],
+                'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
                 'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
                 'd2_phone' => ['required', 'string', 'max:32'],
                 'd1_first' => ['nullable'],
@@ -133,111 +137,19 @@ class RegisteredUserController extends Controller
             return $this->fail($request, 'Payment not completed or does not match registration.');
         }
 
-        $groupCard = $league->groupCards()
-            ->where('group_cards.status', 'active')
-            ->whereIn('group_cards.tag', $tab === 'singles' ? ['single', 'singles'] : ['double', 'doubles'])
-            ->where('group_cards.skill_level_match', $skillLevel)
-            ->first();
+        $groupCardId = (int) ($tab === 'singles' ? $specific['group_card_singles'] : $specific['group_card_doubles']);
+        $groupCard = TournamentRegistrationOptions::resolveGroupCard($league, $tab, $groupCardId);
 
-        if ($groupCard instanceof GroupCard) {
-            $registrationClosed = LeagueRegistrationGate::closedReasonForSelection($league, $tab, $skillLevel, $ageGroup);
-            if ($registrationClosed !== null) {
-                return $this->fail($request, $registrationClosed);
-            }
+        if (! $groupCard instanceof GroupCard) {
+            return $this->fail($request, 'Selected group is not valid for this tournament and format.');
         }
 
-        $groupId = null;
-        if (
-            $tab === 'doubles'
-            && $groupCard instanceof GroupCard
-            && Schema::hasTable('groups')
-        ) {
-            $groupsQuery = Group::query()
-                ->where('status', 'active');
-
-            // Groups can be linked to a GroupCard either via `groups.group_card_id` OR via the pivot `group_group_card`.
-            // Use the relation so it works in both schemas.
-            $groupsQuery->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id));
-
-            if (Schema::hasColumn('groups', 'age_group_key')) {
-                $groupsQuery->where(function ($q) use ($ageGroup) {
-                    $q->whereNull('age_group_key')
-                        ->orWhere('age_group_key', $ageGroup);
-                });
-            }
-
-            $candidateGroups = $groupsQuery->orderBy('id')->get();
-
-            if ($candidateGroups->isNotEmpty()) {
-                $bestGroup = null;
-                $bestCount = null;
-
-                foreach ($candidateGroups as $candidate) {
-                    $currentCount = LeagueRegistration::query()
-                        ->where('league_id', $leagueId)
-                        ->where('group_card_id', $groupCard->id)
-                        ->where('group_id', $candidate->id)
-                        ->where('registration_type', 'doubles')
-                        ->count();
-
-                    if ($bestCount === null || $currentCount < $bestCount) {
-                        $bestCount = $currentCount;
-                        $bestGroup = $candidate;
-                    }
-                }
-
-                if ($bestGroup) {
-                    $groupId = $bestGroup->id;
-                }
-            }
+        $registrationClosed = LeagueRegistrationGate::closedReason($league, $groupCard, $ageGroup);
+        if ($registrationClosed !== null) {
+            return $this->fail($request, $registrationClosed);
         }
 
-        // Singles: auto-assign the least-filled active group (same idea as doubles).
-        // Keep doubles logic above unchanged.
-        if (
-            $tab === 'singles'
-            && $groupCard instanceof GroupCard
-            && Schema::hasTable('groups')
-        ) {
-            $groupsQuery = Group::query()
-                ->where('status', 'active');
-
-            // Groups can be linked to a GroupCard either via `groups.group_card_id` OR via the pivot `group_group_card`.
-            // Use the relation so it works in both schemas.
-            $groupsQuery->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id));
-
-            if (Schema::hasColumn('groups', 'age_group_key')) {
-                $groupsQuery->where(function ($q) use ($ageGroup) {
-                    $q->whereNull('age_group_key')
-                        ->orWhere('age_group_key', $ageGroup);
-                });
-            }
-
-            $candidateGroups = $groupsQuery->orderBy('id')->get();
-
-            if ($candidateGroups->isNotEmpty()) {
-                $bestGroup = null;
-                $bestCount = null;
-
-                foreach ($candidateGroups as $candidate) {
-                    $currentCount = LeagueRegistration::query()
-                        ->where('league_id', $leagueId)
-                        ->where('group_card_id', $groupCard->id)
-                        ->where('group_id', $candidate->id)
-                        ->where('registration_type', 'singles')
-                        ->count();
-
-                    if ($bestCount === null || $currentCount < $bestCount) {
-                        $bestCount = $currentCount;
-                        $bestGroup = $candidate;
-                    }
-                }
-
-                if ($bestGroup) {
-                    $groupId = $bestGroup->id;
-                }
-            }
-        }
+        $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $tab, $ageGroup);
 
         $user = User::create([
             'name' => $base['name'],

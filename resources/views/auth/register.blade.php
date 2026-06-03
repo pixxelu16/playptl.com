@@ -67,7 +67,9 @@
                         <div
                             id="register-league-gate"
                             data-closed-divisions='@json($registrationClosedDivisions ?? [])'
+                            data-closed-group-cards='@json($registrationClosedGroupCards ?? [])'
                             data-league-fees='@json($leagueEntryFees ?? [])'
+                            data-tournament-groups-url="{{ $tournamentGroupsUrl ?? route('register.tournament-groups') }}"
                             hidden
                         ></div>
 
@@ -194,6 +196,17 @@
                                                 @endforeach
                                             </select>
                                         </div>
+                                    </div>
+                                    <div class="tournament-group-wrap {{ old('tournament_singles') ? '' : 'hidden' }}" data-tab="singles">
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Group <span class="text-red-600">*</span></label>
+                                        <select name="group_card_singles"
+                                            class="reg-input tournament-group-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            data-old="{{ old('group_card_singles') }}"
+                                            {{ old('tournament_singles') ? 'required' : '' }}>
+                                            <option value="">Select group</option>
+                                        </select>
+                                        <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666]">Choose a tournament to see available groups. Subgroups are assigned automatically.</p>
+                                        <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666]">Loading groups…</p>
                                     </div>
 
                                 </fieldset>
@@ -340,6 +353,17 @@
                                                 @endforeach
                                             </select>
                                         </div>
+                                    </div>
+                                    <div class="tournament-group-wrap {{ old('tournament_doubles') ? '' : 'hidden' }}" data-tab="doubles">
+                                        <label class="mb-1 block text-[12px] font-bold text-black">Group <span class="text-red-600">*</span></label>
+                                        <select name="group_card_doubles"
+                                            class="tournament-group-select h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                            data-old="{{ old('group_card_doubles') }}"
+                                            {{ old('tournament_doubles') ? 'required' : '' }}>
+                                            <option value="">Select group</option>
+                                        </select>
+                                        <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666]">Choose a tournament to see available groups. Subgroups are assigned automatically.</p>
+                                        <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666]">Loading groups…</p>
                                     </div>
 
                                     <div class="border-t border-[#e8e8e8] pt-4">
