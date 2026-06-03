@@ -1,6 +1,5 @@
 @csrf
 @php
-    $today = now()->toDateString();
     $selectedGroupCardIds = old('group_card_ids', $league->exists ? $league->groupCards->pluck('id')->all() : []);
     $singlesEntryFee = old('singles_entry_fee', \App\Support\LeagueEntryFee::dollarsInputValue($league->exists ? $league : null, 'singles'));
     $doublesEntryFee = old('doubles_entry_fee', \App\Support\LeagueEntryFee::dollarsInputValue($league->exists ? $league : null, 'doubles'));
@@ -10,11 +9,6 @@
     <div class="admin-form-group" style="grid-column: 1 / -1;">
         <label class="admin-label" for="name">League Name</label>
         <input class="admin-input" id="name" type="text" name="name" value="{{ old('name', $league->name) }}" required>
-    </div>
-
-    <div class="admin-form-group" style="grid-column: 1 / -1;">
-        <label class="admin-label" for="start_date">League Start Date</label>
-        <input class="admin-input" id="start_date" type="date" name="start_date" @if (! $league->exists) min="{{ $today }}" @endif value="{{ old('start_date', optional($league->start_date)->format('Y-m-d')) }}">
     </div>
 
     <div class="admin-form-group">

@@ -75,7 +75,7 @@
 
                         {{-- Singles form --}}
                         <form id="singles-register-form"
-                            class="mt-6 space-y-0 {{ $isDoubles ? 'hidden' : '' }}"
+                            class="register-form mt-6 flex flex-col {{ $isDoubles ? 'hidden' : '' }}"
                             method="POST"
                             action="{{ route('register') }}"
                             novalidate
@@ -197,7 +197,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="tournament-group-wrap {{ old('tournament_singles') ? '' : 'hidden' }}" data-tab="singles">
+                                    <div class="tournament-group-wrap mt-3 {{ old('tournament_singles') ? '' : 'hidden' }}" data-tab="singles">
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Group <span class="text-red-600">*</span></label>
                                         <select name="group_card_singles"
                                             class="reg-input tournament-group-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
@@ -213,7 +213,7 @@
                             </div>
 
                             {{-- Singles payment --}}
-                            <div class="mt-4 rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-3">
+                            <div class="register-payment-block rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-4">
                                 <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeSingles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
@@ -221,7 +221,7 @@
                             </div>
 
                             <button type="submit"
-                                class="disable-button mt-3 h-12 w-full rounded-[8px] bg-[#5DA44E] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
+                                class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5DA44E] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
                                 Submit
                             </button>
 
@@ -233,7 +233,7 @@
 
                         {{-- Doubles form --}}
                         <form id="doubles-register-form"
-                            class="mt-6 space-y-0 {{ $isDoubles ? '' : 'hidden' }}"
+                            class="register-form mt-6 flex flex-col {{ $isDoubles ? '' : 'hidden' }}"
                             method="POST"
                             action="{{ route('register') }}"
                             novalidate
@@ -354,7 +354,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="tournament-group-wrap {{ old('tournament_doubles') ? '' : 'hidden' }}" data-tab="doubles">
+                                    <div class="tournament-group-wrap mt-3 {{ old('tournament_doubles') ? '' : 'hidden' }}" data-tab="doubles">
                                         <label class="mb-1 block text-[12px] font-bold text-black">Group <span class="text-red-600">*</span></label>
                                         <select name="group_card_doubles"
                                             class="tournament-group-select h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
@@ -401,7 +401,7 @@
                                 </fieldset>
                             </div>
 
-                            <div class="mt-4 rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-3">
+                            <div class="register-payment-block rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-4">
                                 <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeDoubles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
@@ -409,7 +409,7 @@
                             </div>
 
                             <button type="submit"
-                                class="disable-button mt-3 h-12 w-full rounded-[8px] bg-[#5FA252] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
+                                class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5FA252] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
                                 Submit
                             </button>
 
@@ -437,3 +437,15 @@
         </div>
     </div>
 @endsection
+
+@push('styles')
+    <style>
+        .register-form .register-payment-block {
+            margin-top: 2rem !important;
+        }
+
+        .register-form .register-submit-btn {
+            margin-top: 1.5rem !important;
+        }
+    </style>
+@endpush
