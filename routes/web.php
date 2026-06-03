@@ -61,6 +61,7 @@ Route::get('/league/{leagueSlug}/{groupCardSlug}', [LeagueController::class, 'sh
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store']);
+    Route::get('/register/tournament-groups', \App\Http\Controllers\Auth\TournamentRegistrationGroupsController::class)->name('register.tournament-groups');
     Route::post('/register/payment-intent', RegisterStripePaymentIntentController::class)->name('register.payment-intent');
 
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

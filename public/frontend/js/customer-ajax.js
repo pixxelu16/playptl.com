@@ -75,6 +75,30 @@
     return !!closedDivisionSet()[leagueId + ':' + tab + ':' + skill];
   }
 
+  function closedGroupCardSet() {
+    var raw = $('#register-league-gate').attr('data-closed-group-cards');
+    if (!raw) return {};
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        return {};
+      }
+    }
+    var set = {};
+    if (Array.isArray(raw)) {
+      raw.forEach(function (key) {
+        set[key] = true;
+      });
+    }
+    return set;
+  }
+
+  function isGroupCardClosed(leagueId, groupCardId) {
+    if (!leagueId || !groupCardId) return false;
+    return !!closedGroupCardSet()[leagueId + ':' + groupCardId];
+  }
+
   function leagueFeesMap() {
     var raw = $('#register-league-gate').attr('data-league-fees');
     if (!raw) return { default: { singles: '0.00', doubles: '0.00' } };
@@ -102,6 +126,103 @@
     var amount = entryFeeForLeague(leagueId, tab);
     $form.find('.entry-fee-amount').text(amount);
     $form.data('fee', amount);
+  }
+
+  function tournamentGroupsUrl() {
+    return $('#register-league-gate').attr('data-tournament-groups-url') || '';
+  }
+
+  function registerFormForTab(tab) {
+    return tab === 'doubles' ? $('#doubles-register-form') : $('#singles-register-form');
+  }
+
+  function loadTournamentGroups(tab) {
+    var $form = registerFormForTab(tab);
+    if (!$form.length) return;
+
+    var $wrap = $form.find('.tournament-group-wrap[data-tab="' + tab + '"]');
+    var $select = $wrap.find('.tournament-group-select');
+    var $hint = $wrap.find('.tournament-group-hint');
+    var $loading = $wrap.find('.tournament-group-loading');
+    var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
+    var url = tournamentGroupsUrl();
+    var preserve = $select.data('old') || $select.val() || '';
+
+    if (!leagueId) {
+      $wrap.addClass('hidden');
+      $select.prop('required', false).html('<option value="">Select group</option>');
+      $hint.addClass('hidden');
+      $loading.addClass('hidden');
+      return;
+    }
+
+    $wrap.removeClass('hidden');
+
+    if (!url) {
+      $select.prop('required', false).html('<option value="">Select group</option>');
+      $hint.removeClass('hidden').text('Groups could not be loaded.');
+      $loading.addClass('hidden');
+      return;
+    }
+
+    $loading.removeClass('hidden');
+    $hint.addClass('hidden');
+
+    $.getJSON(url, { league_id: leagueId, tab: tab })
+      .done(function (payload) {
+        var groups = (payload && payload.groups) || [];
+        var html = '<option value="">Select group</option>';
+        var openCount = 0;
+
+        groups.forEach(function (g) {
+          var label = escapeHtml(g.label || g.name || 'Group');
+          if (!g.registration_open && g.closed_reason) {
+            label += ' (closed)';
+          }
+          html +=
+            '<option value="' +
+            escapeHtml(String(g.id)) +
+            '"' +
+            (g.registration_open ? '' : ' disabled') +
+            '>' +
+            label +
+            '</option>';
+          if (g.registration_open) openCount++;
+        });
+
+        $select.html(html);
+
+        if (groups.length === 0) {
+          $select.prop('required', false);
+          $hint
+            .removeClass('hidden')
+            .text('No groups available for this tournament yet. Contact the league admin.');
+        } else {
+          $select.prop('required', true);
+          if (preserve) {
+            $select.val(String(preserve));
+          }
+          if (!$select.val() && openCount === 1) {
+            $select.find('option:not([disabled]):not([value=""])').first().prop('selected', true);
+          }
+          $hint
+            .removeClass('hidden')
+            .text('Subgroup (A, B, C…) is assigned automatically when you register.');
+        }
+      })
+      .fail(function () {
+        $select.html('<option value="">Select group</option>').prop('required', false);
+        $hint.removeClass('hidden').text('Could not load groups. Please try again.');
+      })
+      .always(function () {
+        $loading.addClass('hidden');
+        $select.removeData('old');
+      });
+  }
+
+  function refreshTournamentGroupsForVisibleTab() {
+    var tab = $('#doubles-register-form').hasClass('hidden') ? 'singles' : 'doubles';
+    loadTournamentGroups(tab);
   }
 
   function initRegisterForm(formSelector) {
@@ -280,6 +401,13 @@
         return;
       }
 
+      var $groupSelect = $form.find('.tournament-group-select');
+      if ($groupSelect.length && $groupSelect.prop('required') && !$groupSelect.val()) {
+        $groupSelect.addClass('border-red-500');
+        renderResponse($responseBox, 'error', 'Please select a group for this tournament.');
+        return;
+      }
+
       if (!stripe || !elements) {
         setCardError('Payment is unavailable. Please refresh the page.');
         return;
@@ -309,6 +437,7 @@
 
       var leagueId = tab === 'singles' ? $form.find('select[name="tournament_singles"]').val() : $form.find('select[name="tournament_doubles"]').val();
       var skill = tab === 'singles' ? $form.find('select[name="skill_singles"]').val() : $form.find('select[name="skill_doubles"]').val();
+      var groupCardId = $groupSelect.val();
       var email = tab === 'singles' ? $form.find('#singles_email').val() : $form.find('#doubles_email').val();
 
       if (!leagueId) {
@@ -318,8 +447,15 @@
         if ($loader.length) $loader.addClass('hidden');
         return;
       }
-      if (isDivisionClosed(leagueId, tab, skill)) {
-        renderResponse($responseBox, 'error', 'This group has started. Registration is closed for this skill level.');
+      if (!groupCardId) {
+        renderResponse($responseBox, 'error', 'Please select a group for this tournament.');
+        $groupSelect.addClass('border-red-500');
+        $btn.prop('disabled', false);
+        if ($loader.length) $loader.addClass('hidden');
+        return;
+      }
+      if (isGroupCardClosed(leagueId, groupCardId)) {
+        renderResponse($responseBox, 'error', 'This group has started. Registration is closed for the selected group.');
         $btn.prop('disabled', false);
         if ($loader.length) $loader.addClass('hidden');
         return;
@@ -398,8 +534,14 @@
 
   $(function () {
     // Tabs
-    $('#tab-singles').on('click', function () { setTabUI('singles'); });
-    $('#tab-doubles').on('click', function () { setTabUI('doubles'); });
+    $('#tab-singles').on('click', function () {
+      setTabUI('singles');
+      loadTournamentGroups('singles');
+    });
+    $('#tab-doubles').on('click', function () {
+      setTabUI('doubles');
+      loadTournamentGroups('doubles');
+    });
 
     // Init both forms (independent validation + ajax)
     initRegisterForm('#singles-register-form');
@@ -407,12 +549,15 @@
 
     $('#singles-register-form select[name="tournament_singles"]').on('change', function () {
       syncRegisterEntryFee($('#singles-register-form'));
+      loadTournamentGroups('singles');
     });
     $('#doubles-register-form select[name="tournament_doubles"]').on('change', function () {
       syncRegisterEntryFee($('#doubles-register-form'));
+      loadTournamentGroups('doubles');
     });
     syncRegisterEntryFee($('#singles-register-form'));
     syncRegisterEntryFee($('#doubles-register-form'));
+    refreshTournamentGroupsForVisibleTab();
   });
 })(window.jQuery);
 
