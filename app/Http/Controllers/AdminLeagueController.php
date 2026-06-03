@@ -107,18 +107,12 @@ class AdminLeagueController extends Controller
      */
     protected function validatedData(Request $request, ?League $existing = null): array
     {
-        $startRules = ['nullable', 'date'];
-        if ($existing === null) {
-            $startRules[] = 'after_or_equal:today';
-        }
-
         $validated = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'logo'        => ['nullable', 'image', 'max:2048'],
             'description' => ['nullable', 'string'],
             'stats' => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
-            'start_date' => $startRules,
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'end_date' => ['nullable', 'date'],
             'type' => ['nullable', Rule::in(['single', 'doubles'])],
             'singles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],
             'doubles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],
