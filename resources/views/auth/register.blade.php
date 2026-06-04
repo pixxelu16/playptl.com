@@ -42,11 +42,11 @@
 @section('meta_description', 'Register for Premier Tennis League tournaments — Singles or Doubles.')
 
 @section('content')
-    <div class="register-page flex min-h-[calc(100vh-200px)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div class="register-page flex min-h-[calc(100vh-200px)] items-start justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div class="w-full max-w-[1360px] overflow-hidden rounded-[12px] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
             <div class="flex flex-col lg:flex-row lg:items-stretch">
                 <div class="flex w-full flex-col lg:w-1/2 lg:max-w-[50%]">
-                    {{-- No outer scroll: Singles fits without scrollbar; Doubles panel scrolls internally --}}
+                    {{-- Form grows with content; page scrolls (no inner scrollbar on doubles) --}}
                     <div class="px-6 py-6 sm:px-8 sm:py-7">
                         <h1 class="text-center text-lg font-bold text-[#222] sm:text-xl">Tournament Registration</h1>
 
@@ -197,16 +197,19 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="tournament-group-wrap mt-3 {{ old('tournament_singles') ? '' : 'hidden' }}" data-tab="singles">
-                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Group <span class="text-red-600">*</span></label>
-                                        <select name="group_card_singles"
-                                            class="reg-input tournament-group-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                            data-old="{{ old('group_card_singles') }}"
-                                            {{ old('tournament_singles') ? 'required' : '' }}>
-                                            <option value="">Select group</option>
-                                        </select>
-                                        <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666]">Choose a tournament to see available groups. Subgroups are assigned automatically.</p>
-                                        <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666]">Loading groups…</p>
+                                    <div class="tournament-group-wrap mt-3 hidden" data-tab="singles" data-assign-by-skill="1">
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Your group</label>
+                                        <input type="text"
+                                            class="reg-input tournament-group-preview h-10 w-full rounded-[6px] border border-[#dddddd] bg-[#f5f5f5] px-3 text-[13px] text-[#333]"
+                                            value=""
+                                            placeholder="Select tournament and skill level"
+                                            readonly
+                                            tabindex="-1"
+                                            aria-readonly="true">
+                                        <input type="hidden" name="group_card_singles" class="tournament-group-id" value="{{ old('group_card_singles') }}">
+                                        <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666]">Based on your skill level. Subgroup (A, B, C…) is assigned automatically.</p>
+                                        <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666]">Finding your group…</p>
+                                        <p class="tournament-group-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                                     </div>
 
                                 </fieldset>
@@ -248,7 +251,7 @@
                             <input type="hidden" name="registration_tab" value="doubles">
                             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
 
-                            <div id="panel-doubles" class="tab-panel max-h-[min(72vh,620px)] overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch]" data-tab-panel="doubles">
+                            <div id="panel-doubles" class="tab-panel" data-tab-panel="doubles">
                                 <fieldset class="m-0 min-w-0 space-y-4 border-0 pb-1 pt-0">
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
@@ -342,28 +345,6 @@
                                                 <option value="female" @selected(old('sex_doubles') === 'female')>Female</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label class="mb-1 block text-[12px] font-bold text-black">Tournament <span class="text-red-600">*</span></label>
-                                            <select name="tournament_doubles"
-                                                required
-                                                class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
-                                                <option value="">Select tournament</option>
-                                                @foreach ($registrationLeagues as $league)
-                                                    <option value="{{ $league->id }}" @selected(old('tournament_doubles') == $league->id)>{{ $league->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="tournament-group-wrap mt-3 {{ old('tournament_doubles') ? '' : 'hidden' }}" data-tab="doubles">
-                                        <label class="mb-1 block text-[12px] font-bold text-black">Group <span class="text-red-600">*</span></label>
-                                        <select name="group_card_doubles"
-                                            class="tournament-group-select h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                            data-old="{{ old('group_card_doubles') }}"
-                                            {{ old('tournament_doubles') ? 'required' : '' }}>
-                                            <option value="">Select group</option>
-                                        </select>
-                                        <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666]">Choose a tournament to see available groups. Subgroups are assigned automatically.</p>
-                                        <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666]">Loading groups…</p>
                                     </div>
 
                                     <div class="border-t border-[#e8e8e8] pt-4">
@@ -394,6 +375,83 @@
                                                 <input type="tel" name="d2_phone" id="d2_phone" value="{{ old('d2_phone') }}" placeholder="Phone"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
                                                 autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">City <span class="text-red-600">*</span></label>
+                                                <input type="text" name="d2_city" value="{{ old('d2_city') }}" placeholder="City"
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    autocomplete="address-level2" required>
+                                            </div>
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">State <span class="text-red-600">*</span></label>
+                                                <input type="text" name="d2_state" value="{{ old('d2_state') }}" placeholder="State"
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    autocomplete="address-level1" required>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Age Group <span class="text-red-600">*</span></label>
+                                                <select name="d2_age_group" required
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    <option value="">Select</option>
+                                                    @foreach ($registrationAgeBrackets as $ageValue => $ageLabel)
+                                                        <option value="{{ $ageValue }}" @selected(old('d2_age_group') === $ageValue)>{{ $ageLabel }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Skill Level <span class="text-red-600">*</span></label>
+                                                <select name="d2_skill" required
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    <option value="">Select</option>
+                                                    @foreach ($registrationSkillLevelValues as $skillValue)
+                                                        <option value="{{ $skillValue }}" @selected(old('d2_skill') == $skillValue)>{{ $skillValue === 'not-sure' ? 'Not Sure' : $skillValue }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Sex <span class="text-red-600">*</span></label>
+                                                <select name="d2_sex" required
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    <option value="">Select</option>
+                                                    <option value="male" @selected(old('d2_sex') === 'male')>Male</option>
+                                                    <option value="female" @selected(old('d2_sex') === 'female')>Female</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-[#e8e8e8] pt-4">
+                                        <h2 class="text-center text-[14px] font-bold text-black underline decoration-[#5FA252] decoration-2 underline-offset-4">Other Details</h2>
+                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Tournament <span class="text-red-600">*</span></label>
+                                                <select name="tournament_doubles" required
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    <option value="">Select tournament</option>
+                                                    @foreach ($registrationLeagues as $league)
+                                                        <option value="{{ $league->id }}" @selected(old('tournament_doubles') == $league->id)>{{ $league->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="tournament-group-wrap hidden" data-tab="doubles" data-assign-by-skill="1">
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Your group</label>
+                                                <input type="text"
+                                                    class="tournament-group-preview h-11 w-full rounded-[8px] border border-[#dddddd] bg-[#f5f5f5] px-3 text-[14px] text-[#333]"
+                                                    value=""
+                                                    placeholder="Select tournament and both skill levels"
+                                                    readonly
+                                                    tabindex="-1"
+                                                    aria-readonly="true">
+                                                <input type="hidden" name="group_card_doubles" class="tournament-group-id" value="{{ old('group_card_doubles') }}">
+                                                <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666]">Based on your team average skill. Subgroup is assigned automatically.</p>
+                                                <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666]">Finding your group…</p>
+                                                <p class="tournament-group-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                                             </div>
                                         </div>
                                     </div>

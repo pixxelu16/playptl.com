@@ -132,6 +132,8 @@ Route::middleware('auth')->group(function () {
         Route::post('players/{player}/league-registrations', [AdminPlayerLeagueRegistrationController::class, 'store'])->name('players.league-registrations.store');
         Route::get('payment-histories', [AdminPaymentHistoryController::class, 'index'])->name('payment-histories.index');
         Route::get('charity-donations', [AdminCharityDonationController::class, 'index'])->name('charity-donations.index');
+        Route::get('charity-donations/email-recipient-count', [AdminCharityDonationController::class, 'recipientCount'])->name('charity-donations.email-recipient-count');
+        Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
         Route::resource('charity-causes', AdminCharityCauseController::class);
 
         Route::get('/profile', function () {
@@ -224,6 +226,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/my-profile', [PlayerProfileController::class, 'show'])->name('my-profile');
         Route::get('/my-profile/choose-league', [PlayerProfileController::class, 'showChooseLeague'])->name('profile.league');
         Route::get('/my-profile/choose-league/partner-lookup', [PlayerProfileController::class, 'lookupLeaguePartner'])->name('profile.league.partner-lookup');
+        Route::get('/my-profile/choose-league/tournament-groups', \App\Http\Controllers\Auth\TournamentRegistrationGroupsController::class)->name('profile.league.tournament-groups');
         Route::post('/my-profile/choose-league/payment-intent', [PlayerProfileController::class, 'createLeaguePaymentIntent'])->name('profile.league.payment-intent');
         Route::post('/my-profile/choose-league', [PlayerProfileController::class, 'storeLeagueRegistration'])->name('profile.league.store');
         Route::put('/profile', [PlayerProfileController::class, 'update'])->name('profile.update');

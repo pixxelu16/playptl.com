@@ -2,39 +2,67 @@
 
 namespace App\Support;
 
+use App\Models\GroupCard;
 use App\Models\League;
 use Illuminate\Support\Carbon;
 
 final class LeaguePlayoffCalendar
 {
-    public static function validatePlayoffStartDate(Carbon $playoffStart, League $league): ?string
+    public static function validatePlayoffStartDate(Carbon $playoffStart, League $league, GroupCard $groupCard): ?string
     {
-        if ($league->end_date === null) {
-            return 'Set the league match close date on the Matches page before scheduling playoffs.';
+        if (! DivisionScheduleWindow::tournamentDatesConfigured($league)) {
+            return 'Set the tournament start and end dates on Edit Tournament before scheduling playoffs.';
         }
 
-        $leagueEnd = $league->end_date->copy()->startOfDay();
+        $groupClose = DivisionScheduleWindow::endDate($league, $groupCard);
+        if ($groupClose === null) {
+            return 'Set the group end date on the Matches page after scheduling group matches.';
+        }
+
+        $tournamentStart = $league->start_date->copy()->startOfDay();
+        $tournamentEnd = $league->end_date->copy()->startOfDay();
         $start = $playoffStart->copy()->startOfDay();
 
-        if ($start->lte($leagueEnd)) {
-            return 'Playoff start date must be after the league match close date ('.$league->end_date->format('M j, Y').').';
+        if ($start->lte($groupClose)) {
+            return 'Playoff start must be after group matches close ('.$groupClose->format('M j, Y').').';
+        }
+
+        if ($start->lt($tournamentStart)) {
+            return 'Playoff start must be on or after the tournament start date ('.$tournamentStart->format('M j, Y').').';
+        }
+
+        if ($start->gt($tournamentEnd)) {
+            return 'Playoff start must be on or before the tournament end date ('.$tournamentEnd->format('M j, Y').').';
         }
 
         return null;
     }
 
-    public static function validatePlayoffEndDate(Carbon $playoffStart, Carbon $playoffEnd, League $league): ?string
+    public static function validatePlayoffEndDate(Carbon $playoffStart, Carbon $playoffEnd, League $league, GroupCard $groupCard): ?string
     {
         if ($playoffEnd->copy()->startOfDay()->lt($playoffStart->copy()->startOfDay())) {
             return 'Playoff end date cannot be before the playoff start date.';
         }
 
-        if ($league->end_date === null) {
-            return 'Set the league match close date on the Matches page before scheduling playoffs.';
+        if (! DivisionScheduleWindow::tournamentDatesConfigured($league)) {
+            return 'Set the tournament start and end dates on Edit Tournament before scheduling playoffs.';
         }
 
-        if ($playoffEnd->copy()->startOfDay()->lte($league->end_date->copy()->startOfDay())) {
-            return 'Playoff end date must be after the league match close date ('.$league->end_date->format('M j, Y').').';
+        $tournamentStart = $league->start_date->copy()->startOfDay();
+        $tournamentEnd = $league->end_date->copy()->startOfDay();
+        $end = $playoffEnd->copy()->startOfDay();
+
+        if ($end->lt($tournamentStart)) {
+            return 'Playoff end must be on or after the tournament start date ('.$tournamentStart->format('M j, Y').').';
+        }
+
+        if ($end->gt($tournamentEnd)) {
+            return 'Playoff end must be on or before the tournament end date ('.$tournamentEnd->format('M j, Y').').';
+        }
+
+        $startError = self::validatePlayoffStartDate($playoffStart, $league, $groupCard);
+        if ($startError !== null) {
+            return $startError;
         }
 
         return null;
@@ -67,17 +95,18 @@ final class LeaguePlayoffCalendar
         return $league->playoff_start_date !== null && $league->playoff_end_date !== null;
     }
 
-    public static function playoffDatesAreValid(League $league): bool
+    public static function playoffDatesAreValid(League $league, GroupCard $groupCard): bool
     {
         if (! self::playoffDatesConfigured($league)) {
             return false;
         }
 
-        return self::validatePlayoffStartDate($league->playoff_start_date->copy()->startOfDay(), $league) === null
+        return self::validatePlayoffStartDate($league->playoff_start_date->copy()->startOfDay(), $league, $groupCard) === null
             && self::validatePlayoffEndDate(
                 $league->playoff_start_date->copy()->startOfDay(),
                 $league->playoff_end_date->copy()->startOfDay(),
                 $league,
+                $groupCard,
             ) === null;
     }
 }

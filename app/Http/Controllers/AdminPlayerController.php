@@ -24,6 +24,7 @@ class AdminPlayerController extends Controller
         $players = User::query()
             ->where('role', UserRole::Player)
             ->where('registration_type', $tab)
+            ->with(['leagueRegistrations' => fn ($query) => $query->orderByDesc('id')])
             ->latest('id')
             ->paginate(25)
             ->withQueryString();

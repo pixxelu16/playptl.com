@@ -18,6 +18,35 @@ use Illuminate\Support\Facades\Schema;
  */
 final class SubgroupRoundRobinScheduler
 {
+    /** @var list<GroupMatch> */
+    private static array $deferredMatchNotifications = [];
+
+    private static bool $deferMatchNotifications = false;
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Group>
+     */
+    public static function divisionGroups(League $league, GroupCard $groupCard, ?string $ageGroupKey = null): Collection
+    {
+        return Group::query()
+            ->where(function ($q) use ($groupCard) {
+                $q->whereHas('groupCards', fn ($qq) => $qq->whereKey($groupCard->id));
+                if (Schema::hasColumn('groups', 'group_card_id')) {
+                    $q->orWhere('group_card_id', $groupCard->id);
+                }
+            })
+            ->when(
+                Schema::hasColumn('groups', 'age_group_key') && $ageGroupKey !== null,
+                fn ($q) => $q->where(function ($qq) use ($ageGroupKey) {
+                    $qq->whereNull('age_group_key')->orWhere('age_group_key', $ageGroupKey);
+                })
+            )
+            ->orderBy('name')
+            ->get()
+            ->unique('id')
+            ->values();
+    }
+
     /**
      * @return array{created: int, removed: int, weeks: int}
      */
@@ -26,12 +55,13 @@ final class SubgroupRoundRobinScheduler
         GroupCard $groupCard,
         Group $group,
         ?string $ageGroupKey = null,
+        bool $reschedulePending = false,
     ): array {
         if (! Schema::hasTable('group_matches')) {
             return ['created' => 0, 'removed' => 0, 'weeks' => 0];
         }
 
-        if ($league->start_date === null) {
+        if (DivisionScheduleWindow::startDate($league, $groupCard) === null) {
             return ['created' => 0, 'removed' => 0, 'weeks' => 0];
         }
 
@@ -44,7 +74,11 @@ final class SubgroupRoundRobinScheduler
         $participants = self::participantsForFormat($rosterRegs, $format);
 
         if ($participants->count() < 2) {
-            return ['created' => 0, 'removed' => 0, 'weeks' => 0];
+            return ['created' => 0, 'removed' => 0, 'weeks' => 0, 'updated' => 0];
+        }
+
+        if ($reschedulePending && self::subgroupHasAutoScheduledMatches($league, $groupCard, $group)) {
+            return self::reschedulePendingAutoMatches($league, $groupCard, $group, $participants, $format);
         }
 
         $removed = self::removePendingAutoMatches($league, $groupCard, $group);
@@ -53,12 +87,13 @@ final class SubgroupRoundRobinScheduler
         $roundCount = count($rounds);
 
         if ($roundCount === 0) {
-            return ['created' => 0, 'removed' => $removed, 'weeks' => 0];
+            return ['created' => 0, 'removed' => $removed, 'weeks' => 0, 'updated' => 0];
         }
 
-        $calendar = LeagueWeekCalendar::calendar($league->start_date, $roundCount);
+        $divisionStart = DivisionScheduleWindow::startDate($league, $groupCard);
+        $calendar = LeagueWeekCalendar::calendar($divisionStart, $roundCount);
         $weekEndSundays = $calendar['playWeekSundays'];
-        $leagueStart = $league->start_date->copy()->startOfDay();
+        $leagueStart = $divisionStart->copy()->startOfDay();
 
         $seedByUserId = self::seedMap($rosterRegs);
         $created = 0;
@@ -89,7 +124,7 @@ final class SubgroupRoundRobinScheduler
                     continue;
                 }
 
-                GroupMatch::query()->create([
+                $groupMatch = GroupMatch::query()->create([
                     'league_id' => $league->id,
                     'group_card_id' => $groupCard->id,
                     'group_id' => $group->id,
@@ -111,6 +146,8 @@ final class SubgroupRoundRobinScheduler
                     'round_number' => $roundNumber,
                     'auto_scheduled' => true,
                 ]);
+                $groupMatch->load(['homeUser', 'awayUser', 'homePartnerUser', 'awayPartnerUser', 'group', 'league', 'groupCard']);
+                self::queueMatchNotification($groupMatch);
                 $created++;
             }
         }
@@ -119,6 +156,7 @@ final class SubgroupRoundRobinScheduler
             'created' => $created,
             'removed' => $removed,
             'weeks' => $roundCount,
+            'updated' => 0,
         ];
     }
 
@@ -131,35 +169,58 @@ final class SubgroupRoundRobinScheduler
         League $league,
         GroupCard $groupCard,
         ?string $ageGroupKey = null,
+        bool $reschedulePending = false,
     ): array {
+        MatchScheduleMailQueue::beginBulkScheduling();
+        self::$deferMatchNotifications = true;
+        self::$deferredMatchNotifications = [];
+
         $created = 0;
         $removed = 0;
+        $updated = 0;
         $subgroupCount = 0;
+        $subgroupDetails = [];
 
-        $groups = Group::query()
-            ->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id))
-            ->when(
-                Schema::hasColumn('groups', 'age_group_key') && $ageGroupKey !== null,
-                fn ($q) => $q->where(function ($qq) use ($ageGroupKey) {
-                    $qq->whereNull('age_group_key')->orWhere('age_group_key', $ageGroupKey);
-                })
-            )
-            ->orderBy('name')
-            ->get();
+        $groups = self::divisionGroups($league, $groupCard, $ageGroupKey);
 
         foreach ($groups as $group) {
-            $result = self::sync($league, $groupCard, $group, $ageGroupKey);
-            if ($result['created'] > 0 || $result['removed'] > 0) {
+            $result = self::sync($league, $groupCard, $group, $ageGroupKey, $reschedulePending);
+            $groupCreated = (int) $result['created'];
+            $groupUpdated = (int) ($result['updated'] ?? 0);
+
+            if ($groupCreated > 0 || $result['removed'] > 0 || $groupUpdated > 0) {
                 $subgroupCount++;
             }
-            $created += $result['created'];
+            $created += $groupCreated;
             $removed += $result['removed'];
+            $updated += $groupUpdated;
+
+            $detail = [
+                'name' => (string) $group->name,
+                'created' => $groupCreated,
+                'updated' => $groupUpdated,
+            ];
+            if ($groupCreated === 0 && $groupUpdated === 0) {
+                $note = self::syncSkipReason($league, $groupCard, $group, $ageGroupKey);
+                if ($note !== null) {
+                    $detail['note'] = $note;
+                }
+            }
+            $subgroupDetails[] = $detail;
         }
+
+        foreach (self::$deferredMatchNotifications as $match) {
+            GroupMatchScheduleNotifier::notifyParticipants($match);
+        }
+        self::$deferMatchNotifications = false;
+        self::$deferredMatchNotifications = [];
 
         return [
             'created' => $created,
             'removed' => $removed,
+            'updated' => $updated,
             'subgroup_count' => $subgroupCount,
+            'subgroups' => $subgroupDetails,
         ];
     }
 
@@ -167,18 +228,121 @@ final class SubgroupRoundRobinScheduler
     {
         $lead = $prefix !== '' ? $prefix.' ' : '';
 
+        if (($totals['updated'] ?? 0) > 0) {
+            $groups = (int) ($totals['subgroup_count'] ?? 0);
+
+            return $lead.sprintf(
+                '%d match date%s updated%s. Notification emails are queued.',
+                $totals['updated'],
+                $totals['updated'] === 1 ? '' : 's',
+                $groups > 0 ? ' across '.$groups.' subgroup'.($groups === 1 ? '' : 's') : '',
+            ).self::formatSubgroupDetailSuffix($totals);
+        }
+
         if ($totals['created'] > 0) {
             $groups = (int) ($totals['subgroup_count'] ?? 0);
 
             return $lead.sprintf(
-                '%d match%s scheduled%s.',
+                '%d match%s scheduled%s. Notification emails are queued.',
                 $totals['created'],
                 $totals['created'] === 1 ? '' : 'es',
                 $groups > 0 ? ' across '.$groups.' subgroup'.($groups === 1 ? '' : 's') : '',
-            );
+            ).self::formatSubgroupDetailSuffix($totals);
         }
 
-        return $lead.'No new matches scheduled (check rosters or close date).';
+        $suffix = self::formatSubgroupDetailSuffix($totals);
+
+        return $lead.'No new matches scheduled (check rosters or close date).'.$suffix;
+    }
+
+    /**
+     * @param  array<string, mixed>  $totals
+     */
+    private static function formatSubgroupDetailSuffix(array $totals): string
+    {
+        $subgroups = $totals['subgroups'] ?? [];
+        if (! is_array($subgroups) || $subgroups === []) {
+            return '';
+        }
+
+        $lines = [];
+        foreach ($subgroups as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $name = trim((string) ($row['name'] ?? 'Subgroup'));
+            $groupCreated = (int) ($row['created'] ?? 0);
+            $groupUpdated = (int) ($row['updated'] ?? 0);
+            $note = trim((string) ($row['note'] ?? ''));
+
+            if ($groupCreated > 0) {
+                $lines[] = $name.': '.$groupCreated.' match'.($groupCreated === 1 ? '' : 'es').' scheduled';
+            } elseif ($groupUpdated > 0) {
+                $lines[] = $name.': '.$groupUpdated.' date'.($groupUpdated === 1 ? '' : 's').' updated';
+            } elseif ($note !== '') {
+                $lines[] = $name.': '.$note;
+            }
+        }
+
+        if ($lines === []) {
+            return '';
+        }
+
+        return ' '.implode('; ', $lines).'.';
+    }
+
+    private static function queueMatchNotification(GroupMatch $groupMatch): void
+    {
+        if (self::$deferMatchNotifications) {
+            self::$deferredMatchNotifications[] = $groupMatch;
+
+            return;
+        }
+
+        GroupMatchScheduleNotifier::notifyParticipants($groupMatch);
+    }
+
+    private static function subgroupHasAutoScheduledMatches(League $league, GroupCard $groupCard, Group $group): bool
+    {
+        if (! Schema::hasTable('group_matches')) {
+            return false;
+        }
+
+        $query = GroupMatch::query()
+            ->where('league_id', $league->id)
+            ->where('group_card_id', $groupCard->id)
+            ->where('group_id', $group->id);
+
+        if (Schema::hasColumn('group_matches', 'auto_scheduled')) {
+            $query->where('auto_scheduled', true);
+        }
+
+        return $query->exists();
+    }
+
+    private static function syncSkipReason(
+        League $league,
+        GroupCard $groupCard,
+        Group $group,
+        ?string $ageGroupKey,
+    ): ?string {
+        if (DivisionScheduleWindow::startDate($league, $groupCard) === null) {
+            return 'division start date not set';
+        }
+
+        if (DivisionPlayoffPhase::locksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)) {
+            return 'scheduling locked (playoffs active)';
+        }
+
+        $rosterRegs = self::rosterRegistrations($league, $groupCard, $group, $ageGroupKey);
+        $format = $groupCard->forcedMatchFormat() ?? GroupMatchFormat::Singles;
+        $participants = self::participantsForFormat($rosterRegs, $format);
+
+        if ($participants->count() < 2) {
+            return 'need at least 2 players in roster';
+        }
+
+        return 'round-robin already up to date';
     }
 
     /**
@@ -326,6 +490,111 @@ final class SubgroupRoundRobinScheduler
         }
 
         return $map;
+    }
+
+    /**
+     * @param  Collection<int, array{user_id: int, partner_user_id: int|null}>  $participants
+     * @return array{created: int, removed: int, weeks: int, updated: int}
+     */
+    private static function reschedulePendingAutoMatches(
+        League $league,
+        GroupCard $groupCard,
+        Group $group,
+        Collection $participants,
+        GroupMatchFormat $format,
+    ): array {
+        $rounds = self::roundRobinPairings($participants, $format);
+        $roundCount = count($rounds);
+
+        if ($roundCount === 0) {
+            return ['created' => 0, 'removed' => 0, 'weeks' => 0, 'updated' => 0];
+        }
+
+        $divisionStart = DivisionScheduleWindow::startDate($league, $groupCard);
+        $calendar = LeagueWeekCalendar::calendar($divisionStart, $roundCount);
+        $weekEndSundays = $calendar['playWeekSundays'];
+        $leagueStart = $divisionStart->copy()->startOfDay();
+        $updated = 0;
+
+        foreach ($rounds as $roundIndex => $pairings) {
+            $weekEndSunday = Carbon::parse($weekEndSundays[$roundIndex])->startOfDay();
+            $matchDates = LeagueWeekCalendar::spreadMatchDatesAcrossWeek(
+                $weekEndSunday,
+                $leagueStart,
+                count($pairings),
+                $roundIndex === 0,
+            );
+
+            foreach ($pairings as $pairIndex => $pairing) {
+                $matchDate = $matchDates[$pairIndex] ?? $weekEndSunday->copy()->subDays(2)->format('Y-m-d');
+                $match = self::findPendingAutoMatch(
+                    $league->id,
+                    $groupCard->id,
+                    $group->id,
+                    (int) $pairing['home_user_id'],
+                    (int) $pairing['away_user_id'],
+                    $pairing['home_partner_user_id'] ? (int) $pairing['home_partner_user_id'] : null,
+                    $pairing['away_partner_user_id'] ? (int) $pairing['away_partner_user_id'] : null,
+                );
+
+                if (! $match instanceof GroupMatch) {
+                    continue;
+                }
+
+                $oldDate = $match->match_date?->format('Y-m-d');
+                if ($oldDate === $matchDate) {
+                    continue;
+                }
+
+                $match->update(['match_date' => $matchDate]);
+                $updated++;
+                $match->load(['homeUser', 'awayUser', 'homePartnerUser', 'awayPartnerUser', 'group', 'league', 'groupCard']);
+                self::queueMatchNotification($match);
+            }
+        }
+
+        return [
+            'created' => 0,
+            'removed' => 0,
+            'weeks' => $roundCount,
+            'updated' => $updated,
+        ];
+    }
+
+    private static function findPendingAutoMatch(
+        int $leagueId,
+        int $groupCardId,
+        int $groupId,
+        int $homeUserId,
+        int $awayUserId,
+        ?int $homePartnerId,
+        ?int $awayPartnerId,
+    ): ?GroupMatch {
+        $query = GroupMatch::query()
+            ->where('league_id', $leagueId)
+            ->where('group_card_id', $groupCardId)
+            ->where('group_id', $groupId)
+            ->where(fn ($q) => $q->whereNull('score')->orWhere('score', ''))
+            ->where(fn ($q) => $q->whereNull('winner_side')->orWhere('winner_side', ''))
+            ->where(function ($q) use ($homeUserId, $awayUserId, $homePartnerId, $awayPartnerId) {
+                $q->where(function ($qq) use ($homeUserId, $awayUserId, $homePartnerId, $awayPartnerId) {
+                    $qq->where('home_user_id', $homeUserId)
+                        ->where('away_user_id', $awayUserId)
+                        ->when($homePartnerId, fn ($q) => $q->where('home_partner_user_id', $homePartnerId))
+                        ->when($awayPartnerId, fn ($q) => $q->where('away_partner_user_id', $awayPartnerId));
+                })->orWhere(function ($qq) use ($homeUserId, $awayUserId, $homePartnerId, $awayPartnerId) {
+                    $qq->where('home_user_id', $awayUserId)
+                        ->where('away_user_id', $homeUserId)
+                        ->when($awayPartnerId, fn ($q) => $q->where('home_partner_user_id', $awayPartnerId))
+                        ->when($homePartnerId, fn ($q) => $q->where('away_partner_user_id', $homePartnerId));
+                });
+            });
+
+        if (Schema::hasColumn('group_matches', 'auto_scheduled')) {
+            $query->where('auto_scheduled', true);
+        }
+
+        return $query->first();
     }
 
     private static function removePendingAutoMatches(League $league, GroupCard $groupCard, Group $group): int

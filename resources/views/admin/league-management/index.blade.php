@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'League Management | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage leagues, groups, subgroups, and players from the admin dashboard.')
+@section('title', 'Tournament Management | '.config('app.name', 'playptl'))
+@section('meta_description', 'Manage tournaments, groups, subgroups, and players from the admin dashboard.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
-                <h1 class="admin-card-title">League Management</h1>
-                <p class="admin-card-text">Pick a league to manage its groups, age brackets, subgroups, and player assignments.</p>
+                <h1 class="admin-card-title">Tournament Management</h1>
+                <p class="admin-card-text">Pick a tournament to manage its groups, age brackets, subgroups, and player assignments.</p>
             </div>
             <a class="admin-link" href="{{ route('admin.leagues.index') }}">
                 <i class="fa-solid fa-trophy" aria-hidden="true"></i>
-                <span>Manage leagues</span>
+                <span>Manage tournaments</span>
             </a>
         </div>
 
@@ -24,7 +24,7 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>League</th>
+                        <th>Tournament</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -40,7 +40,7 @@
                             <td>
                                 <div class="admin-table-actions">
                                     <a href="{{ route('admin.league-management.show', $league) }}" title="Manage"><i class="fa-solid fa-sitemap" aria-hidden="true"></i></a>
-                                    <a href="{{ route('admin.leagues.show', $league) }}" title="View league"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
+                                    <a href="{{ route('admin.leagues.show', $league) }}" title="View tournament"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
                                 </div>
                             </td>
                         </tr>
@@ -49,7 +49,7 @@
                             <td colspan="2">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-trophy" aria-hidden="true"></i>
-                                    <p>No leagues found. Create your first league.</p>
+                                    <p>No tournaments found. Create your first tournament.</p>
                                 </div>
                             </td>
                         </tr>

@@ -18,6 +18,9 @@ use App\Models\PlayoffMatchPlayerUpload;
 use App\Models\User;
 use App\Support\LeaguePlayoffCalendar;
 use App\Support\GroupMatchScheduleNotifier;
+use App\Support\PlayerMatchDayConflict;
+use App\Support\TournamentRegistrationOptions;
+use App\Support\PlayoffMatchScheduleNotifier;
 use App\Support\LeagueRegistrationFlow;
 use App\Support\LeagueRegistrationRoster;
 use App\Support\LeagueWeekCalendar;
@@ -62,7 +65,7 @@ class PlayerProfileController extends Controller
             'Choose League',
             'Choose League | '.config('app.name', 'playptl'),
             'Register for a league tournament as singles or doubles.',
-            $this->chooseLeaguePanelData(),
+            $this->chooseLeaguePanelData($request),
         );
     }
 
@@ -99,6 +102,8 @@ class PlayerProfileController extends Controller
             $lastName = $parts[1] ?? '';
         }
 
+        $partnerSkill = $this->partnerSkillLevelFromUser($partner);
+
         return response()->json([
             'found' => true,
             'message' => 'Tell your buddy to please log in with their account and see match details there.',
@@ -106,6 +111,8 @@ class PlayerProfileController extends Controller
             'last_name' => $lastName,
             'phone' => (string) ($partner->phone ?? ''),
             'name' => trim((string) $partner->name) !== '' ? (string) $partner->name : trim($firstName.' '.$lastName),
+            'skill_level' => $partnerSkill,
+            'skill_locked' => $partnerSkill !== null,
         ]);
     }
 
@@ -115,7 +122,6 @@ class PlayerProfileController extends Controller
         $validated = $request->validate([
             'league_id' => ['required', 'integer', 'exists:leagues,id'],
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
-            'skill_level' => ['required', 'string', 'max:32'],
             'email' => ['required', 'string', 'email', 'max:255'],
         ]);
 
@@ -125,7 +131,15 @@ class PlayerProfileController extends Controller
 
         $league = League::query()->findOrFail((int) $validated['league_id']);
         $tab = (string) $validated['registration_tab'];
-        $skillLevel = (string) $validated['skill_level'];
+
+        if ($this->userIsRegisteredInLeague($user, (int) $league->id)) {
+            return response()->json(['message' => 'You are already registered in this tournament.'], 422);
+        }
+
+        $skillLevel = $this->playerFixedSkillLevel($user, $request);
+        if ($skillLevel === null) {
+            return response()->json(['message' => 'Set your skill level on Personal Information before registering for another tournament.'], 422);
+        }
 
         $registrationClosed = \App\Support\LeagueRegistrationGate::closedReasonForSelection($league, $tab, $skillLevel);
         if ($registrationClosed !== null) {
@@ -178,39 +192,81 @@ class PlayerProfileController extends Controller
 
         $tab = (string) $base['registration_tab'];
 
+        $skillLevel = $this->playerFixedSkillLevel($user, $request);
+        if ($skillLevel === null) {
+            return response()->json(['message' => 'Set your skill level on Personal Information before registering for another tournament.'], 422);
+        }
+
+        $playerSkill = $skillLevel;
+
         if ($tab === 'singles') {
             $specific = $request->validate([
-                'skill_singles' => ['required', 'string', 'max:32'],
                 'tournament_singles' => ['required', 'integer', 'exists:leagues,id'],
+                'group_card_singles' => ['required', 'integer', 'exists:group_cards,id'],
             ]);
             $leagueId = (int) $specific['tournament_singles'];
-            $skillLevel = (string) $specific['skill_singles'];
+            $groupCardId = (int) $specific['group_card_singles'];
+            $assignmentSkill = $playerSkill;
         } else {
             $specific = $request->validate([
-                'skill_doubles' => ['required', 'string', 'max:32'],
                 'tournament_doubles' => ['required', 'integer', 'exists:leagues,id'],
+                'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
                 'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
                 'd2_phone' => ['required', 'string', 'max:32'],
                 'd2_first' => ['required', 'string', 'max:255'],
                 'd2_last' => ['required', 'string', 'max:255'],
+                'd2_skill' => ['required', 'string', 'max:32'],
             ]);
 
             if (strtolower((string) $specific['d2_email']) === strtolower((string) $user->email)) {
                 return response()->json(['message' => 'Second player email must be different from your email.'], 422);
             }
 
+            $partnerSkill = trim((string) $specific['d2_skill']);
+            $partner = User::query()->where('email', strtolower((string) $specific['d2_email']))->first();
+            if ($partner instanceof User) {
+                $knownSkill = $this->partnerSkillLevelFromUser($partner);
+                if ($knownSkill !== null && $knownSkill !== $partnerSkill) {
+                    return response()->json(['message' => 'Partner skill level does not match their profile.'], 422);
+                }
+            }
+
+            $averageSkill = TournamentRegistrationOptions::averageSkillLevels($playerSkill, $partnerSkill);
+            if ($averageSkill === null) {
+                return response()->json(['message' => 'Both players need a valid skill level for group assignment.'], 422);
+            }
+
             $leagueId = (int) $specific['tournament_doubles'];
-            $skillLevel = (string) $specific['skill_doubles'];
+            $groupCardId = (int) $specific['group_card_doubles'];
+            $assignmentSkill = $averageSkill;
+            $skillLevel = $playerSkill;
+        }
+
+        if ($this->userIsRegisteredInLeague($user, $leagueId)) {
+            return response()->json(['message' => 'You are already registered in this tournament.'], 422);
         }
 
         $league = League::query()->findOrFail($leagueId);
-        $groupCard = LeagueRegistrationFlow::resolveGroupCard($league, $tab, $skillLevel);
 
-        if (! $groupCard instanceof GroupCard) {
-            return response()->json(['message' => 'No matching group found for this skill level and format.'], 422);
+        $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
+        if (! $expectedCard instanceof GroupCard) {
+            return response()->json([
+                'message' => $tab === 'doubles'
+                    ? 'No group is available for your team skill level in this tournament.'
+                    : 'No group is available for your skill level in this tournament.',
+            ], 422);
         }
 
-        $registrationClosed = \App\Support\LeagueRegistrationGate::closedReasonForSelection($league, $tab, $skillLevel);
+        if ($groupCardId !== (int) $expectedCard->id) {
+            return response()->json(['message' => 'Group assignment does not match your skill level.'], 422);
+        }
+
+        $groupCard = TournamentRegistrationOptions::resolveGroupCard($league, $tab, $groupCardId);
+        if (! $groupCard instanceof GroupCard) {
+            return response()->json(['message' => 'Invalid group for this tournament and format.'], 422);
+        }
+
+        $registrationClosed = \App\Support\LeagueRegistrationGate::closedReason($league, $groupCard, $ageGroup);
         if ($registrationClosed !== null) {
             return response()->json(['message' => $registrationClosed], 422);
         }
@@ -317,7 +373,7 @@ class PlayerProfileController extends Controller
             LeagueRegistrationFlow::registerUser($partner, $leagueId, [
                 'group_card_id' => $groupCard->id,
                 'group_id' => $groupId,
-                'skill_level' => $skillLevel,
+                'skill_level' => (string) $specific['d2_skill'],
                 'age_group_key' => $ageGroup,
                 'registration_type' => 'doubles',
                 'team_key' => $teamKey,
@@ -375,7 +431,7 @@ class PlayerProfileController extends Controller
             'location',
             'My Matches',
             'My Matches | '.config('app.name', 'playptl'),
-            'View your league match schedule and update venue and time.',
+            'View your group match schedule and update venue and time.',
             $this->locationPanelData($request),
         );
     }
@@ -451,17 +507,14 @@ class PlayerProfileController extends Controller
 
         if ($scheduleChanged) {
             $match->refresh();
-            GroupMatchScheduleNotifier::notifyParticipants(
-                $match,
-                excludeUserId: (int) $request->user()->id,
-                updatedByOpponent: true,
-            );
+            $match->load(['homeUser', 'awayUser', 'homePartnerUser', 'awayPartnerUser', 'group', 'league', 'groupCard']);
+            GroupMatchScheduleNotifier::notifyParticipants($match, updatedByPlayer: true);
         }
 
         return redirect()
             ->route('player.profile.location', ['match' => $match->id])
             ->with('status', $scheduleChanged
-                ? 'Match details saved. Your opponent has been emailed the updated schedule.'
+                ? 'Match details saved. All players have been emailed the updated schedule.'
                 : 'Match details saved successfully.');
     }
 
@@ -496,16 +549,39 @@ class PlayerProfileController extends Controller
             }
         }
 
+        $oldDate = $match->match_date?->toDateString();
+        $oldTime = MatchStartTime::toInputValue((string) ($match->start_time ?? ''));
+        $oldVenue = trim((string) ($match->venue ?? ''));
+        $oldCourt = trim((string) ($match->court ?? ''));
+
+        $newDate = Carbon::parse($validated['schedule_date'])->toDateString();
+        $newTime = MatchStartTime::toInputValue($this->normalizeTimeForStorage(trim($validated['schedule_time'])));
+        $newVenue = trim((string) ($validated['schedule_venue'] ?? ''));
+        $newCourt = trim((string) ($validated['schedule_court'] ?? ''));
+
         $match->update([
-            'match_date' => Carbon::parse($validated['schedule_date'])->toDateString(),
+            'match_date' => $newDate,
             'start_time' => $this->normalizeTimeForStorage(trim($validated['schedule_time'])),
-            'venue' => trim((string) ($validated['schedule_venue'] ?? '')) ?: null,
-            'court' => trim((string) ($validated['schedule_court'] ?? '')) ?: null,
+            'venue' => $newVenue !== '' ? $newVenue : null,
+            'court' => $newCourt !== '' ? $newCourt : null,
         ]);
+
+        $scheduleChanged = $oldDate !== $newDate
+            || $oldTime !== $newTime
+            || $oldVenue !== $newVenue
+            || $oldCourt !== $newCourt;
+
+        if ($scheduleChanged) {
+            $match->refresh();
+            $match->load(['homeUser', 'awayUser', 'league', 'groupCard']);
+            PlayoffMatchScheduleNotifier::notifyParticipants($match, updatedByPlayer: true);
+        }
 
         return redirect()
             ->route('player.profile.location', ['match' => $match->id, 'kind' => 'playoff'])
-            ->with('status', 'Playoff match details saved.');
+            ->with('status', $scheduleChanged
+                ? 'Playoff match details saved. Both players have been emailed.'
+                : 'Playoff match details saved.');
     }
 
     public function updateMatchResult(Request $request): RedirectResponse
@@ -1395,6 +1471,8 @@ class PlayerProfileController extends Controller
             }
         }
 
+        $scheduleIndex = PlayerMatchDayConflict::scheduleIndexForPlayerIds([$userId]);
+
         foreach ($days as $dayIndex => $day) {
             foreach ($day['matches'] ?? [] as $matchIndex => $row) {
                 $gid = (int) ($row['groupMatchId'] ?? 0);
@@ -1411,6 +1489,16 @@ class PlayerProfileController extends Controller
                     $days[$dayIndex]['matches'][$matchIndex]['scoreRaw'] = '';
                     $days[$dayIndex]['matches'][$matchIndex]['homeSideWon'] = null;
                     $days[$dayIndex]['matches'][$matchIndex]['winnerLabel'] = null;
+                }
+
+                $dateValue = trim((string) ($row['dateValue'] ?? ''));
+                if ($dateValue !== '') {
+                    $days[$dayIndex]['matches'][$matchIndex]['scheduleConflictMessages'] = PlayerMatchDayConflict::viewerNoticeLinesFromIndex(
+                        $scheduleIndex,
+                        $userId,
+                        $dateValue,
+                        $gid,
+                    );
                 }
             }
         }
@@ -1444,6 +1532,8 @@ class PlayerProfileController extends Controller
             }
         }
 
+        $scheduleIndex = PlayerMatchDayConflict::scheduleIndexForPlayerIds([$userId]);
+
         foreach ($days as $dayIndex => $day) {
             foreach ($day['matches'] ?? [] as $matchIndex => $row) {
                 $pid = (int) ($row['playoffMatchId'] ?? 0);
@@ -1461,6 +1551,17 @@ class PlayerProfileController extends Controller
                     $days[$dayIndex]['matches'][$matchIndex]['scoreRaw'] = '';
                     $days[$dayIndex]['matches'][$matchIndex]['homeSideWon'] = null;
                     $days[$dayIndex]['matches'][$matchIndex]['winnerLabel'] = null;
+                }
+
+                $dateValue = trim((string) ($row['dateValue'] ?? ''));
+                if ($dateValue !== '') {
+                    $days[$dayIndex]['matches'][$matchIndex]['scheduleConflictMessages'] = PlayerMatchDayConflict::viewerNoticeLinesFromIndex(
+                        $scheduleIndex,
+                        $userId,
+                        $dateValue,
+                        null,
+                        $pid,
+                    );
                 }
             }
         }
@@ -1657,16 +1758,80 @@ class PlayerProfileController extends Controller
     /**
      * @return array<string, mixed>
      */
-    protected function chooseLeaguePanelData(): array
+    protected function chooseLeaguePanelData(Request $request): array
     {
-        $registrationLeagues = LeagueMenuHelper::activeLeagues();
+        $user = $request->user();
+        $registeredLeagueIds = $this->registeredLeagueIdsForUser($user);
+
+        $allLeagues = LeagueMenuHelper::activeLeagues();
+        $registrationLeagues = $allLeagues
+            ->filter(fn ($league) => ! in_array((int) $league->id, $registeredLeagueIds, true))
+            ->values();
+
+        $playerSkillLevel = $this->playerFixedSkillLevel($user, $request) ?? '';
+        $playerSkillLabel = $playerSkillLevel === 'not-sure'
+            ? 'Not Sure'
+            : ($playerSkillLevel !== '' ? $playerSkillLevel : '—');
 
         return [
             'registrationLeagues' => $registrationLeagues,
             'registrationClosedDivisions' => \App\Support\LeagueRegistrationGate::closedSelectionKeys(),
-            'leagueEntryFees' => \App\Support\LeagueEntryFee::mapForLeagues($registrationLeagues),
+            'registrationClosedGroupCards' => \App\Support\LeagueRegistrationGate::closedGroupCardKeys(),
+            'leagueEntryFees' => \App\Support\LeagueEntryFee::mapForLeagues($allLeagues),
             'stripePublishableKey' => (string) (config('services.stripe.key') ?: env('STRIPE_PUBLISHABLE_KEY', '')),
+            'tournamentGroupsUrl' => route('player.profile.league.tournament-groups'),
+            'playerFixedSkillLevel' => $playerSkillLevel,
+            'playerFixedSkillLabel' => $playerSkillLabel,
+            'hasPlayerSkillLevel' => $playerSkillLevel !== '' && $playerSkillLevel !== 'not-sure' && is_numeric($playerSkillLevel),
+            'registeredLeagueCount' => count($registeredLeagueIds),
+            'registrationSkillLevelValues' => ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'],
         ];
+    }
+
+    protected function partnerSkillLevelFromUser(User $user): ?string
+    {
+        $skill = trim((string) ($user->leagueRegistrations()->latest('id')->value('skill_level') ?? ''));
+
+        if ($skill === '' || $skill === 'not-sure' || ! is_numeric($skill)) {
+            return null;
+        }
+
+        return $skill;
+    }
+
+    /**
+     * @return list<int>
+     */
+    protected function registeredLeagueIdsForUser(User $user): array
+    {
+        return LeagueRegistration::query()
+            ->where('user_id', $user->id)
+            ->whereHas('league', fn ($q) => $q->where('stats', 'active'))
+            ->pluck('league_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function userIsRegisteredInLeague(User $user, int $leagueId): bool
+    {
+        return in_array($leagueId, $this->registeredLeagueIdsForUser($user), true);
+    }
+
+    protected function playerFixedSkillLevel(User $user, Request $request): ?string
+    {
+        $fromProfile = trim((string) ($this->profileRegistration($request)?->skill_level ?? ''));
+        if ($fromProfile !== '' && $fromProfile !== 'not-sure' && is_numeric($fromProfile)) {
+            return $fromProfile;
+        }
+
+        $latest = trim((string) ($user->leagueRegistrations()->latest('id')->value('skill_level') ?? ''));
+        if ($latest !== '' && $latest !== 'not-sure' && is_numeric($latest)) {
+            return $latest;
+        }
+
+        return null;
     }
 
     /**

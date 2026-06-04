@@ -30,7 +30,7 @@
     @if ($hasLeague)
         <div class="player-matches-section">
             <div class="player-matches-section__head">
-                <h4 class="player-matches-section__title">League matches</h4>
+                <h4 class="player-matches-section__title">Group matches</h4>
                 <p class="player-matches-section__hint">Group-stage schedule and scores</p>
             </div>
             @include('partials.match-schedule-cards', [

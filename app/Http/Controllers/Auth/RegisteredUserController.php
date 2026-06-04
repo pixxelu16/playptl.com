@@ -84,6 +84,11 @@ class RegisteredUserController extends Controller
                 'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
                 'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
                 'd2_phone' => ['required', 'string', 'max:32'],
+                'd2_city' => ['required', 'string', 'max:255'],
+                'd2_state' => ['required', 'string', 'max:64'],
+                'd2_age_group' => ['required', 'string', 'max:32'],
+                'd2_skill' => ['required', 'string', 'max:32'],
+                'd2_sex' => ['required', 'string', 'max:32'],
                 'd1_first' => ['nullable'],
                 'd1_last' => ['nullable'],
                 'd2_first' => ['nullable'],
@@ -100,6 +105,16 @@ class RegisteredUserController extends Controller
 
         $leagueId = (int) ($tab === 'singles' ? $specific['tournament_singles'] : $specific['tournament_doubles']);
         $skillLevel = (string) ($tab === 'singles' ? $specific['skill_singles'] : $specific['skill_doubles']);
+        if ($tab === 'doubles') {
+            $averageSkill = TournamentRegistrationOptions::averageSkillLevels(
+                (string) $specific['skill_doubles'],
+                (string) $specific['d2_skill'],
+            );
+            if ($averageSkill === null) {
+                return $this->fail($request, 'Both players need a valid skill level for group assignment.');
+            }
+            $skillLevel = $averageSkill;
+        }
         $ageGroup = (string) ($tab === 'singles' ? $specific['age_group_singles'] : $specific['age_group_doubles']);
         $sex = (string) ($tab === 'singles' ? $specific['sex_singles'] : $specific['sex_doubles']);
         $phone = (string) ($tab === 'singles' ? $specific['phone_singles'] : $specific['phone_doubles']);
@@ -138,10 +153,25 @@ class RegisteredUserController extends Controller
         }
 
         $groupCardId = (int) ($tab === 'singles' ? $specific['group_card_singles'] : $specific['group_card_doubles']);
-        $groupCard = TournamentRegistrationOptions::resolveGroupCard($league, $tab, $groupCardId);
 
-        if (! $groupCard instanceof GroupCard) {
-            return $this->fail($request, 'Selected group is not valid for this tournament and format.');
+        if ($tab === 'singles') {
+            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $skillLevel);
+            if (! $expectedCard instanceof GroupCard) {
+                return $this->fail($request, 'No group is available for your skill level in this tournament.');
+            }
+            if ($groupCardId !== (int) $expectedCard->id) {
+                return $this->fail($request, 'Group assignment does not match your skill level.');
+            }
+            $groupCard = $expectedCard;
+        } else {
+            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $skillLevel);
+            if (! $expectedCard instanceof GroupCard) {
+                return $this->fail($request, 'No group is available for your team skill level in this tournament.');
+            }
+            if ($groupCardId !== (int) $expectedCard->id) {
+                return $this->fail($request, 'Group assignment does not match your team skill level.');
+            }
+            $groupCard = $expectedCard;
         }
 
         $registrationClosed = LeagueRegistrationGate::closedReason($league, $groupCard, $ageGroup);
@@ -214,6 +244,9 @@ class RegisteredUserController extends Controller
                     'last_name' => $specific['d2_last'] ?? null,
                     'email' => $partnerEmail,
                     'phone' => (string) $specific['d2_phone'],
+                    'city' => (string) $specific['d2_city'],
+                    'state' => (string) $specific['d2_state'],
+                    'sex' => (string) $specific['d2_sex'],
                     'role' => UserRole::Player,
                     'status' => 'active',
                     'password' => Hash::make(Str::random(32)),
@@ -226,8 +259,8 @@ class RegisteredUserController extends Controller
                 [
                     'group_card_id' => $groupCard instanceof GroupCard ? $groupCard->id : null,
                     'group_id' => $groupId,
-                    'skill_level' => $skillLevel,
-                    'age_group_key' => $ageGroup,
+                    'skill_level' => (string) $specific['d2_skill'],
+                    'age_group_key' => (string) $specific['d2_age_group'],
                     'registration_type' => 'doubles',
                     'team_key' => $primaryTeamKey,
                     'payment_status' => 'completed',

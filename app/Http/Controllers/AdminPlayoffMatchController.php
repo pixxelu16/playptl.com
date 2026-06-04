@@ -7,10 +7,15 @@ use App\Models\GroupCard;
 use App\Models\League;
 use App\Models\LeagueRegistration;
 use App\Models\PlayoffMatch;
+use App\Models\User;
+use App\Support\DivisionScheduleWindow;
 use App\Support\LeaguePlayoffCalendar;
 use App\Support\LeagueSeasonPhase;
+use App\Support\PlayoffMatchScheduleNotifier;
+use App\Support\PlayoffMatchScheduler;
 use App\Support\MatchResultInput;
 use App\Support\MatchScoreReader;
+use App\Support\MatchStartTime;
 use App\Support\PlayoffBracketBuilder;
 use App\Support\PlayoffPathAssigner;
 use App\Support\PlayerMatchDayConflict;
@@ -119,6 +124,7 @@ class AdminPlayoffMatchController extends Controller
             'activeGroup' => $activeGroup,
             'playerSchemaReady' => $playerSchemaReady,
             'rosterRegs' => $rosterRegs,
+            'playoffRosterUsers' => $this->playoffRosterUsers($rosterRegs),
             'playoffMatches' => $playoffMatches,
             'ppqMatches' => $byRound->get(PlayoffMatch::ROUND_PRE_PRE_Q, collect()),
             'pqMatches' => $byRound->get(PlayoffMatch::ROUND_PRE_Q, collect()),
@@ -130,11 +136,13 @@ class AdminPlayoffMatchController extends Controller
             'pqComplete' => $pqComplete,
             'qfComplete' => $qfComplete,
             'sfComplete' => $sfComplete,
-            'canStartPlayoffs' => LeagueSeasonPhase::canStartPlayoffs($league),
             'canClosePlayoffs' => LeagueSeasonPhase::canClosePlayoffs($league),
             'playoffsStarted' => LeagueSeasonPhase::playoffsStarted($league),
             'playoffsClosed' => LeagueSeasonPhase::playoffsClosed($league),
-            'playoffsPhaseMessage' => LeagueSeasonPhase::playoffsLockMessage($league),
+            'playoffsPhaseMessage' => LeagueSeasonPhase::playoffsLockMessage($league, $groupCard),
+            'groupMatchesCloseDate' => DivisionScheduleWindow::endDate($league, $groupCard),
+            'tournamentStartDate' => $league->start_date,
+            'tournamentEndDate' => $league->end_date,
             'groupMatchesStarted' => LeagueSeasonPhase::hasGroupMatchesStarted($league),
             'showQualifierPlayoffs' => $showQualifierPlayoffs,
             'qualifierUnavailableMessage' => LeagueSeasonPhase::qualifierPlayoffsUnavailableMessage($league),
@@ -152,32 +160,78 @@ class AdminPlayoffMatchController extends Controller
         $ageGroupKey = $this->ageGroupKeyFromRequest($request);
         $playoffsAlreadyStarted = LeagueSeasonPhase::playoffsStarted($league);
 
-        $rules = [
-            'playoff_end_date' => ['required', 'date'],
-        ];
-        if (! $playoffsAlreadyStarted) {
-            $rules['playoff_start_date'] = ['required', 'date'];
+        if ($playoffsAlreadyStarted) {
+            $validated = $request->validate([
+                'playoff_start_date' => ['required', 'date'],
+                'playoff_end_date' => ['required', 'date'],
+            ]);
+            $playoffStart = Carbon::parse($validated['playoff_start_date'])->startOfDay();
+            $playoffEnd = Carbon::parse($validated['playoff_end_date'])->startOfDay();
+        } else {
+            $validated = $request->validate([
+                'playoff_start_date' => ['required', 'date'],
+                'playoff_end_date' => ['required', 'date'],
+            ]);
+            $playoffStart = Carbon::parse($validated['playoff_start_date'])->startOfDay();
+            $playoffEnd = Carbon::parse($validated['playoff_end_date'])->startOfDay();
         }
-
-        $validated = $request->validate($rules);
-
-        $playoffStart = $playoffsAlreadyStarted
-            ? $league->playoff_start_date?->copy()->startOfDay()
-            : Carbon::parse($validated['playoff_start_date'])->startOfDay();
-        $playoffEnd = Carbon::parse($validated['playoff_end_date'])->startOfDay();
 
         if (! $playoffStart instanceof Carbon) {
             return back()->withErrors(['playoff_start_date' => 'Set playoff start date first.'])->withInput();
         }
 
-        $startError = LeaguePlayoffCalendar::validatePlayoffStartDate($playoffStart, $league);
+        $startError = LeaguePlayoffCalendar::validatePlayoffStartDate($playoffStart, $league, $groupCard);
         if ($startError !== null) {
             return back()->withErrors(['playoff_start_date' => $startError])->withInput();
         }
 
-        $endError = LeaguePlayoffCalendar::validatePlayoffEndDate($playoffStart, $playoffEnd, $league);
+        $endError = LeaguePlayoffCalendar::validatePlayoffEndDate($playoffStart, $playoffEnd, $league, $groupCard);
         if ($endError !== null) {
             return back()->withErrors(['playoff_end_date' => $endError])->withInput();
+        }
+
+        $matchStartError = PlayoffMatchScheduler::validateStartDateAgainstCompletedMatches(
+            $league,
+            $groupCard,
+            $playoffStart->toDateString(),
+            $ageGroupKey,
+        );
+        if ($matchStartError !== null) {
+            return back()->withErrors(['playoff_start_date' => $matchStartError])->withInput();
+        }
+
+        $matchEndError = PlayoffMatchScheduler::validateEndDateAgainstScheduledMatches(
+            $league,
+            $groupCard,
+            $playoffEnd->toDateString(),
+            $ageGroupKey,
+        );
+        if ($matchEndError !== null) {
+            return back()->withErrors(['playoff_end_date' => $matchEndError])->withInput();
+        }
+
+        if ($playoffsAlreadyStarted) {
+            $league->update([
+                'playoff_start_date' => $playoffStart->toDateString(),
+                'playoff_end_date' => $playoffEnd->toDateString(),
+            ]);
+            $league->refresh();
+
+            $totals = PlayoffMatchScheduler::syncDivision($league, $groupCard, $ageGroupKey, reschedulePending: true);
+            $status = PlayoffMatchScheduler::formatSyncSummary(
+                $totals,
+                'Playoff dates updated. The final is scheduled on '.$playoffEnd->format('M j, Y').'.',
+            );
+
+            return redirect()
+                ->route('admin.league-management.playoffs.index', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
+                ->with('status', $status);
+        }
+
+        if (! LeagueSeasonPhase::hasGroupMatchesStarted($league)) {
+            return back()->withErrors([
+                'playoff_dates' => 'Schedule group matches on the Matches page before starting playoffs.',
+            ])->withInput();
         }
 
         $league->update([
@@ -185,25 +239,47 @@ class AdminPlayoffMatchController extends Controller
             'playoff_end_date' => $playoffEnd->toDateString(),
         ]);
 
+        $bracketNote = $this->activatePlayoffSeason($league, $groupCard, $ageGroupKey);
+        $league->refresh();
+
+        $totals = PlayoffMatchScheduler::syncDivision($league, $groupCard, $ageGroupKey);
+        $windowLabel = $playoffStart->format('M j, Y').' – '.$playoffEnd->format('M j, Y');
+        $status = PlayoffMatchScheduler::formatSyncSummary(
+            $totals,
+            'Playoffs started ('.$windowLabel.'). Group-stage scheduling is closed. Final on '.$playoffEnd->format('M j, Y').'.',
+        );
+
+        if ($bracketNote !== '') {
+            $status .= ' '.$bracketNote;
+        }
+
         return redirect()
             ->route('admin.league-management.playoffs.index', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
-            ->with('status', 'Playoff dates saved.');
+            ->with('status', $status);
     }
 
     public function startPlayoffs(Request $request, League $league, GroupCard $groupCard): RedirectResponse
     {
         abort_unless($league->groupCards()->whereKey($groupCard->id)->exists(), 404);
 
-        if (! LeagueSeasonPhase::canStartPlayoffs($league)) {
-            $message = ! LeaguePlayoffCalendar::playoffDatesAreValid($league)
-                ? 'Set valid playoff start and end dates first. Playoff start must be after the league match close date.'
-                : 'Playoffs can start only after league matches have begun (start date set and at least one group match scheduled).';
+        if (! LeagueSeasonPhase::canStartPlayoffs($league, $groupCard)) {
+            $message = ! LeaguePlayoffCalendar::playoffDatesAreValid($league, $groupCard)
+                ? 'Set playoff start and end dates, then click Schedule matches.'
+                : 'Playoffs can start only after group matches have begun (at least one group match scheduled).';
 
             return back()->withErrors(['playoffs' => $message]);
         }
 
         $ageGroupKey = $this->ageGroupKeyFromRequest($request);
+        $bracketNote = $this->activatePlayoffSeason($league, $groupCard, $ageGroupKey);
 
+        return redirect()
+            ->route('admin.league-management.playoffs.index', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
+            ->with('status', 'Playoffs started. Group-stage scheduling is now closed. '.$bracketNote);
+    }
+
+    private function activatePlayoffSeason(League $league, GroupCard $groupCard, ?string $ageGroupKey): string
+    {
         if (Schema::hasTable('playoff_qualifiers')) {
             PlayoffPathAssigner::syncDivision($league, $groupCard, $ageGroupKey);
         }
@@ -213,11 +289,11 @@ class AdminPlayoffMatchController extends Controller
             $bracketNote = PlayoffBracketBuilder::rebuild($league, $groupCard, $ageGroupKey);
         }
 
-        $league->update(['playoffs_started_at' => now()]);
+        if (! LeagueSeasonPhase::playoffsStarted($league)) {
+            $league->update(['playoffs_started_at' => now()]);
+        }
 
-        return redirect()
-            ->route('admin.league-management.playoffs.index', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
-            ->with('status', 'Playoffs started. Group-stage scheduling is now closed. '.$bracketNote);
+        return $bracketNote;
     }
 
     public function closePlayoffs(Request $request, League $league, GroupCard $groupCard): RedirectResponse
@@ -346,7 +422,11 @@ class AdminPlayoffMatchController extends Controller
             return back()->withErrors(['bracket' => $msg])->withInput();
         }
 
+        $rosterUserIds = $this->rosterUserIdsForDivision($league, $groupCard, $request);
+
         $validated = $request->validate([
+            'home_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'away_user_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'match_date' => ['nullable', 'date'],
             'start_time' => ['nullable', 'string', 'max:32'],
             'venue' => ['nullable', 'string', 'max:255'],
@@ -362,9 +442,34 @@ class AdminPlayoffMatchController extends Controller
             return back()->withErrors(['score' => $setPairError])->withInput();
         }
 
-        // Players come from Qualifier seeding / Advance winners — not editable here.
-        $homeId = $playoffMatch->home_user_id ? (int) $playoffMatch->home_user_id : null;
-        $awayId = $playoffMatch->away_user_id ? (int) $playoffMatch->away_user_id : null;
+        $oldHomeId = $playoffMatch->home_user_id ? (int) $playoffMatch->home_user_id : null;
+        $oldAwayId = $playoffMatch->away_user_id ? (int) $playoffMatch->away_user_id : null;
+
+        $homeId = array_key_exists('home_user_id', $validated)
+            ? ($validated['home_user_id'] !== null && $validated['home_user_id'] !== '' ? (int) $validated['home_user_id'] : null)
+            : $oldHomeId;
+        $awayId = array_key_exists('away_user_id', $validated)
+            ? ($validated['away_user_id'] !== null && $validated['away_user_id'] !== '' ? (int) $validated['away_user_id'] : null)
+            : $oldAwayId;
+
+        if ($homeId !== null && ! in_array($homeId, $rosterUserIds, true)) {
+            return back()->withErrors(['home_user_id' => 'Home player must be registered in this division.'])->withInput();
+        }
+        if ($awayId !== null && ! in_array($awayId, $rosterUserIds, true)) {
+            return back()->withErrors(['away_user_id' => 'Away player must be registered in this division.'])->withInput();
+        }
+        if ($homeId !== null && $awayId !== null && $homeId === $awayId) {
+            return back()->withErrors(['away_user_id' => 'Home and away must be different players.'])->withInput();
+        }
+
+        $playersChanged = $oldHomeId !== $homeId || $oldAwayId !== $awayId;
+        if ($playersChanged) {
+            $playoffMatch->home_user_id = $homeId;
+            $playoffMatch->away_user_id = $awayId;
+            $playoffMatch->score = null;
+            $playoffMatch->winner_side = null;
+            $playoffMatch->winner_user_id = null;
+        }
 
         $result = MatchResultInput::fromRequest(
             MatchResultInput::resolveScoreRaw($validated, $validated['result_type'] ?? null),
@@ -409,20 +514,51 @@ class AdminPlayoffMatchController extends Controller
             }
         }
 
+        $oldDate = $playoffMatch->match_date?->toDateString();
+        $oldTime = MatchStartTime::toInputValue((string) ($playoffMatch->start_time ?? ''));
+        $oldVenue = trim((string) ($playoffMatch->venue ?? ''));
+        $oldCourt = trim((string) ($playoffMatch->court ?? ''));
+
+        $newStartTime = trim((string) ($validated['start_time'] ?? ''));
+        $newVenue = trim((string) ($validated['venue'] ?? ''));
+        $newCourt = trim((string) ($validated['court'] ?? ''));
+        $newDate = $matchDateCarbon?->toDateString();
+
         $playoffMatch->match_date = $validated['match_date'] ?? null;
-        $playoffMatch->start_time = $validated['start_time'] ?? null;
-        $playoffMatch->venue = trim((string) ($validated['venue'] ?? '')) ?: null;
-        $playoffMatch->court = trim((string) ($validated['court'] ?? '')) ?: null;
+        $playoffMatch->start_time = $newStartTime !== '' ? $newStartTime : null;
+        $playoffMatch->venue = $newVenue !== '' ? $newVenue : null;
+        $playoffMatch->court = $newCourt !== '' ? $newCourt : null;
         $playoffMatch->score = $scoreTrimmed !== '' ? $scoreTrimmed : null;
         $playoffMatch->winner_side = $winnerSide;
         $playoffMatch->winner_user_id = $this->resolvedWinnerUserIdForPlayoff($playoffMatch, $winnerSide);
         $playoffMatch->save();
 
+        $scheduleChanged = $oldDate !== $newDate
+            || $oldTime !== MatchStartTime::toInputValue($newStartTime)
+            || $oldVenue !== $newVenue
+            || $oldCourt !== $newCourt;
+
+        if (($scheduleChanged || $playersChanged) && ($homeId || $awayId || $oldHomeId || $oldAwayId)) {
+            $playoffMatch->refresh();
+            $playoffMatch->load(['homeUser', 'awayUser', 'league', 'groupCard']);
+            PlayoffMatchScheduleNotifier::notifyPlayoffAssignmentChange(
+                $playoffMatch,
+                $oldHomeId,
+                $oldAwayId,
+                $playersChanged,
+                $scheduleChanged,
+            );
+        }
+
         $ageGroupKey = $this->ageGroupKeyFromRequest($request);
+
+        $emailed = ($scheduleChanged || $playersChanged) && ($homeId || $awayId || $oldHomeId || $oldAwayId);
 
         return redirect()
             ->route('admin.league-management.playoffs.index', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
-            ->with('status', 'Playoff match updated.');
+            ->with('status', $emailed
+                ? 'Playoff match updated. Players have been emailed.'
+                : 'Playoff match updated.');
     }
 
     /**
@@ -591,6 +727,43 @@ class AdminPlayoffMatchController extends Controller
             && $playoffMatch->group_card_id === $groupCard->id,
             404
         );
+    }
+
+    /**
+     * @param  Collection<int, LeagueRegistration>  $rosterRegs
+     * @return Collection<int, User>
+     */
+    private function playoffRosterUsers(Collection $rosterRegs): Collection
+    {
+        return $rosterRegs
+            ->pluck('user')
+            ->filter()
+            ->unique('id')
+            ->sortBy(fn (?User $user) => strtolower((string) ($user?->name ?? '')))
+            ->values();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function rosterUserIdsForDivision(League $league, GroupCard $groupCard, Request $request): array
+    {
+        $ageGroupKey = $this->ageGroupKeyFromRequest($request);
+
+        $query = LeagueRegistration::query()
+            ->where('league_id', $league->id)
+            ->where('group_card_id', $groupCard->id);
+
+        if ($ageGroupKey !== null && Schema::hasColumn('league_registrations', 'age_group_key')) {
+            $query->where('age_group_key', $ageGroupKey);
+        }
+
+        return $query
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function ageGroupKeyFromRequest(Request $request): ?string

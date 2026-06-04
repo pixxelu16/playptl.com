@@ -26,6 +26,7 @@
                     <tr>
                         <th>Card Name</th>
                         <th>Tag</th>
+                        <th>Skill Level</th>
                         <th>Players</th>
                         <th>Status</th>
                         <th>Order</th>
@@ -37,6 +38,13 @@
                         <tr>
                             <td><strong>{{ $groupCard->name }}</strong></td>
                             <td>{{ strtoupper($groupCard->tag) }}</td>
+                            <td>
+                                @if ($groupCard->skill_level_match)
+                                    {{ $groupCard->skill_level_match === 'not-sure' ? 'Not Sure' : $groupCard->skill_level_match }}
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td>{{ $groupCard->players_count }}</td>
                             <td><span class="admin-badge">{{ ucfirst($groupCard->status) }}</span></td>
                             <td>{{ $groupCard->display_order }}</td>
@@ -54,7 +62,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6">
+                            <td colspan="7">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
                                     <p>No groups found. Create your first one.</p>

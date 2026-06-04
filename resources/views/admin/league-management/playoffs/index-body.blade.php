@@ -7,14 +7,18 @@
                 <p class="admin-card-text" style="margin-bottom:0.75rem;">{{ $playoffsPhaseMessage }}</p>
             @endif
             @php
-                $leagueCloseLabel = $league->end_date?->format('M j, Y') ?? 'not set';
+                $groupCloseLabel = ($groupMatchesCloseDate ?? null)?->format('M j, Y') ?? 'not set';
+                $tournamentStartLabel = ($tournamentStartDate ?? null)?->format('M j, Y') ?? 'not set';
+                $tournamentEndLabel = ($tournamentEndDate ?? null)?->format('M j, Y') ?? 'not set';
                 $playoffStartValue = old('playoff_start_date', $league->playoff_start_date?->format('Y-m-d') ?? '');
                 $playoffEndValue = old('playoff_end_date', $league->playoff_end_date?->format('Y-m-d') ?? '');
-                $playoffStartMin = $league->end_date?->copy()->addDay()->format('Y-m-d') ?? '';
+                $playoffStartMin = ($groupMatchesCloseDate ?? null)?->copy()->addDay()->format('Y-m-d') ?? '';
+                $playoffStartMax = ($tournamentEndDate ?? null)?->format('Y-m-d') ?? '';
                 $playoffEndMin = $playoffStartMin;
                 if ($playoffStartValue !== '' && ($playoffEndMin === '' || $playoffStartValue > $playoffEndMin)) {
                     $playoffEndMin = $playoffStartValue;
                 }
+                $playoffEndMax = $playoffStartMax;
                 $playoffDatesLocked = ($playoffsClosed ?? false);
             @endphp
             @if (! $playoffDatesLocked)
@@ -23,30 +27,38 @@
                     action="{{ route('admin.league-management.playoffs.dates', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : [])) }}"
                     class="playoff-dates-form"
                     style="margin-bottom:0.85rem;"
+                    @if (! ($playoffsStarted ?? false))
+                        data-admin-confirm
+                        data-admin-confirm-title="Schedule playoff matches?"
+                        data-admin-confirm-message="Playoffs will start for this tournament. Group-stage scheduling will close. The final will be on the end date you set."
+                        data-admin-confirm-button="Schedule matches"
+                    @endif
                 >
                     @csrf
                     <p class="admin-card-text" style="font-size:0.85rem;margin:0 0 0.65rem;">
-                        League match close: <strong>{{ $leagueCloseLabel }}</strong>.
-                        Playoff start and end must both be <strong>after</strong> that date. End cannot be before start. Match dates must fall between playoff start and end.
+                        Group matches close: <strong>{{ $groupCloseLabel }}</strong>.
+                        Tournament window: <strong>{{ $tournamentStartLabel }}</strong> – <strong>{{ $tournamentEndLabel }}</strong>.
+                        Playoff start must be <strong>after</strong> group matches close and within the tournament dates. Playoff end cannot be before start. Match dates must fall between playoff start and end.
                     </p>
-                    <div style="display:flex;flex-wrap:wrap;gap:0.75rem 1.25rem;align-items:flex-end;">
+                    <div style="display:flex;flex-wrap:wrap;gap:0.75rem 1.25rem;align-items:flex-end;margin-bottom:0.85rem;">
                         <div>
                             <label for="playoff_start_date" style="display:block;font-weight:600;margin-bottom:0.35rem;font-size:0.85rem;">Playoff start date</label>
-                            @if ($playoffsStarted ?? false)
-                                <input class="admin-input" id="playoff_start_date" type="date" value="{{ $playoffStartValue }}" disabled readonly style="background:#f3f4f6;cursor:not-allowed;">
-                            @else
-                                <input class="admin-input" id="playoff_start_date" type="date" name="playoff_start_date" value="{{ $playoffStartValue }}" @if ($playoffStartMin) min="{{ $playoffStartMin }}" @endif required>
-                            @endif
+                            <input class="admin-input @error('playoff_start_date') border-red-500 @enderror" id="playoff_start_date" type="date" name="playoff_start_date" value="{{ $playoffStartValue }}" @if ($playoffStartMin) min="{{ $playoffStartMin }}" @endif @if ($playoffStartMax) max="{{ $playoffStartMax }}" @endif required>
                         </div>
                         <div>
                             <label for="playoff_end_date" style="display:block;font-weight:600;margin-bottom:0.35rem;font-size:0.85rem;">Playoff end date</label>
-                            <input class="admin-input" id="playoff_end_date" type="date" name="playoff_end_date" value="{{ $playoffEndValue }}" @if ($playoffEndMin) min="{{ $playoffEndMin }}" @endif required>
+                            <input class="admin-input @error('playoff_end_date') border-red-500 @enderror" id="playoff_end_date" type="date" name="playoff_end_date" value="{{ $playoffEndValue }}" @if ($playoffEndMin) min="{{ $playoffEndMin }}" @endif @if ($playoffEndMax) max="{{ $playoffEndMax }}" @endif required>
                         </div>
-                        <button class="admin-button admin-button-secondary" type="submit">
-                            <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
-                            <span>Save dates</span>
+                        <button class="admin-button" type="submit">
+                            <i class="fa-solid fa-calendar-{{ ($playoffsStarted ?? false) ? 'check' : 'plus' }}" aria-hidden="true"></i>
+                            <span>{{ ($playoffsStarted ?? false) ? 'Reschedule matches' : 'Schedule matches' }}</span>
                         </button>
                     </div>
+                    @if ($playoffsStarted ?? false)
+                        <p class="admin-card-text" style="margin:0;font-size:0.85rem;">
+                            Change playoff start or end date and click <strong>Reschedule matches</strong> — pending matches update; the <strong>final stays on the end date</strong>.
+                        </p>
+                    @endif
                     @error('playoff_start_date')
                         <p class="admin-field-error" style="margin-top:0.5rem;">{{ $message }}</p>
                     @enderror
@@ -57,30 +69,9 @@
                         <p class="admin-field-error" style="margin-top:0.5rem;">{{ $message }}</p>
                     @enderror
                 </form>
-            @elseif ($league->playoff_start_date && $league->playoff_end_date)
-                <p class="admin-card-text" style="font-size:0.85rem;margin:0 0 0.65rem;">
-                    Playoff window: <strong>{{ $league->playoff_start_date->format('M j, Y') }}</strong>
-                    – <strong>{{ $league->playoff_end_date->format('M j, Y') }}</strong>
-                </p>
             @endif
             <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
-                @if ($canStartPlayoffs ?? false)
-                    <form
-                        method="POST"
-                        action="{{ route('admin.league-management.playoffs.start', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : [])) }}"
-                        style="margin:0;"
-                        data-admin-confirm
-                        data-admin-confirm-title="Start playoffs?"
-                        data-admin-confirm-message="Group-stage match scheduling will close for this league. Playoff matches will use the dates you set above."
-                        data-admin-confirm-button="Start playoffs"
-                    >
-                        @csrf
-                        <button class="admin-button" type="submit">
-                            <i class="fa-solid fa-play" aria-hidden="true"></i>
-                            <span>Playoff start</span>
-                        </button>
-                    </form>
-                @elseif ($playoffsStarted ?? false)
+                @if ($playoffsStarted ?? false)
                     <span class="match-status-pill match-status-pill--done" style="margin:0;">
                         Playoffs started{{ $league->playoffs_started_at ? ' · '.$league->playoffs_started_at->format('M j, Y g:i A') : '' }}
                     </span>
@@ -109,7 +100,11 @@
             </div>
             @if (! ($playoffsStarted ?? false))
                 <p class="admin-card-text" style="font-size:0.85rem;margin:0.75rem 0 0;opacity:0.9;">
-                    Set Qualifier paths, save playoff dates above, then click <strong>Playoff start</strong>.
+                    Set Qualifier paths, pick playoff start and end dates, then click <strong>Schedule matches</strong> to start playoffs.
+                </p>
+            @elseif (! ($playoffsClosed ?? false))
+                <p class="admin-card-text" style="font-size:0.85rem;margin:0.75rem 0 0;opacity:0.9;">
+                    The final is on the playoff end date. Adjust dates above and click <strong>Reschedule matches</strong> if needed, then <strong>Playoff close</strong> when results are final.
                 </p>
             @endif
         </div>
@@ -241,6 +236,7 @@
                         'hint' => $round['hint'],
                         'matches' => $round['matches'],
                         'rosterRegs' => $rosterRegs,
+                        'playoffRosterUsers' => $playoffRosterUsers ?? collect(),
                         'league' => $league,
                         'groupCard' => $groupCard,
                         'ageGroupKey' => $ageGroupKey,

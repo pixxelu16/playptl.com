@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Subgroups & players | '.$league->name.' | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage subgroups and player assignments for a league group.')
+@section('meta_description', 'Manage subgroups and player assignments for a tournament group.')
 
 @section('content')
     <section class="admin-card">

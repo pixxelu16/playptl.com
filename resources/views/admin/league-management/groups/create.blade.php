@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
 @section('title', 'Add Subgroup | '.$league->name.' | '.config('app.name', 'playptl'))
-@section('meta_description', 'Create a subgroup for a league and group.')
+@section('meta_description', 'Create a subgroup for a tournament and group.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">Add Subgroup</h1>
-                <p class="admin-card-text">League: <strong>{{ $league->name }}</strong> · Group: <strong>{{ $groupCard->name }}</strong></p>
+                <p class="admin-card-text">Tournament: <strong>{{ $league->name }}</strong> · Group: <strong>{{ $groupCard->name }}</strong></p>
             </div>
             <a class="admin-link" href="{{ route('admin.league-management.groups.index', [$league, $groupCard, 'age_group_key' => $ageGroupKey]) }}">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>

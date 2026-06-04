@@ -16,9 +16,9 @@
             <a class="admin-stat-card admin-stat-card--leagues" href="{{ route('admin.leagues.index') }}">
                 <span class="admin-stat-icon" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span>
                 <div class="admin-stat-body">
-                    <span class="admin-stat-label">Total Leagues</span>
+                    <span class="admin-stat-label">Total Tournaments</span>
                     <strong class="admin-stat-value">{{ $leaguesCount ?? 0 }}</strong>
-                    <span class="admin-stat-hint">Manage leagues</span>
+                    <span class="admin-stat-hint">Manage tournaments</span>
                 </div>
                 <span class="admin-stat-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
             </a>

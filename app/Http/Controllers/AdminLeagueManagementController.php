@@ -26,12 +26,12 @@ class AdminLeagueManagementController extends Controller
     public function finish(League $league): RedirectResponse
     {
         if ($league->isFinished()) {
-            return back()->with('status', 'This league is already marked as finished.');
+            return back()->with('status', 'This tournament is already marked as finished.');
         }
 
         $league->update(['finished_at' => now()]);
 
-        return back()->with('status', 'League marked as finished.');
+        return back()->with('status', 'Tournament marked as finished.');
     }
 
     public function show(League $league): View

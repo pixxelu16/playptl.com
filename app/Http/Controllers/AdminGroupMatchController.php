@@ -19,6 +19,7 @@ use App\Support\MatchStartTime;
 use App\Support\PlayerMatchDayConflict;
 use App\Support\LeagueWeekCalendar;
 use App\Support\SubgroupRoundRobinScheduler;
+use App\Support\DivisionScheduleWindow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -49,17 +50,7 @@ class AdminGroupMatchController extends Controller
 
         $activeGroupId = (int) $request->query('group', 0);
 
-        $groupsQuery = Group::query()
-            ->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id))
-            ->when(
-                Schema::hasColumn('groups', 'age_group_key') && $ageGroupKey !== null,
-                fn ($q) => $q->where(function ($qq) use ($ageGroupKey) {
-                    $qq->whereNull('age_group_key')->orWhere('age_group_key', $ageGroupKey);
-                })
-            )
-            ->orderBy('name');
-
-        $groups = $groupsQuery->get();
+        $groups = SubgroupRoundRobinScheduler::divisionGroups($league, $groupCard, $ageGroupKey);
 
         if ($activeGroupId === 0 && $groups->isNotEmpty()) {
             $activeGroupId = (int) $groups->first()->id;
@@ -168,13 +159,18 @@ class AdminGroupMatchController extends Controller
             'groupSchedulingLocked' => $groupSchedulingLocked,
             'groupSchedulingLockMessage' => DivisionPlayoffPhase::lockMessage($league->id, $groupCard->id, $ageGroupKey),
             'canEditScheduleDates' => ! LeagueSeasonPhase::playoffsStarted($league) && ! $league->isFinished(),
-            'leagueStartDateLocked' => LeagueSeasonPhase::hasGroupMatchesStarted($league),
-            'leagueMatchCloseDate' => $league->end_date,
-            'groupMatchesClosed' => LeagueSeasonPhase::groupMatchesClosed($league),
-            'canAddManualMatch' => ! LeagueSeasonPhase::groupMatchesClosed($league)
+            'tournamentDatesConfigured' => DivisionScheduleWindow::tournamentDatesConfigured($league),
+            'playoffsStarted' => LeagueSeasonPhase::playoffsStarted($league),
+            'groupMatchesScheduled' => DivisionScheduleWindow::hasDivisionMatchesStarted($league, $groupCard),
+            'groupMatchCloseDate' => DivisionScheduleWindow::endDate($league, $groupCard),
+            'groupMatchesClosed' => DivisionScheduleWindow::divisionMatchesClosed($league, $groupCard),
+            'canAddManualMatch' => ! DivisionScheduleWindow::divisionMatchesClosed($league, $groupCard)
                 && ! LeagueSeasonPhase::playoffsStarted($league)
                 && ! DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey),
-            'leagueHasScheduleDates' => $league->start_date !== null,
+            'groupHasScheduleDates' => DivisionScheduleWindow::divisionHasScheduleDates($league, $groupCard),
+            'divisionScheduleStart' => DivisionScheduleWindow::startDate($league, $groupCard),
+            'divisionScheduleEnd' => DivisionScheduleWindow::endDate($league, $groupCard),
+            'divisionLatestMatchDate' => DivisionScheduleWindow::latestScheduledMatchDate($league, $groupCard),
         ]);
     }
 
@@ -184,76 +180,70 @@ class AdminGroupMatchController extends Controller
 
         $ageGroupKey = (string) $request->query('age_group_key', '');
         $ageGroupKey = $ageGroupKey !== '' ? $ageGroupKey : null;
+        $activeGroupId = (int) $request->query('group', 0);
 
         if (LeagueSeasonPhase::playoffsStarted($league)) {
             return back()
-                ->withErrors(['schedule' => 'Playoffs have started. League match dates cannot be changed.'])
+                ->withErrors(['schedule' => 'Playoffs have started. Group match dates cannot be changed.'])
                 ->withInput();
         }
 
-        $startDateLocked = LeagueSeasonPhase::hasGroupMatchesStarted($league);
+        $matchesScheduled = DivisionScheduleWindow::hasDivisionMatchesStarted($league, $groupCard);
 
-        $validated = $request->validate([
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date'],
-        ]);
-
-        if ($startDateLocked) {
-            $startDate = $league->start_date;
-            $endDate = $validated['end_date'] ?? null;
-
-            if ($endDate !== null && $startDate !== null && $endDate < $startDate->format('Y-m-d')) {
-                return back()
-                    ->withErrors(['end_date' => 'Close date must be on or after the league start date.'])
-                    ->withInput();
-            }
-
-            $league->update(['end_date' => $endDate]);
-            $league->refresh();
-
-            $scheduleSummary = 'League match close date saved.';
-        } else {
-            $startDate = $validated['start_date'] ?? null;
-            $endDate = $validated['end_date'] ?? null;
-
-            if ($endDate !== null && $startDate === null) {
-                return back()
-                    ->withErrors(['end_date' => 'Set a league start date before setting a close date.'])
-                    ->withInput();
-            }
-
-            if ($endDate !== null && $startDate !== null && $endDate < $startDate) {
-                return back()
-                    ->withErrors(['end_date' => 'Close date must be on or after the league start date.'])
-                    ->withInput();
-            }
-
-            $league->update([
-                'start_date' => $startDate,
-                'end_date' => $endDate,
+        if ($matchesScheduled) {
+            $validated = $request->validate([
+                'start_date' => ['required', 'date'],
+                'end_date' => ['nullable', 'date'],
             ]);
-            $league->refresh();
+            $startDate = $validated['start_date'];
+            $endDate = $validated['end_date'] ?? null;
+        } else {
+            $validated = $request->validate([
+                'start_date' => ['required', 'date'],
+            ]);
+            $startDate = $validated['start_date'];
+            $endDate = null;
+        }
 
-            if ($startDate === null) {
-                $scheduleSummary = 'League start and close dates cleared.';
-            } else {
-                $scheduleSummary = 'League dates saved.';
-            }
+        $windowError = DivisionScheduleWindow::validateDivisionDatesAgainstTournament($league, $startDate, $endDate);
+        if ($windowError !== null) {
+            return back()->withErrors(['end_date' => $windowError])->withInput();
+        }
 
+        $matchStartError = DivisionScheduleWindow::validateStartDateAgainstCompletedMatches($league, $groupCard, $startDate);
+        if ($matchStartError !== null) {
+            return back()->withErrors(['start_date' => $matchStartError])->withInput();
+        }
+
+        $matchEndError = DivisionScheduleWindow::validateEndDateAgainstScheduledMatches($league, $groupCard, $endDate);
+        if ($matchEndError !== null) {
+            return back()->withErrors(['end_date' => $matchEndError])->withInput();
+        }
+
+        DivisionScheduleWindow::updateDivisionDates($league, $groupCard, $startDate, $endDate);
+
+        if ($matchesScheduled) {
             if (
-                $startDate !== null
-                && ! LeagueSeasonPhase::groupMatchesClosed($league)
-                && ! DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)
+                ! DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)
+            ) {
+                $totals = SubgroupRoundRobinScheduler::syncDivision($league, $groupCard, $ageGroupKey, reschedulePending: true);
+                $scheduleSummary = SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, 'Matches rescheduled.');
+            } else {
+                $scheduleSummary = 'Group dates saved. Qualifier/playoffs are active — round-robin was not regenerated.';
+            }
+        } else {
+            $scheduleSummary = 'Scheduling matches…';
+            if (
+                ! DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)
             ) {
                 $totals = SubgroupRoundRobinScheduler::syncDivision($league, $groupCard, $ageGroupKey);
-                $scheduleSummary = SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, 'Dates saved.');
-            } elseif ($startDate !== null && DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)) {
-                $scheduleSummary .= ' Qualifier/playoffs are active — round-robin was not regenerated.';
+                $scheduleSummary = SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, 'Matches scheduled.');
+            } else {
+                $scheduleSummary = 'Group start date saved. Qualifier/playoffs are active — round-robin was not generated.';
             }
         }
 
         $redirect = back()->with('status', $scheduleSummary);
-        $activeGroupId = (int) $request->query('group', 0);
         if ($activeGroupId > 0) {
             $redirect->withFragment('group-'.$activeGroupId);
         }
@@ -300,12 +290,6 @@ class AdminGroupMatchController extends Controller
         $ageGroupKey = (string) $request->query('age_group_key', '');
         $ageGroupKey = $ageGroupKey !== '' ? $ageGroupKey : null;
 
-        if (LeagueSeasonPhase::groupMatchesClosed($league)) {
-            return back()
-                ->withErrors(['schedule' => 'League match close date has passed. Extend the close date to add matches.'])
-                ->withInput();
-        }
-
         if (DivisionPlayoffPhase::locksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)) {
             return back()
                 ->withErrors(['schedule' => DivisionPlayoffPhase::lockMessage($league->id, $groupCard->id, $ageGroupKey)])
@@ -346,6 +330,12 @@ class AdminGroupMatchController extends Controller
             )
             ->firstOrFail();
 
+        if (DivisionScheduleWindow::divisionMatchesClosed($league, $groupCard)) {
+            return back()
+                ->withErrors(['schedule' => 'Group end date has passed. Extend the end date above to add matches.'])
+                ->withInput();
+        }
+
         $rosterUserIds = $this->rosterUserIds($league, $groupCard, $group, $ageGroupKey);
 
         $format = GroupMatchFormat::from($validated['format']);
@@ -379,7 +369,7 @@ class AdminGroupMatchController extends Controller
         }
 
         $matchDateCarbon = Carbon::parse($validated['match_date'])->startOfDay();
-        $dateRuleError = LeagueWeekCalendar::validateLeagueMatchDate($matchDateCarbon, $league);
+        $dateRuleError = LeagueWeekCalendar::validateLeagueMatchDate($matchDateCarbon, $league, $groupCard);
         if ($dateRuleError !== null) {
             return back()->withErrors(['match_date' => $dateRuleError])->withInput();
         }
@@ -566,7 +556,9 @@ class AdminGroupMatchController extends Controller
                 'groupCard' => $groupCard,
                 'group' => $groupMatch->group_id,
             ] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
-            ->with('status', 'Match updated.');
+            ->with('status', $scheduleChanged && ! $isQuickResult
+                ? 'Match updated. Players have been emailed.'
+                : 'Match updated.');
     }
 
     public function destroy(Request $request, League $league, GroupCard $groupCard, GroupMatch $groupMatch): RedirectResponse

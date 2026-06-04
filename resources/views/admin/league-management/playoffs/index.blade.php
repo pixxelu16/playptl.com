@@ -269,6 +269,10 @@
             color: #6a7a68;
             font-style: italic;
         }
+        .playoff-match-card__player-select {
+            font-weight: 600;
+            text-align: left;
+        }
         .playoff-match-card__vs {
             align-self: center;
             font-size: 0.72rem;

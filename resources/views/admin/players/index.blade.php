@@ -45,6 +45,7 @@
                         <th>City</th>
                         <th>State</th>
                         <th>Sex</th>
+                        <th>Skill Level</th>
                         <th>Status</th>
                         <th>Registered</th>
                         <th>Actions</th>
@@ -70,6 +71,18 @@
                             <td>{{ $player->city ?? '-' }}</td>
                             <td>{{ $player->state ?? '-' }}</td>
                             <td>{{ $player->sex ?? '-' }}</td>
+                            <td>
+                                @php
+                                    $skillLevel = $player->leagueRegistrations->first()?->skill_level;
+                                @endphp
+                                @if ($skillLevel === 'not-sure')
+                                    Not Sure
+                                @elseif ($skillLevel)
+                                    {{ $skillLevel }}
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td><span class="admin-badge">{{ ucfirst($player->status ?? 'active') }}</span></td>
                             <td>{{ $player->created_at?->format('M d, Y') ?? '-' }}</td>
                             <td>
@@ -89,7 +102,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11">
+                            <td colspan="12">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-user" aria-hidden="true"></i>
                                     <p>No {{ $tab }} players found.</p>

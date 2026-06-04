@@ -12,7 +12,6 @@ use App\Support\LeagueRegistrationRoster;
 use App\Support\PlayerTodayMatchLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -52,17 +51,33 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        $playerLeagueNames = LeagueRegistration::query()
-            ->whereIn('user_id', $players->getCollection()->pluck('id'))
-            ->with('league:id,name')
-            ->get()
-            ->groupBy('user_id')
-            ->map(fn ($regs) => $regs
-                ->map(fn ($reg) => (string) ($reg->league?->name ?? ''))
-                ->filter()
-                ->unique()
-                ->values()
-                ->all());
+        $playerIds = $players->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $playerLeagueNames = [];
+        $playerSkillLevels = [];
+        if ($playerIds !== []) {
+            $registrations = LeagueRegistration::query()
+                ->whereIn('user_id', $playerIds)
+                ->with('league:id,name')
+                ->orderByDesc('id')
+                ->get();
+
+            foreach ($registrations as $registration) {
+                $userId = (int) $registration->user_id;
+                if (! isset($playerLeagueNames[$userId])) {
+                    $playerLeagueNames[$userId] = [];
+                }
+                $leagueName = trim((string) ($registration->league?->name ?? ''));
+                if ($leagueName !== '' && ! in_array($leagueName, $playerLeagueNames[$userId], true)) {
+                    $playerLeagueNames[$userId][] = $leagueName;
+                }
+
+                if (! isset($playerSkillLevels[$userId])) {
+                    $skill = trim((string) ($registration->skill_level ?? ''));
+                    $playerSkillLevels[$userId] = $skill !== '' ? $skill : null;
+                }
+            }
+        }
 
         return view('admin.league-management.assign-players.index', [
             'league' => $league,
@@ -71,7 +86,8 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
             'players' => $players,
             'todayMatchLeagues' => PlayerTodayMatchLookup::leagueNamesByUserId(),
             'playerLeagueNames' => $playerLeagueNames,
-            'ageBrackets' => $this->ageBrackets(),
+            'playerSkillLevels' => $playerSkillLevels,
+            'groupSkillLevel' => trim((string) ($groupCard->skill_level_match ?? '')),
             'schemaReady' => Schema::hasTable('league_registrations'),
         ]);
     }
@@ -84,7 +100,6 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
 
         $validated = $request->validate([
             'user_id' => ['required', 'integer', Rule::exists('users', 'id')],
-            'age_group_key' => ['required', 'string', 'max:32'],
         ]);
 
         $player = User::query()->findOrFail((int) $validated['user_id']);
@@ -116,15 +131,18 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
                 ->withInput();
         }
 
-        $groupId = $this->pickGroupId($league, $groupCard, (string) $validated['age_group_key'], $registrationType);
+        $ageGroupKey = $this->resolveAgeGroupKeyForPlayer($player);
+        $groupId = $this->pickGroupId($league, $groupCard, $ageGroupKey, $registrationType);
+        $playerSkill = $this->resolveSkillLevelForPlayer($player);
+        $skillLevel = $playerSkill ?? trim((string) ($groupCard->skill_level_match ?? ''));
 
         LeagueRegistration::create([
             'user_id' => $player->id,
             'league_id' => $league->id,
             'group_card_id' => $groupCard->id,
             'group_id' => $groupId,
-            'skill_level' => (string) ($groupCard->skill_level_match ?? ''),
-            'age_group_key' => (string) $validated['age_group_key'],
+            'skill_level' => $skillLevel !== '' ? $skillLevel : null,
+            'age_group_key' => $ageGroupKey,
             'registration_type' => $registrationType,
             'payment_status' => 'admin',
         ]);
@@ -146,7 +164,7 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
         return in_array($tag, ['double', 'doubles'], true) ? 'doubles' : 'singles';
     }
 
-    protected function pickGroupId(League $league, GroupCard $groupCard, string $ageGroupKey, string $registrationType): ?int
+    protected function pickGroupId(League $league, GroupCard $groupCard, ?string $ageGroupKey, string $registrationType): ?int
     {
         if (! Schema::hasTable('groups')) {
             return null;
@@ -156,7 +174,8 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
             ->where('status', 'active')
             ->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id));
 
-        if (Schema::hasColumn('groups', 'age_group_key')) {
+        $ageGroupKey = $ageGroupKey !== null ? trim($ageGroupKey) : '';
+        if (Schema::hasColumn('groups', 'age_group_key') && $ageGroupKey !== '') {
             $groupsQuery->where(function ($q) use ($ageGroupKey) {
                 $q->whereNull('age_group_key')->orWhere('age_group_key', $ageGroupKey);
             });
@@ -190,21 +209,27 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
         return $bestGroup?->id;
     }
 
-    /**
-     * @return Collection<string, string>
-     */
-    protected function ageBrackets(): Collection
+    protected function resolveAgeGroupKeyForPlayer(User $player): ?string
     {
-        return collect([
-            'under-18' => 'Under 18',
-            '18-21' => '18–21',
-            '21-25' => '21–25',
-            '26-30' => '26–30',
-            '31-35' => '31–35',
-            '36-40' => '36–40',
-            '41-45' => '41–45',
-            '46-50' => '46–50',
-            'above-50' => 'Above 50',
-        ]);
+        $key = trim((string) (LeagueRegistration::query()
+            ->where('user_id', $player->id)
+            ->latest('id')
+            ->value('age_group_key') ?? ''));
+
+        return $key !== '' ? $key : null;
+    }
+
+    protected function resolveSkillLevelForPlayer(User $player): ?string
+    {
+        $skill = trim((string) (LeagueRegistration::query()
+            ->where('user_id', $player->id)
+            ->latest('id')
+            ->value('skill_level') ?? ''));
+
+        if ($skill === '' || $skill === 'not-sure') {
+            return null;
+        }
+
+        return $skill;
     }
 }
