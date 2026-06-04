@@ -57,7 +57,7 @@ final class TournamentRegistrationOptions
     }
 
     /**
-     * Pick the skill-tier group card for a player skill (e.g. 3.25 → 3.5 group, 3.75 → 4.0 group).
+     * Group card for a player skill: exact skill_level_match on the league, or lowest tier when "not-sure".
      */
     public static function resolveGroupCardBySkill(League $league, string $tab, string $skillLevel): ?GroupCard
     {
@@ -83,39 +83,60 @@ final class TournamentRegistrationOptions
     public static function assignedGroupForSkill(League $league, string $tab, string $skillLevel): ?array
     {
         $skillLevel = trim($skillLevel);
-        if ($skillLevel === '' || $skillLevel === 'not-sure' || ! is_numeric($skillLevel)) {
+
+        if ($skillLevel === 'not-sure') {
+            return self::assignedGroupForLowestSkillTier($league, $tab);
+        }
+
+        if ($skillLevel === '' || ! is_numeric($skillLevel)) {
             return null;
         }
 
         $userSkill = (float) $skillLevel;
-        $groups = self::groupCardsFor($league, $tab);
 
-        $tiered = [];
-        foreach ($groups as $group) {
+        foreach (self::groupCardsFor($league, $tab) as $group) {
             $tierSkill = trim((string) ($group['skill_level'] ?? ''));
             if ($tierSkill === '' || ! is_numeric($tierSkill)) {
                 continue;
             }
 
-            $tiered[] = [
-                'group' => $group,
-                'skill' => (float) $tierSkill,
-            ];
-        }
-
-        if ($tiered === []) {
-            return null;
-        }
-
-        usort($tiered, fn (array $a, array $b): int => $a['skill'] <=> $b['skill']);
-
-        foreach ($tiered as $tier) {
-            if ($userSkill <= $tier['skill']) {
-                return $tier['group'];
+            if ((float) $tierSkill === $userSkill) {
+                return $group;
             }
         }
 
-        return $tiered[array_key_last($tiered)]['group'];
+        return null;
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     skill_level: string|null,
+     *     label: string,
+     *     registration_open: bool,
+     *     closed_reason: string|null
+     * }|null
+     */
+    public static function assignedGroupForLowestSkillTier(League $league, string $tab): ?array
+    {
+        $lowest = null;
+        $lowestSkill = null;
+
+        foreach (self::groupCardsFor($league, $tab) as $group) {
+            $tierSkill = trim((string) ($group['skill_level'] ?? ''));
+            if ($tierSkill === '' || ! is_numeric($tierSkill)) {
+                continue;
+            }
+
+            $skill = (float) $tierSkill;
+            if ($lowestSkill === null || $skill < $lowestSkill) {
+                $lowestSkill = $skill;
+                $lowest = $group;
+            }
+        }
+
+        return $lowest;
     }
 
     public static function averageSkillLevels(string $skillOne, string $skillTwo): ?string

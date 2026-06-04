@@ -231,14 +231,18 @@ class PlayerProfileController extends Controller
                 }
             }
 
-            $averageSkill = TournamentRegistrationOptions::averageSkillLevels($playerSkill, $partnerSkill);
-            if ($averageSkill === null) {
-                return response()->json(['message' => 'Both players need a valid skill level for group assignment.'], 422);
+            if ($playerSkill === 'not-sure' || $partnerSkill === 'not-sure') {
+                $assignmentSkill = 'not-sure';
+            } else {
+                $averageSkill = TournamentRegistrationOptions::averageSkillLevels($playerSkill, $partnerSkill);
+                if ($averageSkill === null) {
+                    return response()->json(['message' => 'Both players need a valid skill level for group assignment.'], 422);
+                }
+                $assignmentSkill = $averageSkill;
             }
 
             $leagueId = (int) $specific['tournament_doubles'];
             $groupCardId = (int) $specific['group_card_doubles'];
-            $assignmentSkill = $averageSkill;
             $skillLevel = $playerSkill;
         }
 
