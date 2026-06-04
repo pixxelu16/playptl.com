@@ -31,9 +31,13 @@ class TournamentRegistrationGroupsController extends Controller
         if ($tab === 'singles' && $skill !== '') {
             $assignedGroup = TournamentRegistrationOptions::assignedGroupForSkill($league, $tab, $skill);
         } elseif ($tab === 'doubles' && $skill !== '' && $skillTwo !== '') {
-            $averageSkill = TournamentRegistrationOptions::averageSkillLevels($skill, $skillTwo);
-            if ($averageSkill !== null) {
-                $assignedGroup = TournamentRegistrationOptions::assignedGroupForSkill($league, $tab, $averageSkill);
+            if ($skill === 'not-sure' || $skillTwo === 'not-sure') {
+                $assignedGroup = TournamentRegistrationOptions::assignedGroupForSkill($league, $tab, 'not-sure');
+            } else {
+                $averageSkill = TournamentRegistrationOptions::averageSkillLevels($skill, $skillTwo);
+                if ($averageSkill !== null) {
+                    $assignedGroup = TournamentRegistrationOptions::assignedGroupForSkill($league, $tab, $averageSkill);
+                }
             }
         }
 

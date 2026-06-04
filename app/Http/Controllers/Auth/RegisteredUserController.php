@@ -105,15 +105,19 @@ class RegisteredUserController extends Controller
 
         $leagueId = (int) ($tab === 'singles' ? $specific['tournament_singles'] : $specific['tournament_doubles']);
         $skillLevel = (string) ($tab === 'singles' ? $specific['skill_singles'] : $specific['skill_doubles']);
+        $assignmentSkill = $skillLevel;
         if ($tab === 'doubles') {
-            $averageSkill = TournamentRegistrationOptions::averageSkillLevels(
-                (string) $specific['skill_doubles'],
-                (string) $specific['d2_skill'],
-            );
-            if ($averageSkill === null) {
-                return $this->fail($request, 'Both players need a valid skill level for group assignment.');
+            $skillOne = (string) $specific['skill_doubles'];
+            $skillTwo = (string) $specific['d2_skill'];
+            if ($skillOne === 'not-sure' || $skillTwo === 'not-sure') {
+                $assignmentSkill = 'not-sure';
+            } else {
+                $averageSkill = TournamentRegistrationOptions::averageSkillLevels($skillOne, $skillTwo);
+                if ($averageSkill === null) {
+                    return $this->fail($request, 'Both players need a valid skill level for group assignment.');
+                }
+                $assignmentSkill = $averageSkill;
             }
-            $skillLevel = $averageSkill;
         }
         $ageGroup = (string) ($tab === 'singles' ? $specific['age_group_singles'] : $specific['age_group_doubles']);
         $sex = (string) ($tab === 'singles' ? $specific['sex_singles'] : $specific['sex_doubles']);
@@ -155,7 +159,7 @@ class RegisteredUserController extends Controller
         $groupCardId = (int) ($tab === 'singles' ? $specific['group_card_singles'] : $specific['group_card_doubles']);
 
         if ($tab === 'singles') {
-            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $skillLevel);
+            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
             if (! $expectedCard instanceof GroupCard) {
                 return $this->fail($request, 'No group is available for your skill level in this tournament.');
             }
@@ -164,7 +168,7 @@ class RegisteredUserController extends Controller
             }
             $groupCard = $expectedCard;
         } else {
-            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $skillLevel);
+            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
             if (! $expectedCard instanceof GroupCard) {
                 return $this->fail($request, 'No group is available for your team skill level in this tournament.');
             }

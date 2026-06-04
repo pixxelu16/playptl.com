@@ -23,7 +23,7 @@ final class LeagueRegistrationGate
         string $skillLevel,
         ?string $ageGroupKey = null,
     ): ?string {
-        $groupCard = LeagueRegistrationFlow::resolveGroupCard($league, $tab, $skillLevel);
+        $groupCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $skillLevel);
 
         if (! $groupCard instanceof GroupCard) {
             return null;

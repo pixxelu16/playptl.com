@@ -316,6 +316,8 @@
     ui.$hint.removeClass('hidden');
     if (showAverage && averageSkill) {
       ui.$hint.text('Team average skill: ' + averageSkill + '. Subgroup is assigned automatically.');
+    } else {
+      ui.$hint.text('Subgroup (A, B, C…) is assigned automatically when you register.');
     }
   }
 
@@ -337,16 +339,6 @@
       ui.$hiddenId.val('');
       ui.$hint.addClass('hidden');
       ui.$loading.addClass('hidden');
-      return;
-    }
-
-    if (tab === 'doubles' && (skill === 'not-sure' || skillTwo === 'not-sure')) {
-      ui.$wrap.removeClass('hidden');
-      ui.$loading.addClass('hidden');
-      ui.$hint.addClass('hidden');
-      ui.$preview.val('');
-      ui.$hiddenId.val('');
-      ui.$error.removeClass('hidden').text('Both players need a specific skill level to see your group.');
       return;
     }
 

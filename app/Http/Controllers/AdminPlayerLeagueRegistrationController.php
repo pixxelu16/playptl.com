@@ -8,6 +8,7 @@ use App\Models\GroupCard;
 use App\Models\League;
 use App\Models\LeagueRegistration;
 use App\Support\LeagueRegistrationRoster;
+use App\Support\TournamentRegistrationOptions;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,16 +55,18 @@ class AdminPlayerLeagueRegistrationController extends Controller
             ? ['double', 'doubles']
             : ['single', 'singles'];
 
-        $groupCard = $league->groupCards()
-            ->where('group_cards.status', 'active')
-            ->whereIn('group_cards.tag', $tagCandidates)
-            ->where('group_cards.skill_level_match', (string) $validated['skill_level'])
-            ->first();
+        $tab = $registrationType === 'doubles' ? 'doubles' : 'singles';
+        $skillLevel = (string) $validated['skill_level'];
+        $groupCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $skillLevel);
 
         if (! $groupCard instanceof GroupCard) {
+            $message = $skillLevel === 'not-sure'
+                ? 'No group with a skill level is assigned to this tournament yet.'
+                : 'No matching group found for this league + skill level. Add a group card with Skill Level Match '.$skillLevel.' to this tournament.';
+
             return back()
                 ->withErrors([
-                    'skill_level' => 'No matching group found for this league + skill level. Please ensure a group is assigned to the league with the same Skill Level Match.',
+                    'skill_level' => $message,
                 ])
                 ->withInput();
         }
