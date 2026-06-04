@@ -12,7 +12,11 @@
     if ($selectedDoublesLeague && isset($leagueEntryFees[(string) $selectedDoublesLeague])) {
         $feeDoubles = $leagueEntryFees[(string) $selectedDoublesLeague]['doubles'];
     }
-    $registrationSkillLevelValues = ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
+    $playerSkillLevel = $playerFixedSkillLevel ?? '';
+    $playerSkillLabel = $playerFixedSkillLabel ?? '—';
+    $hasPlayerSkill = $hasPlayerSkillLevel ?? false;
+    $tournamentCount = ($registrationLeagues ?? collect())->count();
+    $registrationSkillLevelValues = $registrationSkillLevelValues ?? ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
 @endphp
 
 <div
@@ -20,15 +24,17 @@
     class="overflow-hidden rounded-[12px] bg-white p-6 shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0] sm:p-8"
 >
     <h3 class="mb-2 text-center text-[18px] font-bold leading-tight text-[#333333] sm:text-[20px]">Choose League</h3>
-    <p class="mb-6 text-center text-[13px] text-[#666666] sm:text-[14px]">Register for a tournament as Singles or Doubles.</p>
+    <p class="mb-6 text-center text-[13px] text-[#666666] sm:text-[14px]">Register for another tournament as Singles or Doubles. Your skill level is fixed from your profile.</p>
 
     <div
         id="profile-league-registration"
         data-initial-tab="{{ $tab }}"
         data-closed-divisions='@json($registrationClosedDivisions ?? [])'
+        data-closed-group-cards='@json($registrationClosedGroupCards ?? [])'
         data-league-fees='@json($leagueEntryFees ?? [])'
+        data-tournament-groups-url="{{ $tournamentGroupsUrl ?? '' }}"
+        data-fixed-skill="{{ $playerSkillLevel }}"
     >
-        
         <div class="flex gap-3 sm:gap-4">
             <button
                 type="button"
@@ -54,6 +60,17 @@
             <p class="text-[13px] text-[#666666]">{{ $myProfile['email'] }}@if($myProfile['phone']) · {{ $myProfile['phone'] }}@endif</p>
         </div>
 
+        @if (! $hasPlayerSkill)
+            <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-900">
+                Set your skill level on
+                <a href="{{ route('player.my-profile') }}" class="font-bold underline">Personal Information</a>
+                before registering for another tournament.
+            </div>
+        @elseif ($tournamentCount === 0)
+            <div class="mt-6 rounded-lg border border-[#E8E8E8] bg-[#FAFAFA] px-4 py-6 text-center text-[14px] text-[#666666]">
+                You are already registered in every open tournament. Check back when a new tournament is available.
+            </div>
+        @else
         <form
             id="profile-singles-league-form"
             class="mt-6 space-y-5 {{ $isDoubles ? 'hidden' : '' }}"
@@ -71,16 +88,18 @@
             @csrf
             <input type="hidden" name="registration_tab" value="singles">
             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
+            <input type="hidden" name="skill_singles" value="{{ $playerSkillLevel }}">
 
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
-                    <label class="{{ $profileLabelClass }}">Skill Level <span class="text-red-600">*</span></label>
-                    <select name="skill_singles" required class="{{ $profileInputClass }} appearance-none pr-10">
-                        <option value="">Select</option>
-                        @foreach ($registrationSkillLevelValues as $skillValue)
-                            <option value="{{ $skillValue }}" @selected(old('skill_singles') == $skillValue)>{{ $skillValue === 'not-sure' ? 'Not Sure' : $skillValue }}</option>
-                        @endforeach
-                    </select>
+                    <label class="{{ $profileLabelClass }}">Skill Level</label>
+                    <input
+                        type="text"
+                        class="{{ $profileInputClass }} bg-[#f5f5f5] cursor-not-allowed"
+                        value="{{ $playerSkillLabel }}"
+                        readonly
+                        disabled
+                    >
                 </div>
                 <div>
                     <label class="{{ $profileLabelClass }}">Tournament <span class="text-red-600">*</span></label>
@@ -90,8 +109,22 @@
                             <option value="{{ $league->id }}" @selected(old('tournament_singles') == $league->id)>{{ $league->name }}</option>
                         @endforeach
                     </select>
-                
                 </div>
+            </div>
+
+            <div class="tournament-group-wrap hidden" data-tab="singles">
+                <label class="{{ $profileLabelClass }}">Your group</label>
+                <input
+                    type="text"
+                    class="tournament-group-preview {{ $profileInputClass }} bg-[#f5f5f5]"
+                    readonly
+                    disabled
+                    placeholder="Select a tournament"
+                >
+                <input type="hidden" name="group_card_singles" class="tournament-group-id" value="{{ old('group_card_singles') }}">
+                <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666666]">Based on your skill level. Subgroup (A, B, C…) is assigned automatically.</p>
+                <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666666]">Finding your group…</p>
+                <p class="tournament-group-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
             </div>
 
             <div class="rounded-lg border border-[#EEEEEE] bg-[#FAFAFA] px-4 py-3">
@@ -101,7 +134,7 @@
                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
             </div>
 
-            <button type="submit" class="profile-league-submit w-full rounded-lg bg-[#66A157] px-6 py-3 text-[15px] font-bold text-white shadow-sm transition hover:bg-[#5a9048]">
+            <button class="profile-league-submit w-full rounded-lg bg-[#66A157] px-6 py-3 text-[15px] font-bold text-white shadow-sm transition hover:bg-[#5a9048]">
                 Submit
             </button>
             <div class="profile-league-loader hidden rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[13px] text-[#374151]">Processing...</div>
@@ -126,26 +159,17 @@
             @csrf
             <input type="hidden" name="registration_tab" value="doubles">
             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
+            <input type="hidden" name="skill_doubles" value="{{ $playerSkillLevel }}">
 
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div>
-                    <label class="{{ $profileLabelClass }}">Skill Level <span class="text-red-600">*</span></label>
-                    <select name="skill_doubles" required class="{{ $profileInputClass }} appearance-none pr-10">
-                        <option value="">Select</option>
-                        @foreach ($registrationSkillLevelValues as $skillValue)
-                            <option value="{{ $skillValue }}" @selected(old('skill_doubles') == $skillValue)>{{ $skillValue === 'not-sure' ? 'Not Sure' : $skillValue }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="{{ $profileLabelClass }}">Tournament <span class="text-red-600">*</span></label>
-                    <select name="tournament_doubles" required class="{{ $profileInputClass }} appearance-none pr-10">
-                        <option value="">Select tournament</option>
-                        @foreach ($registrationLeagues as $league)
-                            <option value="{{ $league->id }}" @selected(old('tournament_doubles') == $league->id)>{{ $league->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+            <div>
+                <label class="{{ $profileLabelClass }}">Your skill level</label>
+                <input
+                    type="text"
+                    class="{{ $profileInputClass }} bg-[#f5f5f5] cursor-not-allowed"
+                    value="{{ $playerSkillLabel }}"
+                    readonly
+                    disabled
+                >
             </div>
 
             <div class="border-t border-[#E8E8E8] pt-5">
@@ -174,10 +198,56 @@
                             <label class="{{ $profileLabelClass }}">Last Name <span class="text-red-600">*</span></label>
                             <input type="text" name="d2_last" value="{{ old('d2_last') }}" placeholder="Last name" required class="{{ $profileInputClass }} partner-detail-field" autocomplete="off" />
                         </div>
-                        <div class="sm:col-span-2">
+                        <div>
                             <label class="{{ $profileLabelClass }}">Phone Number <span class="text-red-600">*</span></label>
                             <input type="tel" name="d2_phone" value="{{ old('d2_phone') }}" placeholder="Phone" required class="{{ $profileInputClass }} partner-detail-field" inputmode="numeric" pattern="[0-9]*" maxlength="15" autocomplete="tel" />
                         </div>
+                        <div class="partner-skill-field">
+                            <label class="{{ $profileLabelClass }}">Skill Level <span class="text-red-600">*</span></label>
+                            <select name="d2_skill" required class="partner-skill-select {{ $profileInputClass }} appearance-none pr-10">
+                                <option value="">Select</option>
+                                @foreach ($registrationSkillLevelValues as $skillValue)
+                                    <option value="{{ $skillValue }}" @selected(old('d2_skill') == $skillValue)>{{ $skillValue === 'not-sure' ? 'Not Sure' : $skillValue }}</option>
+                                @endforeach
+                            </select>
+                            <input
+                                type="text"
+                                class="partner-skill-locked {{ $profileInputClass }} hidden cursor-not-allowed bg-[#f5f5f5]"
+                                readonly
+                                disabled
+                                tabindex="-1"
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-[#E8E8E8] pt-5">
+                <h4 class="text-center text-[14px] font-bold text-[#333333] underline decoration-[#66A157] decoration-2 underline-offset-4">Other Details</h4>
+                <div class="mt-4 space-y-5">
+                    <div>
+                        <label class="{{ $profileLabelClass }}">Tournament <span class="text-red-600">*</span></label>
+                        <select name="tournament_doubles" required class="{{ $profileInputClass }} appearance-none pr-10">
+                            <option value="">Select tournament</option>
+                            @foreach ($registrationLeagues as $league)
+                                <option value="{{ $league->id }}" @selected(old('tournament_doubles') == $league->id)>{{ $league->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="tournament-group-wrap hidden" data-tab="doubles">
+                        <label class="{{ $profileLabelClass }}">Your group</label>
+                        <input
+                            type="text"
+                            class="tournament-group-preview {{ $profileInputClass }} bg-[#f5f5f5]"
+                            readonly
+                            disabled
+                            placeholder="Select tournament and both skill levels"
+                        >
+                        <input type="hidden" name="group_card_doubles" class="tournament-group-id" value="{{ old('group_card_doubles') }}">
+                        <p class="tournament-group-hint mt-1 hidden text-[12px] text-[#666666]">Subgroup (A, B, C…) is assigned automatically.</p>
+                        <p class="tournament-group-loading mt-1 hidden text-[12px] text-[#666666]">Finding your group…</p>
+                        <p class="tournament-group-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                     </div>
                 </div>
             </div>
@@ -189,12 +259,13 @@
                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
             </div>
 
-            <button type="submit" class="profile-league-submit w-full rounded-lg bg-[#5FA252] px-6 py-3 text-[15px] font-bold text-white shadow-sm transition hover:bg-[#549648]">
+            <button class="profile-league-submit w-full rounded-lg bg-[#5FA252] px-6 py-3 text-[15px] font-bold text-white shadow-sm transition hover:bg-[#549648]">
                 Submit
             </button>
             <div class="profile-league-loader hidden rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[13px] text-[#374151]">Processing...</div>
             <div class="profile_league_form_res text-sm"></div>
         </form>
+        @endif
     </div>
 </div>
 
@@ -203,6 +274,3 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script src="{{ asset('frontend/js/profile-league-register.js') }}?v={{ @filemtime(public_path('frontend/js/profile-league-register.js')) ?: time() }}"></script>
 @endpush
-
-
-

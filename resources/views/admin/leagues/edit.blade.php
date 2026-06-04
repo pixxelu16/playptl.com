@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit League | '.config('app.name', 'playptl'))
-@section('meta_description', 'Edit league details from the admin dashboard.')
+@section('title', 'Edit Tournament | '.config('app.name', 'playptl'))
+@section('meta_description', 'Edit tournament details from the admin dashboard.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
-                <h1 class="admin-card-title">Edit League</h1>
-                <p class="admin-card-text">Update league details for {{ $league->name }}.</p>
+                <h1 class="admin-card-title">Edit Tournament</h1>
+                <p class="admin-card-text">Update tournament details for {{ $league->name }}.</p>
             </div>
             <a class="admin-link" href="{{ route('admin.leagues.index') }}">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                <span>Back to Leagues</span>
+                <span>Back to Tournaments</span>
             </a>
         </div>
 
@@ -24,8 +24,7 @@
             @method('PUT')
             @include('admin.leagues._form')
 
-            <button class="admin-button" type="submit">Update League</button>
+            <button class="admin-button" type="submit">Update Tournament</button>
         </form>
     </section>
-
 @endsection

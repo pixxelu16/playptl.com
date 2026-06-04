@@ -30,7 +30,7 @@
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*', 'admin.league-management.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span>
-                        <span>Leagues</span>
+                        <span>Tournaments</span>
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.group-cards.*') ? 'is-active' : '' }}" href="{{ route('admin.group-cards.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>

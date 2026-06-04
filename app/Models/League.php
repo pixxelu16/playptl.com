@@ -41,7 +41,8 @@ class League extends Model
 
     public function groupCards(): BelongsToMany
     {
-        return $this->belongsToMany(GroupCard::class);
+        return $this->belongsToMany(GroupCard::class)
+            ->withPivot(['start_date', 'end_date']);
     }
 
     public function users(): HasMany

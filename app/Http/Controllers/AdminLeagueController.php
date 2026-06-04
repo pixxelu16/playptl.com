@@ -42,7 +42,7 @@ class AdminLeagueController extends Controller
         $league = League::create($validated);
         $league->groupCards()->sync($groupCardIds);
 
-        return redirect()->route('admin.leagues.index')->with('status', 'League created successfully.');
+        return redirect()->route('admin.leagues.index')->with('status', 'Tournament created successfully.');
     }
 
     public function show(League $league): View
@@ -91,7 +91,7 @@ class AdminLeagueController extends Controller
         $league->update($validated);
         $league->groupCards()->sync($groupCardIds);
 
-        return redirect()->route('admin.leagues.index')->with('status', 'League updated successfully.');
+        return redirect()->route('admin.leagues.index')->with('status', 'Tournament updated successfully.');
     }
 
     public function destroy(League $league): RedirectResponse
@@ -99,7 +99,7 @@ class AdminLeagueController extends Controller
         $this->deleteLogo($league->logo_path);
         $league->delete();
 
-        return redirect()->route('admin.leagues.index')->with('status', 'League deleted successfully.');
+        return redirect()->route('admin.leagues.index')->with('status', 'Tournament deleted successfully.');
     }
 
     /**
@@ -112,7 +112,8 @@ class AdminLeagueController extends Controller
             'logo'        => ['nullable', 'image', 'max:2048'],
             'description' => ['nullable', 'string'],
             'stats' => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
-            'end_date' => ['nullable', 'date'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'type' => ['nullable', Rule::in(['single', 'doubles'])],
             'singles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],
             'doubles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],

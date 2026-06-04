@@ -407,35 +407,87 @@
             @if ($canEditScheduleDates ?? false)
             <div class="admin-card" style="margin-bottom:1.25rem;padding:1rem 1.25rem;border:1px solid rgba(0,0,0,0.08);box-shadow:none;">
                 @php
-                    $scheduleStart = old('start_date', $league->start_date?->format('Y-m-d') ?? '');
-                    $scheduleEnd = old('end_date', $league->end_date?->format('Y-m-d') ?? '');
+                    $scheduleStart = old('start_date', ($divisionScheduleStart ?? null)?->format('Y-m-d') ?? '');
+                    $scheduleEnd = old('end_date', ($divisionScheduleEnd ?? null)?->format('Y-m-d') ?? '');
+                    $tournamentDateMin = $league->start_date?->format('Y-m-d') ?? '';
+                    $tournamentDateMax = $league->end_date?->format('Y-m-d') ?? '';
                 @endphp
-                <h2 class="admin-card-title" style="font-size:1.05rem;margin-bottom:1rem;">Auto round-robin schedule — {{ $groupCard->name }}</h2>
+                <h2 class="admin-card-title" style="font-size:1.05rem;margin-bottom:0.5rem;">Auto round-robin schedule — {{ $groupCard->name }}</h2>
+                <p class="admin-card-text" style="margin:0 0 0.35rem;font-size:0.85rem;">
+                    Applies to all subgroups ({{ $groups->pluck('name')->join(', ') }}) in this group.
+                </p>
+                @if ($tournamentDatesConfigured ?? false)
+                    <p class="admin-card-text" style="margin:0 0 1rem;font-size:0.85rem;">
+                        Group dates must be between the tournament window:
+                        <strong>{{ $league->start_date?->format('M j, Y') }}</strong>
+                        –
+                        <strong>{{ $league->end_date?->format('M j, Y') }}</strong>.
+                    </p>
+                @else
+                    <p class="admin-card-text" style="margin:0 0 1rem;font-size:0.85rem;color:#b45309;">
+                        Set tournament start and end dates on
+                        <a href="{{ route('admin.leagues.edit', $league) }}" class="admin-link" style="font-weight:700;">Edit Tournament</a>
+                        before scheduling this group.
+                    </p>
+                @endif
                 <form method="POST" action="{{ route('admin.league-management.matches.save-schedule-dates', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []) + ['group' => $activeGroup->id]) }}">
                     @csrf
+                    @php
+                        $playoffsStartedLock = $playoffsStarted ?? false;
+                        $matchesAlreadyScheduled = $groupMatchesScheduled ?? false;
+                        $groupEndDateMin = $scheduleStart !== '' ? $scheduleStart : $tournamentDateMin;
+                        if (($divisionLatestMatchDate ?? null) instanceof \Illuminate\Support\Carbon) {
+                            $latestMatchYmd = $divisionLatestMatchDate->format('Y-m-d');
+                            if ($groupEndDateMin === '' || $latestMatchYmd > $groupEndDateMin) {
+                                $groupEndDateMin = $latestMatchYmd;
+                            }
+                        }
+                    @endphp
                     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:1rem;">
                         <div>
-                            <label for="league_start_date" style="display:block;font-weight:600;margin-bottom:0.35rem;">League start date</label>
-                            @if ($leagueStartDateLocked ?? false)
-                                <input class="admin-input" id="league_start_date" type="date" value="{{ $scheduleStart }}" disabled readonly style="background:#f3f4f6;cursor:not-allowed;">
-                                <input type="hidden" name="start_date" value="{{ $scheduleStart }}">
+                            <label for="group_start_date" style="display:block;font-weight:600;margin-bottom:0.35rem;">Group start date</label>
+                            @if ($playoffsStartedLock)
+                                <input class="admin-input" id="group_start_date" type="date" value="{{ $scheduleStart }}" disabled readonly style="background:#f3f4f6;cursor:not-allowed;">
                             @else
-                                <input class="admin-input" id="league_start_date" type="date" name="start_date" value="{{ $scheduleStart }}">
+                                <input class="admin-input @error('start_date') border-red-500 @enderror" id="group_start_date" type="date" name="start_date" value="{{ $scheduleStart }}" required
+                                    @if ($tournamentDateMin) min="{{ $tournamentDateMin }}" @endif
+                                    @if ($tournamentDateMax) max="{{ $tournamentDateMax }}" @endif
+                                    @if (! ($tournamentDatesConfigured ?? false)) disabled @endif>
+                                @error('start_date')
+                                    <p class="mt-1 text-[12px] font-semibold text-red-600">{{ $message }}</p>
+                                @enderror
                             @endif
                         </div>
-                        <div>
-                            <label for="league_match_close_date" style="display:block;font-weight:600;margin-bottom:0.35rem;">League match close date</label>
-                            <input class="admin-input" id="league_match_close_date" type="date" name="end_date" value="{{ $scheduleEnd }}">
-                        </div>
+                        @if ($matchesAlreadyScheduled)
+                            <div>
+                                <label for="group_end_date" style="display:block;font-weight:600;margin-bottom:0.35rem;">Group end date</label>
+                                <input class="admin-input @error('end_date') border-red-500 @enderror" id="group_end_date" type="date" name="end_date" value="{{ $scheduleEnd }}"
+                                    @if ($groupEndDateMin) min="{{ $groupEndDateMin }}" @endif
+                                    @if ($tournamentDateMax) max="{{ $tournamentDateMax }}" @endif
+                                    @if (! ($tournamentDatesConfigured ?? false)) disabled @endif>
+                                @error('end_date')
+                                    <p class="mt-1 text-[12px] font-semibold text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
                     </div>
-                    <button class="admin-button" type="submit">
+                    <button class="admin-button" type="submit" @if (! ($tournamentDatesConfigured ?? false)) disabled @endif>
                         <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
-                        <span>{{ ($leagueStartDateLocked ?? false) ? 'Save close date' : 'Save dates' }}</span>
+                        <span>{{ $matchesAlreadyScheduled ? 'Reschedule matches' : 'Schedule matches' }}</span>
                     </button>
                 </form>
+                @if (! ($matchesAlreadyScheduled ?? false) && ($tournamentDatesConfigured ?? false))
+                    <p class="admin-card-text" style="margin:0.75rem 0 0;font-size:0.85rem;">
+                        Pick a start date and click <strong>Schedule matches</strong>. The group end date field appears after matches are generated.
+                    </p>
+                @elseif ($matchesAlreadyScheduled && ! ($playoffsStartedLock ?? false))
+                    <p class="admin-card-text" style="margin:0.75rem 0 0;font-size:0.85rem;">
+                        You can change the group start or end date until playoffs start, then click <strong>Reschedule matches</strong>.
+                    </p>
+                @endif
                 @if ($groupMatchesClosed ?? false)
                     <p class="admin-card-text" style="margin:0.75rem 0 0;font-size:0.85rem;">
-                        League matches closed on <strong>{{ $leagueMatchCloseDate?->format('M j, Y') }}</strong>. Extend the close date above to reopen scheduling.
+                        Group matches closed on <strong>{{ $groupMatchCloseDate?->format('M j, Y') }}</strong>. Extend the end date above to reopen scheduling.
                     </p>
                 @endif
             </div>
@@ -444,11 +496,11 @@
             @php
                 $addMatchPanelOpen = $errors->hasAny(['home_user_id', 'away_user_id', 'match_date', 'start_time', 'format', 'group_id'])
                     || old('home_user_id') || old('away_user_id');
-                $leagueMatchDateMin = $league->start_date?->format('Y-m-d') ?? '';
-                $leagueMatchDateMax = $league->end_date?->format('Y-m-d') ?? '';
-                $leagueMatchDateTitle = ($leagueMatchDateMin !== '' && $leagueMatchDateMax !== '')
-                    ? 'Between '.$league->start_date->format('M j, Y').' and '.$league->end_date->format('M j, Y')
-                    : (($leagueMatchDateMin !== '') ? 'On or after '.$league->start_date->format('M j, Y') : 'Set league start and close dates first');
+                $divisionMatchDateMin = ($divisionScheduleStart ?? null)?->format('Y-m-d') ?? '';
+                $divisionMatchDateMax = ($divisionScheduleEnd ?? null)?->format('Y-m-d') ?? '';
+                $divisionMatchDateTitle = ($divisionMatchDateMin !== '' && $divisionMatchDateMax !== '')
+                    ? 'Between '.($divisionScheduleStart ?? null)->format('M j, Y').' and '.($divisionScheduleEnd ?? null)->format('M j, Y')
+                    : (($divisionMatchDateMin !== '') ? 'On or after '.($divisionScheduleStart ?? null)->format('M j, Y') : 'Set group start and end dates first');
             @endphp
             <div class="match-add-toggle-wrap">
                 <button
@@ -497,9 +549,9 @@
                                 type="date"
                                 name="match_date"
                                 value="{{ old('match_date', now()->toDateString()) }}"
-                                @if ($leagueMatchDateMin) min="{{ $leagueMatchDateMin }}" @endif
-                                @if ($leagueMatchDateMax) max="{{ $leagueMatchDateMax }}" @endif
-                                title="{{ $leagueMatchDateTitle }}"
+                                @if ($divisionMatchDateMin) min="{{ $divisionMatchDateMin }}" @endif
+                                @if ($divisionMatchDateMax) max="{{ $divisionMatchDateMax }}" @endif
+                                title="{{ $divisionMatchDateTitle }}"
                                 required
                             >
                         </div>
@@ -803,7 +855,7 @@
                                 return;
                             }
                             var parts = slots.map(function (slot) {
-                                return (slot.time_label || 'Time TBA') + ' (' + (slot.league || 'League') + ')';
+                                return (slot.time_label || 'Time TBA') + ' (' + (slot.league || 'Tournament') + ')';
                             });
                             lines.push(nameOf(userId) + ' already has a match on this date at ' + parts.join(', '));
                         });
@@ -1023,9 +1075,9 @@
                                                 type="date"
                                                 name="match_date"
                                                 value="{{ $match->match_date->toDateString() }}"
-                                                @if ($league->start_date) min="{{ $league->start_date->format('Y-m-d') }}" @endif
-                                                @if ($league->end_date) max="{{ $league->end_date->format('Y-m-d') }}" @endif
-                                                title="{{ ($league->start_date && $league->end_date) ? 'Between '.$league->start_date->format('M j, Y').' and '.$league->end_date->format('M j, Y') : '' }}"
+                                                @if ($divisionScheduleStart ?? null) min="{{ $divisionScheduleStart->format('Y-m-d') }}" @endif
+                                                @if ($divisionScheduleEnd ?? null) max="{{ $divisionScheduleEnd->format('Y-m-d') }}" @endif
+                                                title="{{ (($divisionScheduleStart ?? null) && ($divisionScheduleEnd ?? null)) ? 'Between '.$divisionScheduleStart->format('M j, Y').' and '.$divisionScheduleEnd->format('M j, Y') : '' }}"
                                                 required
                                             >
                                         </div>
@@ -1127,6 +1179,28 @@
                             </div>
 
                             @php
+                                $matchParticipantIds = array_values(array_filter([
+                                    (int) $match->home_user_id,
+                                    (int) $match->away_user_id,
+                                    $match->home_partner_user_id ? (int) $match->home_partner_user_id : null,
+                                    $match->away_partner_user_id ? (int) $match->away_partner_user_id : null,
+                                ]));
+                                $matchScheduleConflictLines = \App\Support\PlayerMatchDayConflict::cardNoticeLinesFromIndex(
+                                    $playerScheduleByDay ?? [],
+                                    $match->match_date->format('Y-m-d'),
+                                    $matchParticipantIds,
+                                    (int) $match->id,
+                                    null,
+                                    $playerNamesById ?? [],
+                                );
+                            @endphp
+                            @if ($matchScheduleConflictLines !== [])
+                                <div class="admin-match-schedule-conflict">
+                                    @include('partials.match-schedule-conflict-notice', ['lines' => $matchScheduleConflictLines])
+                                </div>
+                            @endif
+
+                            @php
                                 $fmtSingles = $match->format === \App\Enums\GroupMatchFormat::Singles;
                                 $wid = $fmtSingles ? $match->singlesWinnerUserId() : null;
                                 $teamWon = $match->homeSideWon();
@@ -1211,7 +1285,7 @@
             @empty
                 <div class="admin-empty-state" style="margin-top:1rem;">
                     <i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i>
-                    <p>No matches scheduled for <strong>{{ $activeGroup->name }}</strong> yet. Save the league start date above to auto-schedule, or click <strong>Add match</strong> for a manual game.</p>
+                    <p>No matches scheduled for <strong>{{ $activeGroup->name }}</strong> yet. Set the group start date and click <strong>Schedule matches</strong>, or use <strong>Add match</strong> for a manual game.</p>
                 </div>
             @endforelse
         @endif

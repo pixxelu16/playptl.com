@@ -126,6 +126,9 @@
                             <span>TBA</span>
                         @endif
                     </div>
+                    @if ($isMine && ! empty($match['scheduleConflictMessages']))
+                        @include('partials.match-schedule-conflict-notice', ['lines' => $match['scheduleConflictMessages']])
+                    @endif
                     @if ($isMine && $playerMatchId > 0)
                         <div class="mt-2 border-t border-[#EEEEEE] pt-2">
                             @if ($showPlayerMatchActions)

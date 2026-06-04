@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', $league->name.' | '.config('app.name', 'playptl'))
-@section('meta_description', 'View league details from the admin dashboard.')
+@section('meta_description', 'View tournament details from the admin dashboard.')
 
 @section('content')
     @php
@@ -11,7 +11,7 @@
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">{{ $league->name }}</h1>
-                <p class="admin-card-text">League details and schedule information.</p>
+                <p class="admin-card-text">Tournament details and schedule information.</p>
             </div>
             <div class="admin-header-actions">
                 <a class="admin-link" href="{{ route('admin.leagues.index') }}">
@@ -24,7 +24,7 @@
                 </a>
                 <a class="admin-button admin-button-link" href="{{ route('admin.leagues.edit', $league) }}">
                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                    <span>Edit League</span>
+                    <span>Edit Tournament</span>
                 </a>
             </div>
         </div>
@@ -47,11 +47,11 @@
                     <strong>{{ $league->end_date?->format('M d, Y') ?? '-' }}</strong>
                 </div>
                 <div>
-                    <span>League Description</span>
+                    <span>Tournament Description</span>
                     <p>{{ $league->description ?: '-' }}</p>
                 </div>
                 <div>
-                    <span>League Stats</span>
+                    <span>Tournament Status</span>
                     <p>{{ $league->stats ? ucfirst($league->stats) : '-' }}</p>
                 </div>
                 <div>
@@ -80,7 +80,7 @@
                                 <li>
                                     <span class="admin-badge">
                                         {{ $groupCard->name }}
-                                        ({{ strtoupper($groupCard->tag) }})
+                                        ({{ strtoupper($groupCard->tag) }}@if($groupCard->skill_level_match) · {{ $groupCard->skill_level_match }}@endif)
                                     </span>
                                 </li>
                             @endforeach

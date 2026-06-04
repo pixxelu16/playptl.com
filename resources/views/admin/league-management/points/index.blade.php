@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Points | '.$league->name.' | '.config('app.name', 'playptl'))
-@section('meta_description', 'Standings and points for a league group.')
+@section('meta_description', 'Standings and points for a tournament group.')
 
 @section('content')
     <section class="admin-card">

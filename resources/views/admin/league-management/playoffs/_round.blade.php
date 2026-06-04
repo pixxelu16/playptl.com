@@ -22,6 +22,7 @@
                 'ageGroupKey' => $ageGroupKey,
                 'qfComplete' => $qfComplete ?? false,
                 'sfComplete' => $sfComplete ?? false,
+                'playoffRosterUsers' => $playoffRosterUsers ?? collect(),
             ])
         @endforeach
     </div>

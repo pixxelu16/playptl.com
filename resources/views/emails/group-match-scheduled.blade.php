@@ -8,15 +8,42 @@
 <body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
     <div style="max-width:640px;margin:0 auto;padding:24px;">
         <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;">
+            @php
+                $isPlayoff = ($playoffRoundLabel ?? null) !== null && ($playoffRoundLabel ?? '') !== '';
+                $isUpdate = ($updatedByOpponent ?? false) || ($updatedByPlayer ?? false);
+            @endphp
             <h2 style="margin:0 0 10px;font-size:18px;">
-                {{ ($updatedByOpponent ?? false) ? 'Your match schedule was updated' : 'Your match is scheduled' }}
+                @if ($removedFromMatch ?? false)
+                    Playoff match assignment changed
+                @elseif ($rosterChanged ?? false)
+                    Your playoff match players were updated
+                @elseif ($isUpdate)
+                    Your match schedule was updated
+                @elseif ($isPlayoff)
+                    Your playoff match is scheduled
+                @else
+                    Your match is scheduled
+                @endif
             </h2>
             <p style="margin:0 0 14px;font-size:14px;line-height:1.5;">
                 Hi {{ $recipientDisplayName }},
             </p>
             <p style="margin:0 0 14px;font-size:14px;line-height:1.5;">
-                @if ($updatedByOpponent ?? false)
+                @if ($removedFromMatch ?? false)
+                    An administrator has updated the players for a <strong>{{ $playoffRoundLabel }}</strong> playoff match in
+                @elseif ($rosterChanged ?? false)
+                    An administrator has updated the players for your <strong>{{ $playoffRoundLabel }}</strong> playoff match in
+                @elseif ($updatedByPlayer ?? false)
+                    A player has updated the schedule for your
+                    @if ($isPlayoff)
+                        <strong>{{ $playoffRoundLabel }}</strong> playoff match in
+                    @else
+                        <strong>{{ $formatLabel }}</strong> match in
+                    @endif
+                @elseif ($updatedByOpponent ?? false)
                     Your opponent has updated the schedule for your <strong>{{ $formatLabel }}</strong> match in
+                @elseif ($isPlayoff)
+                    An administrator has scheduled your <strong>{{ $playoffRoundLabel }}</strong> playoff match in
                 @else
                     An administrator has scheduled a <strong>{{ $formatLabel }}</strong> match for you in
                 @endif
@@ -24,7 +51,7 @@
                 @if ($divisionName !== '')
                     ({{ $divisionName }})
                 @endif
-                @if ($groupName !== '')
+                @if (! $isPlayoff && ($groupName ?? '') !== '')
                     — {{ $groupName }}
                 @endif
                 .

@@ -115,4 +115,9 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'playptl')),
     ],
 
+    /*
+    | Seconds between each queued match-schedule email during bulk scheduling.
+    */
+    'schedule_queue_stagger_seconds' => (int) env('MAIL_SCHEDULE_QUEUE_STAGGER_SECONDS', 2),
+
 ];

@@ -1,13 +1,13 @@
 @extends('layouts.admin')
 
-@section('title', 'Add to League | '.config('app.name', 'playptl'))
-@section('meta_description', 'Register a player into a league from admin.')
+@section('title', 'Add to Tournament | '.config('app.name', 'playptl'))
+@section('meta_description', 'Register a player into a tournament from admin.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
-                <h1 class="admin-card-title">Add player to league</h1>
+                <h1 class="admin-card-title">Add player to tournament</h1>
                 <p class="admin-card-text">
                     Player: <strong>{{ $player->name }}</strong> ({{ $player->email }}) · Type: <strong>{{ ucfirst($player->registration_type ?? 'singles') }}</strong>
                 </p>
@@ -33,9 +33,9 @@
 
             <div class="admin-form-grid">
                 <div class="admin-form-group" style="grid-column: 1 / -1;">
-                    <label class="admin-label" for="league_id">League</label>
+                    <label class="admin-label" for="league_id">Tournament</label>
                     <select class="admin-input" id="league_id" name="league_id" required>
-                        <option value="">Select league</option>
+                        <option value="">Select tournament</option>
                         @foreach ($leagues as $league)
                             <option value="{{ $league->id }}" @selected((int) old('league_id') === (int) $league->id)>
                                 {{ $league->name }}{{ ($league->stats ?? '') ? ' — '.ucfirst($league->stats) : '' }}
@@ -73,7 +73,7 @@
             </div>
 
             <div style="display:flex; gap: 10px; margin-top: 18px;">
-                <button class="admin-button" type="submit">Add to league</button>
+                <button class="admin-button" type="submit">Add to tournament</button>
                 <a class="admin-button admin-button-secondary" href="{{ route('admin.players.index', ['tab' => $player->registration_type ?? 'singles']) }}">Cancel</a>
             </div>
         </form>

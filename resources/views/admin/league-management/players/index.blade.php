@@ -110,7 +110,7 @@
                             <td colspan="4">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-user" aria-hidden="true"></i>
-                                    <p>No registrations found for this league/card filter.</p>
+                                    <p>No registrations found for this tournament/card filter.</p>
                                 </div>
                             </td>
                         </tr>

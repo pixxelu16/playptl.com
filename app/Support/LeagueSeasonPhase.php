@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\GroupCard;
 use App\Models\GroupMatch;
 use App\Models\League;
 use Illuminate\Support\Facades\Schema;
@@ -13,10 +14,6 @@ final class LeagueSeasonPhase
 {
     public static function hasGroupMatchesStarted(League $league): bool
     {
-        if ($league->start_date === null) {
-            return false;
-        }
-
         if (! Schema::hasTable('group_matches')) {
             return false;
         }
@@ -52,7 +49,7 @@ final class LeagueSeasonPhase
     public static function qualifierPlayoffsUnavailableMessage(League $league): string
     {
         if (! self::hasGroupMatchesStarted($league)) {
-            return 'League matches have not started yet. Set the start date on the Matches page and schedule group matches first.';
+            return 'Tournament matches have not started yet. Set the start date on the Matches page and schedule group matches first.';
         }
 
         return 'Playoff paths appear after at least one group match has a result. Enter scores on the Matches page, then return here.';
@@ -77,10 +74,10 @@ final class LeagueSeasonPhase
         return $league->playoffs_closed_at !== null;
     }
 
-    public static function canStartPlayoffs(League $league): bool
+    public static function canStartPlayoffs(League $league, GroupCard $groupCard): bool
     {
         return self::hasGroupMatchesStarted($league)
-            && LeaguePlayoffCalendar::playoffDatesAreValid($league)
+            && LeaguePlayoffCalendar::playoffDatesAreValid($league, $groupCard)
             && ! self::playoffsStarted($league)
             && ! self::playoffsClosed($league);
     }
@@ -109,17 +106,17 @@ final class LeagueSeasonPhase
     public static function groupSchedulingLockMessage(League $league): ?string
     {
         if (self::playoffsStarted($league)) {
-            return 'Playoffs have started for this league. Group-stage match scheduling is closed — use the Playoffs page.';
+            return 'Playoffs have started for this tournament. Group-stage match scheduling is closed — use the Playoffs page.';
         }
 
         if (self::groupMatchesClosed($league) && $league->end_date) {
-            return 'League matches closed on '.$league->end_date->format('M j, Y').'. Group-stage scheduling is closed — you can still update results on existing matches.';
+            return 'Tournament matches closed on '.$league->end_date->format('M j, Y').'. Group-stage scheduling is closed — you can still update results on existing matches.';
         }
 
         return null;
     }
 
-    public static function playoffsLockMessage(League $league): ?string
+    public static function playoffsLockMessage(League $league, GroupCard $groupCard): ?string
     {
         if (self::playoffsClosed($league)) {
             return 'Playoffs were closed on '.$league->playoffs_closed_at->format('M j, Y g:i A').'.';
@@ -127,10 +124,13 @@ final class LeagueSeasonPhase
 
         if (! self::playoffsStarted($league)) {
             if (! LeaguePlayoffCalendar::playoffDatesConfigured($league)) {
-                return 'Set playoff start and end dates below (start must be after league close date), then click Playoff start.';
+                $groupClose = DivisionScheduleWindow::endDate($league, $groupCard);
+                $closeLabel = $groupClose?->format('M j, Y') ?? 'the group end date (set on Matches)';
+
+                return 'Set playoff start and end dates below, then click Schedule matches (within the tournament window; start after group matches close on '.$closeLabel.').';
             }
 
-            return 'Click Playoff start when league matches are underway and Qualifier paths are ready.';
+            return 'Pick playoff dates and click Schedule matches when Qualifier paths are ready.';
         }
 
         return null;

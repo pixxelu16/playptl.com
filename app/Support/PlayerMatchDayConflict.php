@@ -175,6 +175,110 @@ final class PlayerMatchDayConflict
     }
 
     /**
+     * Red notice lines for match cards (admin + player), using a pre-built schedule index.
+     *
+     * @param  array<int, array<string, list<array{time: string, time_label: string, league: string, group_match_id: int|null, playoff_match_id: int|null}>>>  $index
+     * @param  array<int, string>  $namesById
+     * @return list<string>
+     */
+    public static function cardNoticeLinesFromIndex(
+        array $index,
+        string $dateYmd,
+        array $playerIds,
+        ?int $ignoreGroupMatchId = null,
+        ?int $ignorePlayoffMatchId = null,
+        array $namesById = [],
+    ): array {
+        $dateYmd = trim($dateYmd);
+        if ($dateYmd === '') {
+            return [];
+        }
+
+        $playerIds = array_values(array_unique(array_filter($playerIds)));
+        if ($playerIds === []) {
+            return [];
+        }
+
+        if ($namesById === []) {
+            $namesById = User::query()->whereIn('id', $playerIds)->pluck('name', 'id')->all();
+        }
+
+        $lines = [];
+        foreach ($playerIds as $userId) {
+            $slots = self::filteredSlotsForDay(
+                $index[$userId][$dateYmd] ?? [],
+                $ignoreGroupMatchId,
+                $ignorePlayoffMatchId,
+            );
+            if ($slots === []) {
+                continue;
+            }
+
+            $name = trim((string) ($namesById[$userId] ?? 'Player'));
+            foreach ($slots as $slot) {
+                $timeLabel = trim((string) ($slot['time_label'] ?? 'Time TBA')) ?: 'Time TBA';
+                $leagueName = trim((string) ($slot['league'] ?? 'another tournament')) ?: 'another tournament';
+                $lines[] = $name.' also has a match on this date at '.$timeLabel.' in '.$leagueName.'. Change date or time here or in that league.';
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @param  array<int, array<string, list<array{time: string, time_label: string, league: string, group_match_id: int|null, playoff_match_id: int|null}>>>  $index
+     * @return list<string>
+     */
+    public static function viewerNoticeLinesFromIndex(
+        array $index,
+        int $viewerUserId,
+        string $dateYmd,
+        ?int $ignoreGroupMatchId = null,
+        ?int $ignorePlayoffMatchId = null,
+    ): array {
+        $dateYmd = trim($dateYmd);
+        if ($dateYmd === '' || $viewerUserId <= 0) {
+            return [];
+        }
+
+        $slots = self::filteredSlotsForDay(
+            $index[$viewerUserId][$dateYmd] ?? [],
+            $ignoreGroupMatchId,
+            $ignorePlayoffMatchId,
+        );
+
+        $lines = [];
+        foreach ($slots as $slot) {
+            $timeLabel = trim((string) ($slot['time_label'] ?? 'Time TBA')) ?: 'Time TBA';
+            $leagueName = trim((string) ($slot['league'] ?? 'another tournament')) ?: 'another tournament';
+            $lines[] = 'You also have a match on this date at '.$timeLabel.' in '.$leagueName.'. Change date or time below or in that league.';
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @param  list<array{time: string, time_label: string, league: string, group_match_id: int|null, playoff_match_id: int|null}>  $slots
+     * @return list<array{time: string, time_label: string, league: string, group_match_id: int|null, playoff_match_id: int|null}>
+     */
+    private static function filteredSlotsForDay(
+        array $slots,
+        ?int $ignoreGroupMatchId,
+        ?int $ignorePlayoffMatchId,
+    ): array {
+        return array_values(array_filter($slots, function (array $slot) use ($ignoreGroupMatchId, $ignorePlayoffMatchId): bool {
+            if ($ignoreGroupMatchId !== null && (int) ($slot['group_match_id'] ?? 0) === $ignoreGroupMatchId) {
+                return false;
+            }
+            if ($ignorePlayoffMatchId !== null && (int) ($slot['playoff_match_id'] ?? 0) === $ignorePlayoffMatchId) {
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
+    /**
      * @return list<int>
      */
     private static function participantIdsFromGroupMatch(GroupMatch $match): array

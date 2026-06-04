@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
 @section('title', $league->name.' Management | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage groups, subgroups and players for a league.')
+@section('meta_description', 'Manage groups, subgroups and players for a tournament.')
 
 @section('content')
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">{{ $league->name }} — Management</h1>
-                <p class="admin-card-text">League → Groups → Subgroups → Players.</p>
+                <p class="admin-card-text">Tournament → Groups → Subgroups → Players.</p>
             </div>
             <div class="admin-header-actions">
                 <a class="admin-link" href="{{ route('admin.league-management.index') }}">
@@ -17,14 +17,14 @@
                 </a>
                 <a class="admin-button admin-button-link" href="{{ route('admin.leagues.edit', $league) }}">
                     <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                    <span>Edit League</span>
+                    <span>Edit Tournament</span>
                 </a>
             </div>
         </div>
 
         @if (! $tablesReady)
             <div class="admin-alert admin-alert-error">
-                League management tables are not available yet. Create & run migrations first (no website changes needed).
+                Tournament management tables are not available yet. Create & run migrations first (no website changes needed).
             </div>
         @endif
 
@@ -67,7 +67,7 @@
                             <td colspan="5">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
-                                    <p>No groups are assigned to this league. Edit the league and assign groups.</p>
+                                    <p>No groups are assigned to this tournament. Edit the tournament and assign groups.</p>
                                 </div>
                             </td>
                         </tr>

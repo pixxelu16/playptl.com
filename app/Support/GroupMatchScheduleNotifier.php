@@ -6,7 +6,6 @@ use App\Enums\GroupMatchFormat;
 use App\Mail\GroupMatchScheduledMail;
 use App\Models\GroupMatch;
 use App\Models\User;
-use Illuminate\Support\Facades\Mail;
 
 final class GroupMatchScheduleNotifier
 {
@@ -19,6 +18,7 @@ final class GroupMatchScheduleNotifier
         GroupMatch $groupMatch,
         ?int $excludeUserId = null,
         bool $updatedByOpponent = false,
+        bool $updatedByPlayer = false,
     ): void {
         $groupMatch->loadMissing([
             'homeUser', 'awayUser', 'homePartnerUser', 'awayPartnerUser',
@@ -46,22 +46,19 @@ final class GroupMatchScheduleNotifier
             if (! self::userHasDeliverableEmail($user)) {
                 continue;
             }
-            try {
-                Mail::to($user->email)->send(new GroupMatchScheduledMail(
-                    recipientDisplayName: self::userDisplayName($user),
-                    leagueName: $leagueName !== '' ? $leagueName : 'League',
-                    divisionName: $divisionName,
-                    groupName: $groupName,
-                    matchDateDisplay: $matchDateDisplay,
-                    startTime: $startTimeDisplay !== '' ? $startTimeDisplay : 'To be confirmed',
-                    venueDisplay: $venueDisplay,
-                    formatLabel: $formatLabel,
-                    opponentSummary: self::opponentSummaryForRecipient($groupMatch, (int) $user->id),
-                    updatedByOpponent: $updatedByOpponent,
-                ));
-            } catch (\Throwable $e) {
-                report($e);
-            }
+            MatchScheduleMailQueue::queue($user->email, new GroupMatchScheduledMail(
+                recipientDisplayName: self::userDisplayName($user),
+                leagueName: $leagueName !== '' ? $leagueName : 'League',
+                divisionName: $divisionName,
+                groupName: $groupName,
+                matchDateDisplay: $matchDateDisplay,
+                startTime: $startTimeDisplay !== '' ? $startTimeDisplay : 'To be confirmed',
+                venueDisplay: $venueDisplay,
+                formatLabel: $formatLabel,
+                opponentSummary: self::opponentSummaryForRecipient($groupMatch, (int) $user->id),
+                updatedByOpponent: $updatedByOpponent && ! $updatedByPlayer,
+                updatedByPlayer: $updatedByPlayer,
+            ));
         }
     }
 
