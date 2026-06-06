@@ -126,7 +126,7 @@
                                 id="gallery-global-empty"
                                 class="col-span-full rounded-lg border border-[#E0E0E0] bg-white px-5 py-12 text-center text-[15px] font-medium text-[#6B7280]"
                             >
-                                Abhi gallery mein koi match photo upload nahi hui. Players apni profile se upload kar sakte hain.
+                                No match photos have been uploaded to the gallery yet. Players can upload photos from their profile.
                             </div>
                         @endif
                     @endforelse

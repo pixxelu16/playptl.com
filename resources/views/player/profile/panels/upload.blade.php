@@ -117,7 +117,7 @@
                     </svg>
                     <p class="text-[15px] font-semibold text-[#6B7280] sm:text-[16px]">No images for this match yet</p>
                     <p class="mt-2 max-w-sm text-[13px] leading-relaxed text-[#9CA3AF] sm:text-[14px]">
-                        Is match ke liye abhi koi photo upload nahi hui. Neeche <span class="font-semibold text-[#5DA051]">Upload Image</span> dabakar photos add karo.
+                        No photos have been uploaded for this match yet. Select <span class="font-semibold text-[#5DA051]">Upload Image</span> below to add photos.
                     </p>
                 </div>
             @endif
