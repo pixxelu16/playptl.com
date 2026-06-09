@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Support\AdminPlayerLeagueRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
@@ -24,7 +25,6 @@ class AdminPlayerController extends Controller
         $players = User::query()
             ->where('role', UserRole::Player)
             ->where('registration_type', $tab)
-            ->with(['leagueRegistrations' => fn ($query) => $query->orderByDesc('id')])
             ->latest('id')
             ->paginate(25)
             ->withQueryString();
@@ -66,15 +66,22 @@ class AdminPlayerController extends Controller
             'state' => ['nullable', 'string', 'max:120'],
             'sex' => ['nullable', Rule::in(['male', 'female'])],
             'status' => ['required', Rule::in(['active', 'pending', 'suspend'])],
+            'skill_level' => ['nullable', 'string', 'max:32', Rule::in(AdminPlayerLeagueRegistrationService::skillLevelValues())],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $plainPassword = substr(str_replace(['/', '+', '='], '', base64_encode(random_bytes(12))), 0, 12);
 
+        $skillLevel = isset($validated['skill_level']) && $validated['skill_level'] !== ''
+            ? $validated['skill_level']
+            : null;
+        unset($validated['skill_level'], $validated['avatar']);
+
         $player = User::create([
             ...$validated,
+            'skill_level' => $skillLevel,
             'role' => UserRole::Player,
-            'registration_type' => 'singles',
+            'registration_type' => $tab,
             'password' => $plainPassword,
         ]);
 
@@ -117,8 +124,6 @@ class AdminPlayerController extends Controller
             $tab = 'singles';
         }
 
-        $player->load(['leagueRegistrations' => fn ($query) => $query->orderByDesc('id')]);
-
         return view('admin.players.edit', [
             'tab' => $tab,
             'player' => $player,
@@ -141,14 +146,11 @@ class AdminPlayerController extends Controller
             'state' => ['nullable', 'string', 'max:120'],
             'sex' => ['nullable', Rule::in(['male', 'female'])],
             'status' => ['required', Rule::in(['active', 'pending', 'suspend'])],
-            'skill_level' => ['nullable', Rule::in(['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'])],
+            'skill_level' => ['nullable', 'string', 'max:32', Rule::in(AdminPlayerLeagueRegistrationService::skillLevelValues())],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        // Enforce role stays as player
         $validated['role'] = UserRole::Player;
-
-        // Email should not be editable from admin players screen.
         unset($validated['email']);
 
         if ($request->hasFile('avatar')) {
@@ -175,13 +177,12 @@ class AdminPlayerController extends Controller
         $skillLevel = isset($validated['skill_level']) && $validated['skill_level'] !== ''
             ? $validated['skill_level']
             : null;
-        unset($validated['skill_level']);
+        unset($validated['skill_level'], $validated['avatar']);
 
-        $player->update($validated);
-
-        if ($request->has('skill_level') && $player->leagueRegistrations()->exists()) {
-            $player->leagueRegistrations()->update(['skill_level' => $skillLevel]);
-        }
+        $player->update([
+            ...$validated,
+            'skill_level' => $skillLevel,
+        ]);
 
         return redirect()
             ->route('admin.players.index', ['tab' => $tab])
@@ -204,4 +205,3 @@ class AdminPlayerController extends Controller
             ->with('status', 'Player deleted successfully.');
     }
 }
-

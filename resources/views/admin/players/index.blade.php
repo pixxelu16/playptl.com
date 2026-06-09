@@ -72,9 +72,7 @@
                             <td>{{ $player->state ?? '-' }}</td>
                             <td>{{ $player->sex ?? '-' }}</td>
                             <td>
-                                @php
-                                    $skillLevel = $player->leagueRegistrations->first()?->skill_level;
-                                @endphp
+                                @php $skillLevel = $player->skill_level; @endphp
                                 @if ($skillLevel === 'not-sure')
                                     Not Sure
                                 @elseif ($skillLevel)
