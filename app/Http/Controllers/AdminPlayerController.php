@@ -117,6 +117,8 @@ class AdminPlayerController extends Controller
             $tab = 'singles';
         }
 
+        $player->load(['leagueRegistrations' => fn ($query) => $query->orderByDesc('id')]);
+
         return view('admin.players.edit', [
             'tab' => $tab,
             'player' => $player,
@@ -139,6 +141,7 @@ class AdminPlayerController extends Controller
             'state' => ['nullable', 'string', 'max:120'],
             'sex' => ['nullable', Rule::in(['male', 'female'])],
             'status' => ['required', Rule::in(['active', 'pending', 'suspend'])],
+            'skill_level' => ['nullable', Rule::in(['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'])],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
@@ -169,7 +172,16 @@ class AdminPlayerController extends Controller
             $validated['avatar_path'] = $newPath;
         }
 
+        $skillLevel = isset($validated['skill_level']) && $validated['skill_level'] !== ''
+            ? $validated['skill_level']
+            : null;
+        unset($validated['skill_level']);
+
         $player->update($validated);
+
+        if ($request->has('skill_level') && $player->leagueRegistrations()->exists()) {
+            $player->leagueRegistrations()->update(['skill_level' => $skillLevel]);
+        }
 
         return redirect()
             ->route('admin.players.index', ['tab' => $tab])
