@@ -30,6 +30,7 @@ use Illuminate\Notifications\Notifiable;
     'preferred_play_time',
     'dominant_hand',
     'sex',
+    'skill_level',
     'registration_type',
     'transaction_id',
 ])]

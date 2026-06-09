@@ -50,7 +50,7 @@
                 <div class="admin-form-group">
                     <label class="admin-label" for="skill_level">Skill Level</label>
                     @php
-                        $registrationSkillLevelValues = ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
+                        $registrationSkillLevelValues = \App\Support\AdminPlayerLeagueRegistrationService::skillLevelValues();
                         $selectedSkill = old('skill_level');
                     @endphp
                     <select class="admin-input" id="skill_level" name="skill_level" required>
@@ -79,4 +79,3 @@
         </form>
     </section>
 @endsection
-

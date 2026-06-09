@@ -86,22 +86,9 @@
                     </select>
                 </div>
 
-                <div class="admin-form-group">
-                    <label class="admin-label" for="skill_level">Skill Level</label>
-                    @php
-                        $registrationSkillLevelValues = ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
-                        $currentSkillLevel = old('skill_level', $player->leagueRegistrations->first()?->skill_level);
-                    @endphp
-                    <select class="admin-input" id="skill_level" name="skill_level">
-                        <option value="" @selected($currentSkillLevel === null || $currentSkillLevel === '')>—</option>
-                        @foreach ($registrationSkillLevelValues as $skillValue)
-                            <option value="{{ $skillValue }}" @selected($currentSkillLevel == $skillValue)>{{ $skillValue === 'not-sure' ? 'Not Sure' : $skillValue }}</option>
-                        @endforeach
-                    </select>
-                    @if ($player->leagueRegistrations->isEmpty())
-                        <small class="admin-muted">No league registration yet — skill level will apply once the player is registered.</small>
-                    @endif
-                </div>
+                @include('admin.players._skill-level-field', [
+                    'currentSkillLevel' => old('skill_level', $player->skill_level),
+                ])
             </div>
 
             <div style="display:flex; gap: 10px; margin-top: 18px;">
