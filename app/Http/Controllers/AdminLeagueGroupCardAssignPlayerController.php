@@ -10,6 +10,7 @@ use App\Models\LeagueRegistration;
 use App\Models\User;
 use App\Support\LeagueRegistrationRoster;
 use App\Support\PlayerTodayMatchLookup;
+use App\Support\UserSkillLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -55,6 +56,11 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
 
         $playerLeagueNames = [];
         $playerSkillLevels = [];
+
+        foreach ($players as $player) {
+            $playerSkillLevels[(int) $player->id] = UserSkillLevel::normalize(UserSkillLevel::resolvedFor($player));
+        }
+
         if ($playerIds !== []) {
             $registrations = LeagueRegistration::query()
                 ->whereIn('user_id', $playerIds)
@@ -70,11 +76,6 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
                 $leagueName = trim((string) ($registration->league?->name ?? ''));
                 if ($leagueName !== '' && ! in_array($leagueName, $playerLeagueNames[$userId], true)) {
                     $playerLeagueNames[$userId][] = $leagueName;
-                }
-
-                if (! isset($playerSkillLevels[$userId])) {
-                    $skill = trim((string) ($registration->skill_level ?? ''));
-                    $playerSkillLevels[$userId] = $skill !== '' ? $skill : null;
                 }
             }
         }
@@ -146,6 +147,8 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
             'registration_type' => $registrationType,
             'payment_status' => 'admin',
         ]);
+
+        UserSkillLevel::syncToUser($player, $playerSkill);
 
         return redirect()
             ->route('admin.league-management.assign-players.index', [$league, $groupCard])
@@ -221,10 +224,7 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
 
     protected function resolveSkillLevelForPlayer(User $player): ?string
     {
-        $skill = trim((string) (LeagueRegistration::query()
-            ->where('user_id', $player->id)
-            ->latest('id')
-            ->value('skill_level') ?? ''));
+        $skill = trim((string) (\App\Support\UserSkillLevel::resolvedFor($player) ?? ''));
 
         if ($skill === '' || $skill === 'not-sure') {
             return null;

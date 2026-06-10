@@ -12,6 +12,7 @@ use App\Models\PlayoffMatch;
 use App\Models\User;
 use App\Support\LeaguePointSystem;
 use App\Support\LeagueRegistrationRoster;
+use App\Support\UserSkillLevel;
 use App\Support\MatchSchedulePresenter;
 use App\Support\MatchScoreReader;
 use App\Support\MatchStartTime;
@@ -537,7 +538,7 @@ class LeagueController extends Controller
                         'email' => $entry['display_subtitle'] !== '' ? $entry['display_subtitle'] : (string) ($user->email ?? ''),
                         'phone' => (string) ($user->phone ?? ''),
                         'location' => $location !== '' ? $location : '—',
-                        'skillLevel' => (string) ($registration->skill_level ?? '—'),
+                        'skillLevel' => (string) (UserSkillLevel::resolvedFor($user) ?? $registration->skill_level ?? '—'),
                         'group' => $group->name,
                         'division' => $groupCard->name,
                         'playerId' => '#PTL-'.str_pad((string) $user->id, 3, '0', STR_PAD_LEFT),

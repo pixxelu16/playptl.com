@@ -8,6 +8,7 @@ use App\Support\LeagueEntryFee;
 use App\Support\LeagueRegistrationFlow;
 use App\Support\LeagueRegistrationGate;
 use App\Support\TournamentRegistrationOptions;
+use App\Support\UserSkillLevel;
 use App\Http\Controllers\Controller;
 use App\Models\GroupCard;
 use App\Models\League;
@@ -197,6 +198,7 @@ class RegisteredUserController extends Controller
             'city' => $city,
             'state' => $state,
             'sex' => $sex,
+            'skill_level' => $skillLevel,
             'registration_type' => $tab,
             'transaction_id' => (string) $intent->id,
         ]);
@@ -235,6 +237,8 @@ class RegisteredUserController extends Controller
             ]
         );
 
+        UserSkillLevel::syncToUser($user, $skillLevel);
+
         // Doubles: create/attach second player as separate user + registration, send invite/setup email
         if ($tab === 'doubles') {
             $partnerEmail = strtolower((string) $specific['d2_email']);
@@ -255,7 +259,10 @@ class RegisteredUserController extends Controller
                     'status' => 'active',
                     'password' => Hash::make(Str::random(32)),
                     'registration_type' => 'doubles',
+                    'skill_level' => (string) $specific['d2_skill'],
                 ]);
+            } else {
+                UserSkillLevel::syncToUser($partner, (string) $specific['d2_skill']);
             }
 
             LeagueRegistration::updateOrCreate(

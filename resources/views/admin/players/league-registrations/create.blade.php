@@ -51,7 +51,7 @@
                     <label class="admin-label" for="skill_level">Skill Level</label>
                     @php
                         $registrationSkillLevelValues = \App\Support\AdminPlayerLeagueRegistrationService::skillLevelValues();
-                        $selectedSkill = old('skill_level');
+                        $selectedSkill = old('skill_level', $player->skill_level);
                     @endphp
                     <select class="admin-input" id="skill_level" name="skill_level" required>
                         <option value="">Select skill level</option>

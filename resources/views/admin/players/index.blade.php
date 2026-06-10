@@ -72,7 +72,7 @@
                             <td>{{ $player->state ?? '-' }}</td>
                             <td>{{ $player->sex ?? '-' }}</td>
                             <td>
-                                @php $skillLevel = $player->skill_level; @endphp
+                                @php $skillLevel = \App\Support\UserSkillLevel::resolvedFor($player); @endphp
                                 @if ($skillLevel === 'not-sure')
                                     Not Sure
                                 @elseif ($skillLevel)
