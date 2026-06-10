@@ -8,6 +8,7 @@ use App\Models\League;
 use App\Models\LeagueRegistration;
 use App\Models\User;
 use App\Support\LeagueRegistrationRoster;
+use App\Support\UserSkillLevel;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -99,7 +100,7 @@ class LeagueRegistrationFlow
             throw new \InvalidArgumentException("Already registered in another {$formatLabel} group for this league.");
         }
 
-        return LeagueRegistration::updateOrCreate(
+        $registration = LeagueRegistration::updateOrCreate(
             [
                 'user_id' => $user->id,
                 'league_id' => $leagueId,
@@ -114,6 +115,10 @@ class LeagueRegistrationFlow
                 'payment_status' => $attributes['payment_status'] ?? 'completed',
             ],
         );
+
+        UserSkillLevel::syncToUser($user, isset($attributes['skill_level']) ? (string) $attributes['skill_level'] : null);
+
+        return $registration;
     }
 
     public static function newDoublesTeamKey(): string

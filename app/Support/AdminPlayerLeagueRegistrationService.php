@@ -85,7 +85,7 @@ class AdminPlayerLeagueRegistrationService
 
         $groupId = LeagueRegistrationFlow::resolveGroupId($league->id, $groupCard, $tab, $ageGroupKey);
 
-        return LeagueRegistration::create([
+        $registration = LeagueRegistration::create([
             'user_id' => $player->id,
             'league_id' => $league->id,
             'group_card_id' => $groupCard->id,
@@ -95,6 +95,10 @@ class AdminPlayerLeagueRegistrationService
             'registration_type' => $tab,
             'payment_status' => 'admin',
         ]);
+
+        UserSkillLevel::syncToUser($player, $skillLevel);
+
+        return $registration;
     }
 
     public static function syncRegistration(
@@ -142,6 +146,8 @@ class AdminPlayerLeagueRegistrationService
             'age_group_key' => $ageGroupKey,
             'registration_type' => $tab,
         ]);
+
+        UserSkillLevel::syncToUser($player, $skillLevel);
 
         return $registration->fresh();
     }

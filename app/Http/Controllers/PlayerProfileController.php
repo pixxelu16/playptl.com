@@ -23,6 +23,7 @@ use App\Support\TournamentRegistrationOptions;
 use App\Support\PlayoffMatchScheduleNotifier;
 use App\Support\LeagueRegistrationFlow;
 use App\Support\LeagueRegistrationRoster;
+use App\Support\UserSkillLevel;
 use App\Support\LeagueWeekCalendar;
 use App\Support\MatchStartTime;
 use App\Support\MatchResultInput;
@@ -371,7 +372,10 @@ class PlayerProfileController extends Controller
                     'status' => 'active',
                     'password' => Hash::make(Str::random(32)),
                     'registration_type' => 'doubles',
+                    'skill_level' => (string) $specific['d2_skill'],
                 ]);
+            } else {
+                UserSkillLevel::syncToUser($partner, (string) $specific['d2_skill']);
             }
 
             LeagueRegistrationFlow::registerUser($partner, $leagueId, [
@@ -997,7 +1001,9 @@ class PlayerProfileController extends Controller
 
         $registration = $this->profileRegistration($request);
         if ($registration && array_key_exists('ntrp', $validated)) {
-            $registration->update(['skill_level' => $validated['ntrp'] ?: null]);
+            $ntrp = $validated['ntrp'] ?: null;
+            $registration->update(['skill_level' => $ntrp]);
+            UserSkillLevel::syncToUser($user, $ntrp);
         }
 
         return redirect()
@@ -1031,7 +1037,7 @@ class PlayerProfileController extends Controller
             'firstName' => $firstName,
             'lastName' => $lastName,
             'dob' => $user->date_of_birth?->format('Y-m-d') ?? '',
-            'ntrp' => (string) ($registration?->skill_level ?? ''),
+            'ntrp' => (string) (UserSkillLevel::resolvedFor($user) ?? $registration?->skill_level ?? ''),
             'email' => (string) $user->email,
             'phone' => (string) ($user->phone ?? ''),
             'city' => (string) ($user->city ?? ''),
@@ -1794,7 +1800,7 @@ class PlayerProfileController extends Controller
 
     protected function partnerSkillLevelFromUser(User $user): ?string
     {
-        $skill = trim((string) ($user->leagueRegistrations()->latest('id')->value('skill_level') ?? ''));
+        $skill = trim((string) (UserSkillLevel::resolvedFor($user) ?? ''));
 
         if ($skill === '' || $skill === 'not-sure' || ! is_numeric($skill)) {
             return null;
@@ -1825,14 +1831,9 @@ class PlayerProfileController extends Controller
 
     protected function playerFixedSkillLevel(User $user, Request $request): ?string
     {
-        $fromProfile = trim((string) ($this->profileRegistration($request)?->skill_level ?? ''));
-        if ($fromProfile !== '' && $fromProfile !== 'not-sure' && is_numeric($fromProfile)) {
-            return $fromProfile;
-        }
-
-        $latest = trim((string) ($user->leagueRegistrations()->latest('id')->value('skill_level') ?? ''));
-        if ($latest !== '' && $latest !== 'not-sure' && is_numeric($latest)) {
-            return $latest;
+        $fromUser = trim((string) (UserSkillLevel::resolvedFor($user) ?? ''));
+        if ($fromUser !== '' && $fromUser !== 'not-sure' && is_numeric($fromUser)) {
+            return $fromUser;
         }
 
         return null;
