@@ -7,6 +7,7 @@ use App\Models\GroupMatch;
 use App\Models\League;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Division (group card) match schedule window for a tournament — shared by all subgroups A/B/C.
@@ -68,7 +69,7 @@ final class DivisionScheduleWindow
         if ($endDate !== null) {
             $groupEnd = Carbon::parse($endDate)->startOfDay();
             if ($groupEnd->gt($tournamentEnd)) {
-                return 'Group end date must be on or before the tournament end date ('.$tournamentEnd->format('M j, Y').').';
+                return 'Group end date cannot be later than the tournament end date ('.$tournamentEnd->format('M j, Y').'). Extend the tournament dates on Edit Tournament first.';
             }
             if ($groupEnd->lt($tournamentStart)) {
                 return 'Group end date must be on or after the tournament start date ('.$tournamentStart->format('M j, Y').').';
@@ -138,7 +139,7 @@ final class DivisionScheduleWindow
         GroupCard $groupCard,
         ?string $endDate,
     ): ?string {
-        if ($endDate === null || $endDate === '' || ! Schema::hasTable('group_matches')) {
+        if (! Schema::hasTable('group_matches')) {
             return null;
         }
 
@@ -147,6 +148,16 @@ final class DivisionScheduleWindow
         if ($latestMatchDay === null) {
             return null;
         }
+
+        if ($endDate === null || $endDate === '') {
+            return null;
+        }
+
+        $exceedsTournament = TournamentDateWindowConflict::groupMatchesExceedTournamentEnd($league, $groupCard);
+        if ($exceedsTournament !== null) {
+            return $exceedsTournament;
+        }
+
         $proposedEnd = Carbon::parse($endDate)->startOfDay();
 
         if ($proposedEnd->lt($latestMatchDay)) {
@@ -184,16 +195,45 @@ final class DivisionScheduleWindow
         return self::startDate($league, $groupCard) !== null;
     }
 
+    /**
+     * When group matches are considered closed for playoff scheduling (pivot end date, or latest match if unset).
+     */
+    public static function groupCloseDateForPlayoffs(League $league, GroupCard $groupCard): ?Carbon
+    {
+        $groupEnd = self::endDate($league, $groupCard);
+        $latestMatch = self::latestScheduledMatchDate($league, $groupCard);
+
+        if ($groupEnd !== null && $latestMatch !== null) {
+            return $groupEnd->gte($latestMatch) ? $groupEnd->copy()->startOfDay() : $latestMatch->copy()->startOfDay();
+        }
+
+        return ($groupEnd ?? $latestMatch)?->copy()->startOfDay();
+    }
+
+    /** First calendar day playoffs may start — the day after group matches close. */
+    public static function earliestPlayoffStartDate(League $league, GroupCard $groupCard): ?Carbon
+    {
+        $groupClose = self::groupCloseDateForPlayoffs($league, $groupCard);
+
+        return $groupClose?->copy()->addDay()->startOfDay();
+    }
+
     public static function updateDivisionDates(
         League $league,
         GroupCard $groupCard,
         ?string $startDate,
         ?string $endDate,
     ): void {
-        $league->groupCards()->updateExistingPivot($groupCard->id, [
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-        ]);
+        DB::table('group_card_league')
+            ->where('league_id', $league->id)
+            ->where('group_card_id', $groupCard->id)
+            ->update([
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ]);
+
+        $league->unsetRelation('groupCards');
+        $groupCard->unsetRelation('leagues');
     }
 
     /**
@@ -234,10 +274,15 @@ final class DivisionScheduleWindow
 
     private static function pivotValue(League $league, GroupCard $groupCard, string $column): mixed
     {
-        $attached = $league->groupCards()
-            ->where('group_cards.id', $groupCard->id)
-            ->first();
+        if (! Schema::hasTable('group_card_league') || ! Schema::hasColumn('group_card_league', $column)) {
+            return null;
+        }
 
-        return $attached?->pivot?->{$column};
+        $row = DB::table('group_card_league')
+            ->where('league_id', $league->id)
+            ->where('group_card_id', $groupCard->id)
+            ->value($column);
+
+        return $row;
     }
 }

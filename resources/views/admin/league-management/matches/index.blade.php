@@ -395,6 +395,13 @@
                 No players in <strong>{{ $activeGroup->name }}</strong> yet. Add players from Subgroups &amp; players, then schedule matches.
             </div>
         @else
+            @if ($scheduleExceedsTournamentMessage ?? null)
+                <div class="admin-alert" style="background:#fff8e6;border:1px solid #f0d78c;color:#7a5b00;margin-bottom:1rem;" role="status">
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                    {{ $scheduleExceedsTournamentMessage }}
+                    <a href="{{ route('admin.leagues.edit', $league) }}" class="admin-link" style="margin-left:0.35rem;font-weight:700;">Edit Tournament</a>
+                </div>
+            @endif
             @if ($groupSchedulingLocked ?? false)
                 <div class="admin-alert admin-alert-error playoff-schedule-lock" role="status">
                     {{ $groupSchedulingLockMessage ?? 'Group match scheduling is closed while qualifier or playoffs are active.' }}
@@ -476,6 +483,23 @@
                         <span>{{ $matchesAlreadyScheduled ? 'Reschedule matches' : 'Schedule matches' }}</span>
                     </button>
                 </form>
+                @if (($canCancelMatches ?? false) && ($divisionMatchesCount ?? 0) > 0)
+                    <form
+                        method="POST"
+                        action="{{ route('admin.league-management.matches.cancel-schedule', [$league, $groupCard] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []) + ['group' => $activeGroup->id]) }}"
+                        onsubmit="return confirm('Cancel all {{ $divisionMatchesCount }} scheduled match(es) for {{ $groupCard->name }}? This removes matches from every subgroup ({{ $groups->pluck('name')->join(', ') }}) and clears group dates. All affected players will be emailed.');"
+                        style="margin:0.75rem 0 0;"
+                    >
+                        @csrf
+                        <button type="submit" class="admin-button admin-button-secondary" style="border-color:#c62828;color:#c62828;">
+                            <i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i>
+                            <span>Cancel this group matches</span>
+                        </button>
+                    </form>
+                    <p class="admin-card-text" style="margin:0.5rem 0 0;font-size:0.85rem;">
+                        Removes the full schedule for <strong>{{ $groupCard->name }}</strong> across all subgroups ({{ $groups->pluck('name')->join(', ') }}).
+                    </p>
+                @endif
                 @if (! ($matchesAlreadyScheduled ?? false) && ($tournamentDatesConfigured ?? false))
                     <p class="admin-card-text" style="margin:0.75rem 0 0;font-size:0.85rem;">
                         Pick a start date and click <strong>Schedule matches</strong>. The group end date field appears after matches are generated.

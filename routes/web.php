@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
         Route::get('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'index'])->name('league-management.matches.index');
         Route::post('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'store'])->name('league-management.matches.store');
         Route::post('league-management/{league}/group-cards/{groupCard}/matches/schedule-dates', [AdminGroupMatchController::class, 'saveScheduleDates'])->name('league-management.matches.save-schedule-dates');
+        Route::post('league-management/{league}/group-cards/{groupCard}/matches/cancel-schedule', [AdminGroupMatchController::class, 'cancelSchedule'])->name('league-management.matches.cancel-schedule');
         Route::post('league-management/{league}/group-cards/{groupCard}/matches/generate-round-robin', [AdminGroupMatchController::class, 'generateRoundRobin'])->name('league-management.matches.generate-round-robin');
         Route::put('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'update'])->name('league-management.matches.update');
         Route::delete('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'destroy'])->name('league-management.matches.destroy');

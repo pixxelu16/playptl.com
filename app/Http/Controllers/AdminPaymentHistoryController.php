@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\League;
+use App\Helpers\LeagueMenuHelper;
 use App\Models\PaymentHistory;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,10 +23,7 @@ class AdminPaymentHistoryController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        $leagues = League::query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->get();
+        $leagues = LeagueMenuHelper::activeLeagues(latestFirst: true);
 
         return view('admin.payment-histories.index', [
             'payments' => $payments,

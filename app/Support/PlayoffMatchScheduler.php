@@ -201,14 +201,31 @@ final class PlayoffMatchScheduler
         string $endDateYmd,
         ?string $ageGroupKey = null,
     ): ?string {
+        $exceedsTournament = TournamentDateWindowConflict::playoffMatchesExceedTournamentEnd(
+            $league,
+            $groupCard,
+            $ageGroupKey,
+        );
+        if ($exceedsTournament !== null) {
+            return $exceedsTournament;
+        }
+
         $proposedEnd = Carbon::parse($endDateYmd)->startOfDay();
-        $latestMatchDay = self::latestCompletedMatchDate($league, $groupCard, $ageGroupKey);
+        $latestMatchDay = self::latestScheduledPlayoffMatchDate($league, $groupCard, $ageGroupKey);
 
         if ($latestMatchDay !== null && $proposedEnd->lt($latestMatchDay)) {
             return 'Playoff end date cannot be before the latest scheduled playoff match ('.$latestMatchDay->format('M j, Y').').';
         }
 
         return null;
+    }
+
+    public static function latestScheduledPlayoffMatchDate(
+        League $league,
+        GroupCard $groupCard,
+        ?string $ageGroupKey = null,
+    ): ?Carbon {
+        return TournamentDateWindowConflict::latestScheduledPlayoffMatchDate($league, $groupCard, $ageGroupKey);
     }
 
     /**

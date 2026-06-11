@@ -51,7 +51,6 @@
                             <th>Email</th>
                             <th>Skill level</th>
                             <th>Today</th>
-                            <th>Other tournaments</th>
                             <th>Assign</th>
                         </tr>
                     </thead>
@@ -59,7 +58,6 @@
                         @forelse ($players as $player)
                             @php
                                 $todayLeague = $todayMatchLeagues[(int) $player->id] ?? null;
-                                $otherLeagues = $playerLeagueNames[(int) $player->id] ?? [];
                                 $playerSkill = $playerSkillLevels[(int) $player->id] ?? null;
                             @endphp
                             <tr>
@@ -82,13 +80,6 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($otherLeagues !== [])
-                                        {{ implode(', ', $otherLeagues) }}
-                                    @else
-                                        <span class="admin-muted">—</span>
-                                    @endif
-                                </td>
-                                <td>
                                     <form method="POST" action="{{ route('admin.league-management.assign-players.store', [$league, $groupCard]) }}">
                                         @csrf
                                         <input type="hidden" name="user_id" value="{{ $player->id }}">
@@ -101,7 +92,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6">
+                                <td colspan="5">
                                     <div class="admin-empty-state">
                                         <i class="fa-solid fa-user" aria-hidden="true"></i>
                                         <p>No unassigned {{ $registrationType }} players left. Everyone is already in this group, or no players exist on the platform.</p>

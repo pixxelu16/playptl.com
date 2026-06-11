@@ -19,6 +19,7 @@ use App\Support\MatchStartTime;
 use App\Support\PlayoffBracketBuilder;
 use App\Support\PlayoffPathAssigner;
 use App\Support\PlayerMatchDayConflict;
+use App\Support\TournamentDateWindowConflict;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
@@ -141,11 +142,22 @@ class AdminPlayoffMatchController extends Controller
             'playoffsClosed' => LeagueSeasonPhase::playoffsClosed($league),
             'playoffsPhaseMessage' => LeagueSeasonPhase::playoffsLockMessage($league, $groupCard),
             'groupMatchesCloseDate' => DivisionScheduleWindow::endDate($league, $groupCard),
+            'latestGroupMatchDate' => DivisionScheduleWindow::latestScheduledMatchDate($league, $groupCard),
+            'earliestPlayoffStartDate' => DivisionScheduleWindow::earliestPlayoffStartDate($league, $groupCard),
             'tournamentStartDate' => $league->start_date,
             'tournamentEndDate' => $league->end_date,
             'groupMatchesStarted' => LeagueSeasonPhase::hasGroupMatchesStarted($league),
             'showQualifierPlayoffs' => $showQualifierPlayoffs,
             'qualifierUnavailableMessage' => LeagueSeasonPhase::qualifierPlayoffsUnavailableMessage($league),
+            'playoffsNeedTournamentExtensionMessage' => TournamentDateWindowConflict::playoffsNeedTournamentExtension(
+                $league,
+                $groupCard,
+            ),
+            'playoffExceedsTournamentMessage' => TournamentDateWindowConflict::playoffMatchesExceedTournamentEnd(
+                $league,
+                $groupCard,
+                $ageGroupKey,
+            ),
         ]);
     }
 
@@ -160,24 +172,21 @@ class AdminPlayoffMatchController extends Controller
         $ageGroupKey = $this->ageGroupKeyFromRequest($request);
         $playoffsAlreadyStarted = LeagueSeasonPhase::playoffsStarted($league);
 
-        if ($playoffsAlreadyStarted) {
-            $validated = $request->validate([
-                'playoff_start_date' => ['required', 'date'],
-                'playoff_end_date' => ['required', 'date'],
-            ]);
-            $playoffStart = Carbon::parse($validated['playoff_start_date'])->startOfDay();
-            $playoffEnd = Carbon::parse($validated['playoff_end_date'])->startOfDay();
-        } else {
-            $validated = $request->validate([
-                'playoff_start_date' => ['required', 'date'],
-                'playoff_end_date' => ['required', 'date'],
-            ]);
-            $playoffStart = Carbon::parse($validated['playoff_start_date'])->startOfDay();
-            $playoffEnd = Carbon::parse($validated['playoff_end_date'])->startOfDay();
+        $extensionBlock = TournamentDateWindowConflict::playoffsNeedTournamentExtension($league, $groupCard);
+        if ($extensionBlock !== null) {
+            return back()->withErrors(['playoff_dates' => $extensionBlock])->withInput();
         }
 
-        if (! $playoffStart instanceof Carbon) {
-            return back()->withErrors(['playoff_start_date' => 'Set playoff start date first.'])->withInput();
+        $validated = $request->validate([
+            'playoff_start_date' => ['required', 'date'],
+            'playoff_end_date' => ['required', 'date'],
+        ]);
+        $playoffStart = Carbon::parse($validated['playoff_start_date'])->startOfDay();
+        $playoffEnd = Carbon::parse($validated['playoff_end_date'])->startOfDay();
+
+        $datesExtension = TournamentDateWindowConflict::playoffDatesNeedTournamentExtension($league, $playoffEnd);
+        if ($datesExtension !== null) {
+            return back()->withErrors(['playoff_end_date' => $datesExtension])->withInput();
         }
 
         $startError = LeaguePlayoffCalendar::validatePlayoffStartDate($playoffStart, $league, $groupCard);
