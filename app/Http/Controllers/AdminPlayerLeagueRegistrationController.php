@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
-use App\Models\League;
+use App\Helpers\LeagueMenuHelper;
 use App\Models\User;
 use App\Support\AdminPlayerLeagueRegistrationService;
 use Illuminate\Http\RedirectResponse;
@@ -18,10 +18,7 @@ class AdminPlayerLeagueRegistrationController extends Controller
     {
         abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
 
-        $leagues = League::query()
-            ->select(['id', 'name', 'stats', 'start_date', 'end_date'])
-            ->orderByDesc('id')
-            ->get();
+        $leagues = LeagueMenuHelper::activeLeagues(latestFirst: true);
 
         return view('admin.players.league-registrations.create', [
             'player' => $player,

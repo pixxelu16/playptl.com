@@ -28,7 +28,7 @@
                     <select class="admin-input" name="league_id" id="league_id">
                         <option value="" @selected($leagueId === null)>All</option>
                         @foreach ($leagues as $l)
-                            <option value="{{ $l->id }}" @selected($leagueId === $l->id)>{{ $l->name }} (ID: {{ $l->id }})</option>
+                            <option value="{{ $l->id }}" @selected($leagueId === $l->id)>{{ $l->name }}</option>
                         @endforeach
                     </select>
                 </div>

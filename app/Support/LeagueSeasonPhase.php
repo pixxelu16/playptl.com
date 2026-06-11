@@ -123,11 +123,13 @@ final class LeagueSeasonPhase
         }
 
         if (! self::playoffsStarted($league)) {
-            if (! LeaguePlayoffCalendar::playoffDatesConfigured($league)) {
-                $groupClose = DivisionScheduleWindow::endDate($league, $groupCard);
-                $closeLabel = $groupClose?->format('M j, Y') ?? 'the group end date (set on Matches)';
+            $groupClose = DivisionScheduleWindow::groupCloseDateForPlayoffs($league, $groupCard);
+            $closeLabel = $groupClose?->format('M j, Y') ?? 'the group end date';
+            $earliestStart = DivisionScheduleWindow::earliestPlayoffStartDate($league, $groupCard);
+            $startLabel = $earliestStart?->format('M j, Y') ?? 'after group matches close';
 
-                return 'Set playoff start and end dates below, then click Schedule matches (within the tournament window; start after group matches close on '.$closeLabel.').';
+            if (! LeaguePlayoffCalendar::playoffDatesConfigured($league)) {
+                return 'Set playoff start and end dates below, then click Schedule matches (start on or after '.$startLabel.', once group matches close on '.$closeLabel.').';
             }
 
             return 'Pick playoff dates and click Schedule matches when Qualifier paths are ready.';

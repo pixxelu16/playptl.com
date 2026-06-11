@@ -8,12 +8,15 @@
             @endif
             @php
                 $groupCloseLabel = ($groupMatchesCloseDate ?? null)?->format('M j, Y') ?? 'not set';
-                $tournamentStartLabel = ($tournamentStartDate ?? null)?->format('M j, Y') ?? 'not set';
-                $tournamentEndLabel = ($tournamentEndDate ?? null)?->format('M j, Y') ?? 'not set';
+                $latestGroupMatchLabel = ($latestGroupMatchDate ?? null)?->format('M j, Y');
+                $earliestPlayoffStartLabel = ($earliestPlayoffStartDate ?? null)?->format('M j, Y');
+                $playoffsNeedExtension = ($playoffsNeedTournamentExtensionMessage ?? null) !== null;
+                $playoffStartMin = ($earliestPlayoffStartDate ?? null)?->format('Y-m-d') ?? '';
+                $playoffStartMax = (! $playoffsNeedExtension && ($tournamentEndDate ?? null))
+                    ? $tournamentEndDate->format('Y-m-d')
+                    : '';
                 $playoffStartValue = old('playoff_start_date', $league->playoff_start_date?->format('Y-m-d') ?? '');
                 $playoffEndValue = old('playoff_end_date', $league->playoff_end_date?->format('Y-m-d') ?? '');
-                $playoffStartMin = ($groupMatchesCloseDate ?? null)?->copy()->addDay()->format('Y-m-d') ?? '';
-                $playoffStartMax = ($tournamentEndDate ?? null)?->format('Y-m-d') ?? '';
                 $playoffEndMin = $playoffStartMin;
                 if ($playoffStartValue !== '' && ($playoffEndMin === '' || $playoffStartValue > $playoffEndMin)) {
                     $playoffEndMin = $playoffStartValue;
@@ -21,6 +24,20 @@
                 $playoffEndMax = $playoffStartMax;
                 $playoffDatesLocked = ($playoffsClosed ?? false);
             @endphp
+            @if ($playoffsNeedTournamentExtensionMessage ?? null)
+                <div class="admin-alert" style="background:#fff8e6;border:1px solid #f0d78c;color:#7a5b00;margin-bottom:0.85rem;" role="status">
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                    {{ $playoffsNeedTournamentExtensionMessage }}
+                    <a href="{{ route('admin.leagues.edit', $league) }}" class="admin-link" style="margin-left:0.35rem;font-weight:700;">Edit Tournament</a>
+                </div>
+            @endif
+            @if ($playoffExceedsTournamentMessage ?? null)
+                <div class="admin-alert" style="background:#fff8e6;border:1px solid #f0d78c;color:#7a5b00;margin-bottom:0.85rem;" role="status">
+                    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                    {{ $playoffExceedsTournamentMessage }}
+                    <a href="{{ route('admin.leagues.edit', $league) }}" class="admin-link" style="margin-left:0.35rem;font-weight:700;">Edit Tournament</a>
+                </div>
+            @endif
             @if (! $playoffDatesLocked)
                 <form
                     method="POST"
@@ -36,20 +53,28 @@
                 >
                     @csrf
                     <p class="admin-card-text" style="font-size:0.85rem;margin:0 0 0.65rem;">
-                        Group matches close: <strong>{{ $groupCloseLabel }}</strong>.
-                        Tournament window: <strong>{{ $tournamentStartLabel }}</strong> – <strong>{{ $tournamentEndLabel }}</strong>.
-                        Playoff start must be <strong>after</strong> group matches close and within the tournament dates. Playoff end cannot be before start. Match dates must fall between playoff start and end.
+                        Group matches close: <strong>{{ $groupCloseLabel }}</strong>@if ($latestGroupMatchLabel) (latest scheduled match: <strong>{{ $latestGroupMatchLabel }}</strong>)@endif.
+                        @if ($earliestPlayoffStartDate ?? null)
+                            Playoff start must be <strong>after</strong> group matches close — pick from <strong>{{ $earliestPlayoffStartLabel }}</strong> onward.
+                        @else
+                            Playoff start must be <strong>after</strong> group matches close.
+                        @endif
+                        Playoff end cannot be before start.
+                        @if (! $playoffsNeedExtension && ($tournamentStartDate ?? null) && ($tournamentEndDate ?? null))
+                            Dates must fall within the tournament window:
+                            <strong>{{ $tournamentStartDate->format('M j, Y') }}</strong> – <strong>{{ $tournamentEndDate->format('M j, Y') }}</strong>.
+                        @endif
                     </p>
                     <div style="display:flex;flex-wrap:wrap;gap:0.75rem 1.25rem;align-items:flex-end;margin-bottom:0.85rem;">
                         <div>
                             <label for="playoff_start_date" style="display:block;font-weight:600;margin-bottom:0.35rem;font-size:0.85rem;">Playoff start date</label>
-                            <input class="admin-input @error('playoff_start_date') border-red-500 @enderror" id="playoff_start_date" type="date" name="playoff_start_date" value="{{ $playoffStartValue }}" @if ($playoffStartMin) min="{{ $playoffStartMin }}" @endif @if ($playoffStartMax) max="{{ $playoffStartMax }}" @endif required>
+                            <input class="admin-input @error('playoff_start_date') border-red-500 @enderror" id="playoff_start_date" type="date" name="playoff_start_date" value="{{ $playoffStartValue }}" @if ($playoffStartMin) min="{{ $playoffStartMin }}" @endif @if ($playoffStartMax) max="{{ $playoffStartMax }}" @endif @if ($playoffsNeedExtension) disabled @endif required>
                         </div>
                         <div>
                             <label for="playoff_end_date" style="display:block;font-weight:600;margin-bottom:0.35rem;font-size:0.85rem;">Playoff end date</label>
-                            <input class="admin-input @error('playoff_end_date') border-red-500 @enderror" id="playoff_end_date" type="date" name="playoff_end_date" value="{{ $playoffEndValue }}" @if ($playoffEndMin) min="{{ $playoffEndMin }}" @endif @if ($playoffEndMax) max="{{ $playoffEndMax }}" @endif required>
+                            <input class="admin-input @error('playoff_end_date') border-red-500 @enderror" id="playoff_end_date" type="date" name="playoff_end_date" value="{{ $playoffEndValue }}" @if ($playoffEndMin) min="{{ $playoffEndMin }}" @endif @if ($playoffEndMax) max="{{ $playoffEndMax }}" @endif @if ($playoffsNeedExtension) disabled @endif required>
                         </div>
-                        <button class="admin-button" type="submit">
+                        <button class="admin-button" type="submit" @if ($playoffsNeedExtension) disabled @endif>
                             <i class="fa-solid fa-calendar-{{ ($playoffsStarted ?? false) ? 'check' : 'plus' }}" aria-hidden="true"></i>
                             <span>{{ ($playoffsStarted ?? false) ? 'Reschedule matches' : 'Schedule matches' }}</span>
                         </button>

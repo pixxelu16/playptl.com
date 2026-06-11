@@ -11,17 +11,24 @@ class LeagueMenuHelper
     /**
      * @return Collection<int, League>
      */
-    public static function activeLeagues(): Collection
+    public static function activeLeagues(bool $latestFirst = false): Collection
     {
         if (! Schema::hasTable('leagues')) {
             return collect();
         }
 
-        return League::query()
+        $query = League::query()
             ->select(['id', 'name', 'slug'])
             ->where('stats', 'active')
-            ->orderBy('name')
-            ->get();
+            ->whereNull('finished_at');
+
+        if ($latestFirst) {
+            $query->orderByDesc('id');
+        } else {
+            $query->orderBy('name');
+        }
+
+        return $query->get();
     }
 
 }

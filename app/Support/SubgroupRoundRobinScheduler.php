@@ -56,12 +56,14 @@ final class SubgroupRoundRobinScheduler
         Group $group,
         ?string $ageGroupKey = null,
         bool $reschedulePending = false,
+        ?Carbon $divisionStartOverride = null,
     ): array {
         if (! Schema::hasTable('group_matches')) {
             return ['created' => 0, 'removed' => 0, 'weeks' => 0];
         }
 
-        if (DivisionScheduleWindow::startDate($league, $groupCard) === null) {
+        $divisionStart = $divisionStartOverride ?? DivisionScheduleWindow::startDate($league, $groupCard);
+        if ($divisionStart === null) {
             return ['created' => 0, 'removed' => 0, 'weeks' => 0];
         }
 
@@ -78,7 +80,7 @@ final class SubgroupRoundRobinScheduler
         }
 
         if ($reschedulePending && self::subgroupHasAutoScheduledMatches($league, $groupCard, $group)) {
-            return self::reschedulePendingAutoMatches($league, $groupCard, $group, $participants, $format);
+            return self::reschedulePendingAutoMatches($league, $groupCard, $group, $participants, $format, $divisionStart);
         }
 
         $removed = self::removePendingAutoMatches($league, $groupCard, $group);
@@ -90,7 +92,6 @@ final class SubgroupRoundRobinScheduler
             return ['created' => 0, 'removed' => $removed, 'weeks' => 0, 'updated' => 0];
         }
 
-        $divisionStart = DivisionScheduleWindow::startDate($league, $groupCard);
         $calendar = LeagueWeekCalendar::calendar($divisionStart, $roundCount);
         $weekEndSundays = $calendar['playWeekSundays'];
         $leagueStart = $divisionStart->copy()->startOfDay();
@@ -170,6 +171,7 @@ final class SubgroupRoundRobinScheduler
         GroupCard $groupCard,
         ?string $ageGroupKey = null,
         bool $reschedulePending = false,
+        ?Carbon $divisionStartOverride = null,
     ): array {
         MatchScheduleMailQueue::beginBulkScheduling();
         self::$deferMatchNotifications = true;
@@ -184,7 +186,7 @@ final class SubgroupRoundRobinScheduler
         $groups = self::divisionGroups($league, $groupCard, $ageGroupKey);
 
         foreach ($groups as $group) {
-            $result = self::sync($league, $groupCard, $group, $ageGroupKey, $reschedulePending);
+            $result = self::sync($league, $groupCard, $group, $ageGroupKey, $reschedulePending, $divisionStartOverride);
             $groupCreated = (int) $result['created'];
             $groupUpdated = (int) ($result['updated'] ?? 0);
 
@@ -201,7 +203,7 @@ final class SubgroupRoundRobinScheduler
                 'updated' => $groupUpdated,
             ];
             if ($groupCreated === 0 && $groupUpdated === 0) {
-                $note = self::syncSkipReason($league, $groupCard, $group, $ageGroupKey);
+                $note = self::syncSkipReason($league, $groupCard, $group, $ageGroupKey, $divisionStartOverride);
                 if ($note !== null) {
                     $detail['note'] = $note;
                 }
@@ -325,8 +327,9 @@ final class SubgroupRoundRobinScheduler
         GroupCard $groupCard,
         Group $group,
         ?string $ageGroupKey,
+        ?Carbon $divisionStartOverride = null,
     ): ?string {
-        if (DivisionScheduleWindow::startDate($league, $groupCard) === null) {
+        if (($divisionStartOverride ?? DivisionScheduleWindow::startDate($league, $groupCard)) === null) {
             return 'division start date not set';
         }
 
@@ -502,6 +505,7 @@ final class SubgroupRoundRobinScheduler
         Group $group,
         Collection $participants,
         GroupMatchFormat $format,
+        Carbon $divisionStart,
     ): array {
         $rounds = self::roundRobinPairings($participants, $format);
         $roundCount = count($rounds);
@@ -510,7 +514,6 @@ final class SubgroupRoundRobinScheduler
             return ['created' => 0, 'removed' => 0, 'weeks' => 0, 'updated' => 0];
         }
 
-        $divisionStart = DivisionScheduleWindow::startDate($league, $groupCard);
         $calendar = LeagueWeekCalendar::calendar($divisionStart, $roundCount);
         $weekEndSundays = $calendar['playWeekSundays'];
         $leagueStart = $divisionStart->copy()->startOfDay();

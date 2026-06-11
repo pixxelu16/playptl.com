@@ -10,16 +10,19 @@ use App\Models\League;
 use App\Models\LeagueRegistration;
 use App\Models\User;
 use App\Support\DivisionPlayoffPhase;
+use App\Support\GroupMatchScheduleCancelledNotifier;
 use App\Support\GroupMatchScheduleNotifier;
 use App\Support\LeagueSeasonPhase;
 use App\Support\LeagueRegistrationRoster;
 use App\Support\MatchResultInput;
 use App\Support\MatchScoreReader;
 use App\Support\MatchStartTime;
+use App\Support\MatchScheduleMailQueue;
 use App\Support\PlayerMatchDayConflict;
 use App\Support\LeagueWeekCalendar;
 use App\Support\SubgroupRoundRobinScheduler;
 use App\Support\DivisionScheduleWindow;
+use App\Support\TournamentDateWindowConflict;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -171,6 +174,15 @@ class AdminGroupMatchController extends Controller
             'divisionScheduleStart' => DivisionScheduleWindow::startDate($league, $groupCard),
             'divisionScheduleEnd' => DivisionScheduleWindow::endDate($league, $groupCard),
             'divisionLatestMatchDate' => DivisionScheduleWindow::latestScheduledMatchDate($league, $groupCard),
+            'canCancelMatches' => DivisionScheduleWindow::hasDivisionMatchesStarted($league, $groupCard)
+                && ! LeagueSeasonPhase::playoffsStarted($league)
+                && ! $league->isFinished()
+                && ! DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey),
+            'divisionMatchesCount' => GroupMatch::query()
+                ->where('league_id', $league->id)
+                ->where('group_card_id', $groupCard->id)
+                ->count(),
+            'scheduleExceedsTournamentMessage' => TournamentDateWindowConflict::groupMatchesExceedTournamentEnd($league, $groupCard),
         ]);
     }
 
@@ -221,23 +233,34 @@ class AdminGroupMatchController extends Controller
         }
 
         DivisionScheduleWindow::updateDivisionDates($league, $groupCard, $startDate, $endDate);
+        $divisionStart = Carbon::parse($startDate)->startOfDay();
 
         if ($matchesScheduled) {
             if (
                 ! DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)
             ) {
-                $totals = SubgroupRoundRobinScheduler::syncDivision($league, $groupCard, $ageGroupKey, reschedulePending: true);
-                $scheduleSummary = SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, 'Matches rescheduled.');
+                $totals = SubgroupRoundRobinScheduler::syncDivision(
+                    $league,
+                    $groupCard,
+                    $ageGroupKey,
+                    reschedulePending: true,
+                    divisionStartOverride: $divisionStart,
+                );
+                $scheduleSummary = self::formatScheduleSummary($totals, 'Matches rescheduled.');
             } else {
                 $scheduleSummary = 'Group dates saved. Qualifier/playoffs are active — round-robin was not regenerated.';
             }
         } else {
-            $scheduleSummary = 'Scheduling matches…';
             if (
                 ! DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)
             ) {
-                $totals = SubgroupRoundRobinScheduler::syncDivision($league, $groupCard, $ageGroupKey);
-                $scheduleSummary = SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, 'Matches scheduled.');
+                $totals = SubgroupRoundRobinScheduler::syncDivision(
+                    $league,
+                    $groupCard,
+                    $ageGroupKey,
+                    divisionStartOverride: $divisionStart,
+                );
+                $scheduleSummary = self::formatScheduleSummary($totals, 'Matches scheduled.');
             } else {
                 $scheduleSummary = 'Group start date saved. Qualifier/playoffs are active — round-robin was not generated.';
             }
@@ -561,6 +584,65 @@ class AdminGroupMatchController extends Controller
                 : 'Match updated.');
     }
 
+    public function cancelSchedule(Request $request, League $league, GroupCard $groupCard): RedirectResponse
+    {
+        abort_unless($league->groupCards()->whereKey($groupCard->id)->exists(), 404);
+
+        if (LeagueSeasonPhase::playoffsStarted($league) || $league->isFinished()) {
+            return back()->withErrors(['schedule' => 'Playoffs have started. Group matches cannot be cancelled.']);
+        }
+
+        $ageGroupKey = (string) $request->query('age_group_key', '');
+        $ageGroupKey = $ageGroupKey !== '' ? $ageGroupKey : null;
+        $activeGroupId = (int) $request->query('group', 0);
+
+        if (DivisionPlayoffPhase::divisionLocksGroupMatchScheduling($league->id, $groupCard->id, $ageGroupKey)) {
+            return back()->withErrors(['schedule' => 'Playoffs have started for this group. Matches cannot be cancelled.']);
+        }
+
+        $activeGroup = Group::query()->find($activeGroupId);
+        if (! $activeGroup instanceof Group) {
+            return back()->withErrors(['schedule' => 'Select a subgroup first.']);
+        }
+
+        $matches = GroupMatch::query()
+            ->where('league_id', $league->id)
+            ->where('group_card_id', $groupCard->id)
+            ->with(['homeUser', 'awayUser', 'homePartnerUser', 'awayPartnerUser'])
+            ->get();
+
+        if ($matches->isEmpty()) {
+            return back()->with('status', 'No scheduled matches to cancel.');
+        }
+
+        $matchCount = $matches->count();
+
+        MatchScheduleMailQueue::beginBulkScheduling();
+        GroupMatchScheduleCancelledNotifier::notifyDivision($matches, $groupCard, $league);
+
+        GroupMatch::query()
+            ->where('league_id', $league->id)
+            ->where('group_card_id', $groupCard->id)
+            ->delete();
+
+        DivisionScheduleWindow::updateDivisionDates($league, $groupCard, null, null);
+        DivisionPlayoffPhase::reconcileDivisionAfterGroupMatchesChanged($league->id, $groupCard->id);
+        $league->refresh();
+        LeagueSeasonPhase::resetLeaguePlayoffFlagsIfNoMatches($league);
+
+        return redirect()
+            ->route('admin.league-management.matches.index', [
+                'league' => $league,
+                'groupCard' => $groupCard,
+                'group' => $activeGroup->id,
+            ] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
+            ->with('status', sprintf(
+                'All %d scheduled match(es) for %s cancelled (all subgroups). Group dates cleared. Players have been notified.',
+                $matchCount,
+                $groupCard->name,
+            ));
+    }
+
     public function destroy(Request $request, League $league, GroupCard $groupCard, GroupMatch $groupMatch): RedirectResponse
     {
         abort_unless($league->groupCards()->whereKey($groupCard->id)->exists(), 404);
@@ -819,5 +901,20 @@ class AdminGroupMatchController extends Controller
         $court = trim((string) ($value ?? ''));
 
         return $court === '' ? null : $court;
+    }
+
+    /**
+     * @param  array<string, mixed>  $totals
+     */
+    private static function formatScheduleSummary(array $totals, string $successPrefix): string
+    {
+        $created = (int) ($totals['created'] ?? 0);
+        $updated = (int) ($totals['updated'] ?? 0);
+
+        if ($created > 0 || $updated > 0) {
+            return SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, $successPrefix);
+        }
+
+        return SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, '');
     }
 }

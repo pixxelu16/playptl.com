@@ -38,7 +38,7 @@
                         <option value="">Select tournament</option>
                         @foreach ($leagues as $league)
                             <option value="{{ $league->id }}" @selected((int) old('league_id') === (int) $league->id)>
-                                {{ $league->name }}{{ ($league->stats ?? '') ? ' — '.ucfirst($league->stats) : '' }}
+                                {{ $league->name }}
                             </option>
                         @endforeach
                     </select>

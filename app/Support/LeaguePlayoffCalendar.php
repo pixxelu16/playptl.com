@@ -14,17 +14,18 @@ final class LeaguePlayoffCalendar
             return 'Set the tournament start and end dates on Edit Tournament before scheduling playoffs.';
         }
 
-        $groupClose = DivisionScheduleWindow::endDate($league, $groupCard);
+        $groupClose = DivisionScheduleWindow::groupCloseDateForPlayoffs($league, $groupCard);
         if ($groupClose === null) {
-            return 'Set the group end date on the Matches page after scheduling group matches.';
+            return 'Schedule group matches and set the group end date on the Matches page before picking playoff dates.';
         }
 
         $tournamentStart = $league->start_date->copy()->startOfDay();
         $tournamentEnd = $league->end_date->copy()->startOfDay();
         $start = $playoffStart->copy()->startOfDay();
+        $earliestStart = $groupClose->copy()->addDay()->startOfDay();
 
-        if ($start->lte($groupClose)) {
-            return 'Playoff start must be after group matches close ('.$groupClose->format('M j, Y').').';
+        if ($start->lt($earliestStart)) {
+            return 'Playoff start must be after group matches close ('.$groupClose->format('M j, Y').'). Earliest allowed: '.$earliestStart->format('M j, Y').'.';
         }
 
         if ($start->lt($tournamentStart)) {
@@ -32,7 +33,7 @@ final class LeaguePlayoffCalendar
         }
 
         if ($start->gt($tournamentEnd)) {
-            return 'Playoff start must be on or before the tournament end date ('.$tournamentEnd->format('M j, Y').').';
+            return 'Playoff start must be on or before the tournament end date ('.$tournamentEnd->format('M j, Y').'). Extend the tournament dates on Edit Tournament first.';
         }
 
         return null;
@@ -57,7 +58,7 @@ final class LeaguePlayoffCalendar
         }
 
         if ($end->gt($tournamentEnd)) {
-            return 'Playoff end must be on or before the tournament end date ('.$tournamentEnd->format('M j, Y').').';
+            return 'Playoff end cannot be later than the tournament end date ('.$tournamentEnd->format('M j, Y').'). Extend the tournament dates on Edit Tournament first.';
         }
 
         $startError = self::validatePlayoffStartDate($playoffStart, $league, $groupCard);
