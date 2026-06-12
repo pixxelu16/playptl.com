@@ -1,7 +1,8 @@
 @extends('layouts.website')
 
-{{-- Flash (e.g. password reset) shown above the card, same as forgot-password --}}
+{{-- Flash + validation shown inside the card (same pattern as register) --}}
 @section('suppress_global_status', '1')
+@section('suppress_global_errors', '1')
 
 @section('header_theme', 'light')
 @section('header_logo_path', 'frontend/images/logo-2.png')
@@ -72,6 +73,14 @@
                             class="h-[45px] w-full rounded-[5px] bg-[#61a153] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
                             Login Now
                         </button>
+
+                        @if ($errors->any())
+                            <div class="mt-3 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-medium text-red-800" role="alert">
+                                @foreach ($errors->all() as $error)
+                                    <p>{{ $error }}</p>
+                                @endforeach
+                            </div>
+                        @endif
                     </form>
 
                     <p class="mt-10 text-center text-[14px] text-[#888888]">

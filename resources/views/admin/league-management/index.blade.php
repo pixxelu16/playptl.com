@@ -8,7 +8,7 @@
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">Tournament Management</h1>
-                <p class="admin-card-text">Pick a tournament to manage its groups, age brackets, subgroups, and player assignments.</p>
+                <p class="admin-card-text">Pick a tournament to manage subgroups and move registered players into groups. New registrations happen on the website only.</p>
             </div>
             <a class="admin-link" href="{{ route('admin.leagues.index') }}">
                 <i class="fa-solid fa-trophy" aria-hidden="true"></i>

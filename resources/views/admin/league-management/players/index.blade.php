@@ -73,6 +73,9 @@
                         <th>Player</th>
                         <th>Photo</th>
                         <th>Payment</th>
+                        @if ($isDoublesGroupCard ?? false)
+                            <th>Partner</th>
+                        @endif
                         <th>Assigned Subgroup</th>
                     </tr>
                 </thead>
@@ -91,6 +94,17 @@
                             <td>
                                 <span class="admin-badge">{{ ucfirst($reg->payment_status ?? 'pending') }}</span>
                             </td>
+                            @if ($isDoublesGroupCard ?? false)
+                                <td>
+                                    @include('admin.league-management.partials.partner-assign-field', [
+                                        'league' => $league,
+                                        'groupCard' => $groupCard,
+                                        'reg' => $reg,
+                                        'partnerOptionsByRegId' => $partnerOptionsByRegId,
+                                        'currentPartnerRegIdByRegId' => $currentPartnerRegIdByRegId,
+                                    ])
+                                </td>
+                            @endif
                             <td>
                                 <form method="POST" action="{{ route('admin.league-management.players.update-group', [$league, $groupCard, $reg]) }}" class="admin-assign">
                                     @csrf
@@ -107,7 +121,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4">
+                            <td colspan="{{ ($isDoublesGroupCard ?? false) ? 5 : 4 }}">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-user" aria-hidden="true"></i>
                                     <p>No registrations found for this tournament/card filter.</p>

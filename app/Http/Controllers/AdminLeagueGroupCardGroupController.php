@@ -143,6 +143,34 @@ class AdminLeagueGroupCardGroupController extends Controller
             ->orderBy('name')
             ->get(['group_cards.id', 'group_cards.name', 'group_cards.tag']);
 
+        $isDoublesGroupCard = LeagueRegistrationRoster::isDoublesSubGroup($groupCard);
+        $partnerOptionsByRegId = [];
+        $currentPartnerRegIdByRegId = [];
+
+        if ($isDoublesGroupCard && $playerSchemaReady) {
+            $allGroupCardRegistrations = LeagueRegistration::query()
+                ->where('league_id', $league->id)
+                ->where(function ($query) use ($groupCard) {
+                    $query->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
+                })
+                ->when(
+                    $ageGroupKey !== null && Schema::hasColumn('league_registrations', 'age_group_key'),
+                    fn ($query) => $query->where('age_group_key', $ageGroupKey)
+                )
+                ->with('user')
+                ->get();
+
+            $activePool = $activeGroup
+                ? $activeGroup->leagueRegistrations
+                : collect();
+
+            [$partnerOptionsByRegId, $currentPartnerRegIdByRegId] = $this->partnerFieldMaps(
+                $activeGroupRoster->merge($unassignedRoster),
+                $allGroupCardRegistrations,
+                $activePool,
+            );
+        }
+
         return view('admin.league-management.groups.index', [
             'league' => $league,
             'groupCard' => $groupCard,
@@ -158,7 +186,41 @@ class AdminLeagueGroupCardGroupController extends Controller
             'unassignedRoster' => $unassignedRoster,
             'schemaReady' => Schema::hasTable('groups'),
             'playerSchemaReady' => $playerSchemaReady,
+            'isDoublesGroupCard' => $isDoublesGroupCard,
+            'partnerOptionsByRegId' => $partnerOptionsByRegId,
+            'currentPartnerRegIdByRegId' => $currentPartnerRegIdByRegId,
         ]);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $rosterEntries
+     * @param  \Illuminate\Support\Collection<int, LeagueRegistration>  $allGroupCardRegistrations
+     * @param  \Illuminate\Support\Collection<int, LeagueRegistration>  $activeSubgroupPool
+     * @return array{array<int, list<array{registration_id: int, user_id: int, label: string}>>, array<int, int|null>}
+     */
+    private function partnerFieldMaps(
+        \Illuminate\Support\Collection $rosterEntries,
+        \Illuminate\Support\Collection $allGroupCardRegistrations,
+        \Illuminate\Support\Collection $activeSubgroupPool,
+    ): array {
+        $options = [];
+        $current = [];
+
+        foreach ($rosterEntries as $entry) {
+            /** @var LeagueRegistration $registration */
+            $registration = $entry['registration'];
+            $pool = ($registration->group_id ?? null) !== null
+                ? $activeSubgroupPool
+                : $allGroupCardRegistrations;
+
+            $options[(int) $registration->id] = LeagueRegistrationRoster::partnerOptionsFor(
+                $registration,
+                $pool,
+            )->all();
+            $current[(int) $registration->id] = LeagueRegistrationRoster::partnerRegistrationIdFor($registration);
+        }
+
+        return [$options, $current];
     }
 
     public function create(Request $request, League $league, GroupCard $groupCard): View

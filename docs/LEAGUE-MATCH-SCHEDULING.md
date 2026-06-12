@@ -1,5 +1,7 @@
 # PTL League — Match Scheduling & Player Flow
 
+> **Poori system guide (admin + player):** [`PTL-SYSTEM-GUIDE.md`](./PTL-SYSTEM-GUIDE.md)
+
 Yeh document explain karta hai ke system mein **tournament → group (division) → subgroups → players → matches → playoffs** ka pura flow kaise chalta hai.
 
 ---
@@ -231,7 +233,9 @@ Winners advance; admin HOME/AWAY change kar sakta hai (email on change).
 
 ### 9.4 Playoff dates
 
-- Tournament par `playoff_start_date` / `playoff_end_date`.
+- League par `playoff_start_date` / `playoff_end_date` save hoti hain (Playoffs page se).
+- **Playoff start** group matches khatam hone ke **baad** honi chahiye (`group end date` ya latest group match + 1 day).
+- Agar group matches tournament end ke baad jaati hain → pehle **Edit Tournament** se end date extend karo; tab tak playoffs schedule block/warning.
 - **Schedule playoffs** → `PlayoffMatchScheduler` — Mon–Sat window, final round alag window logic.
 - Reschedule: **sirf jinki date change** — group stage jaisa.
 
