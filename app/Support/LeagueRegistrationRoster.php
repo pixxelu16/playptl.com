@@ -296,4 +296,188 @@ class LeagueRegistrationRoster
 
         return $out;
     }
+
+    /**
+     * @return list<int>
+     */
+    public static function teamMemberUserIds(LeagueRegistration $registration): array
+    {
+        if (! filled($registration->team_key)) {
+            return [(int) $registration->user_id];
+        }
+
+        return LeagueRegistration::query()
+            ->where('league_id', $registration->league_id)
+            ->where('team_key', $registration->team_key)
+            ->where(function ($query) use ($registration) {
+                if ($registration->group_card_id !== null) {
+                    $query->where('group_card_id', $registration->group_card_id);
+                } else {
+                    $query->whereNull('group_card_id');
+                }
+            })
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public static function partnerUserIdFor(LeagueRegistration $registration): ?int
+    {
+        $selfId = (int) $registration->user_id;
+
+        foreach (self::teamMemberUserIds($registration) as $userId) {
+            if ($userId !== $selfId) {
+                return $userId;
+            }
+        }
+
+        return null;
+    }
+
+    public static function partnerRegistrationIdFor(LeagueRegistration $registration): ?int
+    {
+        $partnerUserId = self::partnerUserIdFor($registration);
+        if ($partnerUserId === null) {
+            return null;
+        }
+
+        $partnerId = LeagueRegistration::query()
+            ->where('league_id', $registration->league_id)
+            ->where('user_id', $partnerUserId)
+            ->where(function ($query) use ($registration) {
+                if ($registration->group_card_id !== null) {
+                    $query->where('group_card_id', $registration->group_card_id);
+                } else {
+                    $query->whereNull('group_card_id');
+                }
+            })
+            ->value('id');
+
+        return $partnerId !== null ? (int) $partnerId : null;
+    }
+
+    public static function isAvailableAsPartner(LeagueRegistration $candidate, int $forUserId): bool
+    {
+        if ((int) $candidate->user_id === $forUserId) {
+            return false;
+        }
+
+        $existingPartnerId = self::partnerUserIdFor($candidate);
+
+        return $existingPartnerId === null || $existingPartnerId === $forUserId;
+    }
+
+    /**
+     * @param  Collection<int, LeagueRegistration>  $candidateRegs
+     * @return Collection<int, array{registration_id: int, user_id: int, label: string}>
+     */
+    public static function partnerOptionsFor(
+        LeagueRegistration $registration,
+        Collection $candidateRegs,
+    ): Collection {
+        return $candidateRegs
+            ->filter(fn (LeagueRegistration $candidate) => self::isAvailableAsPartner($candidate, (int) $registration->user_id))
+            ->map(fn (LeagueRegistration $candidate) => [
+                'registration_id' => (int) $candidate->id,
+                'user_id' => (int) $candidate->user_id,
+                'label' => self::nameToken((string) ($candidate->user?->name ?? ''))
+                    ?: (string) ($candidate->user?->email ?? 'Player'),
+            ])
+            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+    }
+
+    public static function linkPartners(LeagueRegistration $primary, LeagueRegistration $partner): void
+    {
+        self::assertSamePartnerContext($primary, $partner);
+
+        foreach ([$primary, $partner] as $registration) {
+            if (! filled($registration->team_key)) {
+                continue;
+            }
+
+            LeagueRegistration::query()
+                ->where('league_id', $registration->league_id)
+                ->where('team_key', $registration->team_key)
+                ->where(function ($query) use ($registration) {
+                    if ($registration->group_card_id !== null) {
+                        $query->where('group_card_id', $registration->group_card_id);
+                    } else {
+                        $query->whereNull('group_card_id');
+                    }
+                })
+                ->update(['team_key' => null]);
+        }
+
+        $teamKey = LeagueRegistrationFlow::newDoublesTeamKey();
+
+        LeagueRegistration::query()
+            ->whereIn('id', [(int) $primary->id, (int) $partner->id])
+            ->update([
+                'team_key' => $teamKey,
+                'registration_type' => 'doubles',
+            ]);
+    }
+
+    public static function unlinkPartner(LeagueRegistration $registration): void
+    {
+        if (! filled($registration->team_key)) {
+            return;
+        }
+
+        LeagueRegistration::query()
+            ->where('league_id', $registration->league_id)
+            ->where('team_key', $registration->team_key)
+            ->where(function ($query) use ($registration) {
+                if ($registration->group_card_id !== null) {
+                    $query->where('group_card_id', $registration->group_card_id);
+                } else {
+                    $query->whereNull('group_card_id');
+                }
+            })
+            ->update(['team_key' => null]);
+    }
+
+    public static function syncSubgroupForPartners(LeagueRegistration $registration, ?int $groupId): void
+    {
+        self::updateGroupForEntry($registration, $groupId);
+
+        $partnerUserId = self::partnerUserIdFor($registration);
+        if ($partnerUserId === null) {
+            return;
+        }
+
+        $partnerRegistration = LeagueRegistration::query()
+            ->where('league_id', $registration->league_id)
+            ->where('user_id', $partnerUserId)
+            ->where(function ($query) use ($registration) {
+                if ($registration->group_card_id !== null) {
+                    $query->where('group_card_id', $registration->group_card_id);
+                } else {
+                    $query->whereNull('group_card_id');
+                }
+            })
+            ->first();
+
+        if ($partnerRegistration instanceof LeagueRegistration) {
+            self::updateGroupForEntry($partnerRegistration, $groupId);
+        }
+    }
+
+    private static function assertSamePartnerContext(LeagueRegistration $primary, LeagueRegistration $partner): void
+    {
+        if ((int) $primary->league_id !== (int) $partner->league_id) {
+            throw new \InvalidArgumentException('Partners must be in the same tournament.');
+        }
+
+        if ((int) ($primary->group_card_id ?? 0) !== (int) ($partner->group_card_id ?? 0)) {
+            throw new \InvalidArgumentException('Partners must be in the same group.');
+        }
+
+        if ((int) $primary->user_id === (int) $partner->user_id) {
+            throw new \InvalidArgumentException('A player cannot partner with themselves.');
+        }
+    }
 }

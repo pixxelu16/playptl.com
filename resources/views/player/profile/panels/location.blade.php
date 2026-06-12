@@ -3,11 +3,35 @@
     class="overflow-hidden rounded-[10px] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] ring-1 ring-[#E0E0E0] sm:p-8 sm:px-[28px] sm:py-[26px]"
 >
     <h3 class="mb-2 text-[18px] font-bold leading-tight text-[#000000] sm:text-[20px]">My Matches</h3>
-    @if (! empty($profileLeagueName))
+    @if (! empty($profileActiveTournaments))
+        <div class="mb-6 space-y-3">
+            <p class="text-[12px] font-bold uppercase tracking-wide text-[#424242]">
+                Active Tournaments{{ count($profileActiveTournaments) > 1 ? ' ('.count($profileActiveTournaments).')' : '' }}
+            </p>
+            @foreach ($profileActiveTournaments as $activeTournament)
+                <div class="rounded-lg border border-[#C8E6C0] bg-[#F9FBF9] px-3 py-3 sm:px-4">
+                    <p class="text-[14px] font-bold text-[#333333] sm:text-[15px]">{{ $activeTournament['tournament'] }}</p>
+                    <p class="mt-0.5 text-[12px] font-medium text-[#5a9048]">{{ $activeTournament['window'] }}</p>
+                    @foreach ($activeTournament['registrations'] as $entry)
+                        <p class="mt-1.5 text-[13px] text-[#666666]">
+                            {{ $entry['group'] }}
+                            @if (($entry['subgroup'] ?? '') !== 'Unassigned')
+                                · {{ $entry['subgroup'] }}
+                            @endif
+                            · {{ $entry['format'] }}
+                        </p>
+                    @endforeach
+                </div>
+            @endforeach
+        </div>
+    @elseif (! empty($profileLeagueName))
         <p class="mb-6 text-[13px] text-[#666666] sm:text-[14px]">
             <strong>{{ $profileLeagueName }}</strong>
             @if (! empty($profileDivisionName))
                 · {{ $profileDivisionName }}
+            @endif
+            @if (! empty($profileTournamentWindow))
+                <span class="block mt-1 text-[12px] font-medium text-[#5a9048]">{{ $profileTournamentWindow }}</span>
             @endif
         </p>
     @else
@@ -65,7 +89,11 @@
 
     @if (! $hasLeague && ! $hasPlayoff)
         <p class="rounded-[10px] bg-[#F9FAFB] px-4 py-8 text-center text-[14px] font-medium text-[#757575] ring-1 ring-[#E8E8E8] sm:text-[15px]">
-            No matches scheduled for you in this league yet. They will appear here automatically after the admin sets the schedule.
+            @if (! empty($profileActiveTournaments))
+                No matches scheduled for you in your active tournaments yet. They will appear here automatically after the admin sets the schedule.
+            @else
+                No matches scheduled for you in this league yet. They will appear here automatically after the admin sets the schedule.
+            @endif
         </p>
     @endif
 

@@ -149,7 +149,7 @@
     @elseif (! $playerSchemaReady)
         <div class="admin-alert admin-alert-error">Player roster is not ready for this division.</div>
     @elseif ($rosterRegs->isEmpty())
-        <div class="admin-alert admin-alert-error">Add players to this division first, then set paths on the Qualifier page.</div>
+        <div class="admin-alert admin-alert-error">No players in this division yet. Players register on the website, then set paths on the Qualifier page.</div>
     @else
         @if (! $bracketExists)
             <div class="admin-empty-state playoffs-empty">

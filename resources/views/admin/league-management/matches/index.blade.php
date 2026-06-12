@@ -392,7 +392,7 @@
             </div>
         @elseif ($rosterRegs->isEmpty())
             <div class="admin-alert admin-alert-error">
-                No players in <strong>{{ $activeGroup->name }}</strong> yet. Add players from Subgroups &amp; players, then schedule matches.
+                No players in <strong>{{ $activeGroup->name }}</strong> yet. Players register on the website — assign them to subgroups from <strong>Subgroups &amp; players</strong>, then schedule matches.
             </div>
         @else
             @if ($scheduleExceedsTournamentMessage ?? null)

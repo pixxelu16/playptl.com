@@ -22,6 +22,7 @@ use App\Support\PlayerMatchDayConflict;
 use App\Support\TournamentRegistrationOptions;
 use App\Support\PlayoffMatchScheduleNotifier;
 use App\Support\LeagueRegistrationFlow;
+use App\Support\LeagueSeasonWindow;
 use App\Support\LeagueRegistrationRoster;
 use App\Support\UserSkillLevel;
 use App\Support\LeagueWeekCalendar;
@@ -1029,10 +1030,36 @@ class PlayerProfileController extends Controller
 
         $division = (string) ($registration?->groupCard?->name ?? '—');
         $group = (string) ($registration?->group?->name ?? '—');
+        $tournament = (string) ($registration?->league?->name ?? '');
+
+        $roleLine = 'Player';
+        if ($tournament !== '') {
+            $roleLine .= ' · '.$tournament;
+        }
+        if ($group !== '—' && $group !== '') {
+            $roleLine .= ' · '.$group;
+        }
+
+        $playerTournamentGroups = $this->playerTournamentGroups($user);
+        $currentTournamentGroups = collect($playerTournamentGroups)
+            ->filter(fn (array $group) => (bool) ($group['is_current'] ?? false))
+            ->values()
+            ->all();
+
+        if ($currentTournamentGroups !== []) {
+            $tournamentNames = collect($currentTournamentGroups)->pluck('tournament')->filter()->values();
+            $roleLine = 'Player · '.$tournamentNames->join(', ');
+            if (count($currentTournamentGroups) === 1) {
+                $primaryEntry = $currentTournamentGroups[0]['registrations'][0] ?? null;
+                if ($primaryEntry && ($primaryEntry['subgroup'] ?? '') !== 'Unassigned') {
+                    $roleLine .= ' · '.$primaryEntry['subgroup'];
+                }
+            }
+        }
 
         $myProfile = [
             'name' => trim((string) $user->name) !== '' ? (string) $user->name : trim($firstName.' '.$lastName),
-            'roleLine' => 'Player - '.$group,
+            'roleLine' => $roleLine,
             'avatarUrl' => asset($user->avatar_path ?: 'upload/user-avatar/default-user-pic.png'),
             'firstName' => $firstName,
             'lastName' => $lastName,
@@ -1054,6 +1081,8 @@ class PlayerProfileController extends Controller
             'leagueId' => (int) ($registration?->league_id ?? 0),
             'groupCardId' => (int) ($registration?->group_card_id ?? 0),
             'myProfile' => $myProfile,
+            'playerTournamentGroups' => $playerTournamentGroups,
+            'currentTournamentGroups' => $currentTournamentGroups,
         ], $this->profileLayoutTheme());
     }
 
@@ -1094,9 +1123,9 @@ class PlayerProfileController extends Controller
     /**
      * @return \Illuminate\Database\Eloquent\Builder<GroupMatch>
      */
-    protected function playerMatchesQuery(Request $request)
+    protected function playerMatchesQuery(Request $request, ?Collection $registrations = null)
     {
-        $registrations = $this->profileRegistrations($request);
+        $registrations ??= $this->profileRegistrations($request);
         if ($registrations->isEmpty() || ! Schema::hasTable('group_matches')) {
             return GroupMatch::query()->whereRaw('0 = 1');
         }
@@ -1132,9 +1161,9 @@ class PlayerProfileController extends Controller
     /**
      * @return \Illuminate\Database\Eloquent\Builder<PlayoffMatch>
      */
-    protected function playerPlayoffMatchesQuery(Request $request)
+    protected function playerPlayoffMatchesQuery(Request $request, ?Collection $registrations = null)
     {
-        $registrations = $this->profileRegistrations($request);
+        $registrations ??= $this->profileRegistrations($request);
         if ($registrations->isEmpty() || ! Schema::hasTable('playoff_matches')) {
             return PlayoffMatch::query()->whereRaw('0 = 1');
         }
@@ -1265,9 +1294,18 @@ class PlayerProfileController extends Controller
     protected function locationPanelData(Request $request): array
     {
         $registration = $this->profileRegistration($request);
+        $matchRegistrations = $this->profileRegistrationsForMatchesPanel($request);
+        $profileActiveTournaments = collect($this->playerTournamentGroups($request->user()))
+            ->filter(fn (array $group) => (bool) ($group['is_current'] ?? false))
+            ->values()
+            ->all();
         $base = [
             'profileLeagueName' => (string) ($registration?->league?->name ?? ''),
             'profileDivisionName' => (string) ($registration?->groupCard?->name ?? ''),
+            'profileTournamentWindow' => $registration?->league instanceof League
+                ? LeagueSeasonWindow::label($registration->league)
+                : '',
+            'profileActiveTournaments' => $profileActiveTournaments,
             'playerLeagueScheduleDays' => [],
             'playerPlayoffScheduleDays' => [],
             'playerScheduleDays' => [],
@@ -1279,12 +1317,12 @@ class PlayerProfileController extends Controller
             'locationVenueValue' => '',
         ];
 
-        if (! $registration) {
+        if (! $registration && $matchRegistrations->isEmpty() && $profileActiveTournaments === []) {
             return $base;
         }
 
         $userId = (int) $request->user()->id;
-        $matches = $this->playerMatchesQuery($request)->get();
+        $matches = $this->playerMatchesQuery($request, $matchRegistrations)->get();
         $leagueForCalendar = $matches->first()?->league;
         $base['playerLeagueScheduleDays'] = $this->enrichPlayerScheduleDays(
             MatchSchedulePresenter::groupIntoDays(
@@ -1298,9 +1336,9 @@ class PlayerProfileController extends Controller
         );
         $base['playerScheduleDays'] = $base['playerLeagueScheduleDays'];
 
-        $playoffMatches = $this->playerPlayoffMatchesQuery($request)->get();
+        $playoffMatches = $this->playerPlayoffMatchesQuery($request, $matchRegistrations)->get();
         if ($playoffMatches->isEmpty()) {
-            $leagueIds = $this->profileRegistrations($request)
+            $leagueIds = $matchRegistrations
                 ->pluck('league_id')
                 ->map(fn ($id) => (int) $id)
                 ->unique()
@@ -1341,6 +1379,7 @@ class PlayerProfileController extends Controller
         if ($leagueLabels->isNotEmpty()) {
             $base['profileLeagueName'] = $leagueLabels->join(' · ');
             $base['profileDivisionName'] = '';
+            $base['profileTournamentWindow'] = '';
         }
 
         $ctx = $this->playerMatchSelectionContext($request);
@@ -1862,6 +1901,128 @@ class PlayerProfileController extends Controller
 
     protected function profileRegistration(Request $request): ?LeagueRegistration
     {
-        return $this->profileRegistrations($request)->first();
+        $registrations = $this->profileRegistrations($request);
+        if ($registrations->isEmpty()) {
+            return null;
+        }
+
+        if ($request->filled('league_id') || $request->filled('group_card_id')) {
+            return $registrations->first();
+        }
+
+        return $this->pickPrimaryRegistration($registrations);
+    }
+
+    /**
+     * @param  Collection<int, LeagueRegistration>  $registrations
+     */
+    protected function pickPrimaryRegistration(Collection $registrations): ?LeagueRegistration
+    {
+        if ($registrations->isEmpty()) {
+            return null;
+        }
+
+        $current = $this->currentLeagueRegistrations($registrations);
+
+        if ($current->isNotEmpty()) {
+            return $current->sortByDesc('id')->first();
+        }
+
+        return $registrations->first();
+    }
+
+    /**
+     * Registrations in leagues that are currently in season (for My Matches when no explicit league filter).
+     *
+     * @return Collection<int, LeagueRegistration>
+     */
+    protected function profileRegistrationsForMatchesPanel(Request $request): Collection
+    {
+        $registrations = $this->profileRegistrations($request);
+        if ($registrations->isEmpty()) {
+            return $registrations;
+        }
+
+        if ($request->filled('league_id') || $request->filled('group_card_id')) {
+            return $registrations;
+        }
+
+        $currentRegistrations = $this->currentLeagueRegistrations($registrations);
+        if ($currentRegistrations->isNotEmpty()) {
+            return $currentRegistrations;
+        }
+
+        return $registrations;
+    }
+
+    /**
+     * @param  Collection<int, LeagueRegistration>  $registrations
+     * @return Collection<int, LeagueRegistration>
+     */
+    protected function currentLeagueRegistrations(Collection $registrations): Collection
+    {
+        return $registrations->filter(function (LeagueRegistration $registration) {
+            $league = $registration->league;
+
+            return $league instanceof League && LeagueSeasonWindow::isCurrent($league);
+        })->values();
+    }
+
+    /**
+     * @return list<array{
+     *     tournament: string,
+     *     window: string,
+     *     is_current: bool,
+     *     status_label: string,
+     *     registrations: list<array{group: string, subgroup: string, format: string}>
+     * }>
+     */
+    protected function playerTournamentGroups(User $user): array
+    {
+        $registrations = $user->leagueRegistrations()
+            ->with(['league', 'groupCard', 'group'])
+            ->whereHas('league', fn ($q) => $q->whereNull('finished_at'))
+            ->orderByDesc('id')
+            ->get();
+
+        $today = now()->startOfDay();
+        $grouped = [];
+
+        foreach ($registrations as $registration) {
+            $league = $registration->league;
+            if (! $league instanceof League) {
+                continue;
+            }
+
+            $leagueId = (int) $league->id;
+            if (! isset($grouped[$leagueId])) {
+                $season = LeagueSeasonWindow::status($league, $today);
+                $grouped[$leagueId] = [
+                    'tournament' => trim((string) $league->name) ?: '—',
+                    'window' => LeagueSeasonWindow::label($league),
+                    'is_current' => $season['is_current'],
+                    'status_label' => $season['label'],
+                    'registrations' => [],
+                ];
+            }
+
+            $grouped[$leagueId]['registrations'][] = [
+                'group' => trim((string) ($registration->groupCard?->name ?? '')) ?: '—',
+                'subgroup' => trim((string) ($registration->group?->name ?? '')) ?: 'Unassigned',
+                'format' => ucfirst((string) ($registration->registration_type ?? 'singles')),
+            ];
+        }
+
+        $groups = array_values($grouped);
+
+        usort($groups, function (array $a, array $b): int {
+            if ($a['is_current'] !== $b['is_current']) {
+                return $a['is_current'] ? -1 : 1;
+            }
+
+            return strcmp($a['tournament'], $b['tournament']);
+        });
+
+        return $groups;
     }
 }

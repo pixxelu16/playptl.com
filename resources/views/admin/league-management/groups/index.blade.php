@@ -131,6 +131,9 @@
                                 <th>Player</th>
                                 <th>Photo</th>
                                 <th>Payment</th>
+                                @if ($isDoublesGroupCard ?? false)
+                                    <th>Partner</th>
+                                @endif
                                 <th>Subgroup</th>
                             </tr>
                         </thead>
@@ -149,6 +152,17 @@
                                     <td>
                                         <span class="admin-badge">{{ ucfirst($reg->payment_status ?? 'pending') }}</span>
                                     </td>
+                                    @if ($isDoublesGroupCard ?? false)
+                                        <td>
+                                            @include('admin.league-management.partials.partner-assign-field', [
+                                                'league' => $league,
+                                                'groupCard' => $groupCard,
+                                                'reg' => $reg,
+                                                'partnerOptionsByRegId' => $partnerOptionsByRegId,
+                                                'currentPartnerRegIdByRegId' => $currentPartnerRegIdByRegId,
+                                            ])
+                                        </td>
+                                    @endif
                                     <td>
                                         <form method="POST" action="{{ route('admin.league-management.players.update-group', [$league, $groupCard, $reg]) }}" class="admin-assign">
                                             @csrf
@@ -165,12 +179,9 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td>
+                                    <td colspan="{{ ($isDoublesGroupCard ?? false) ? 5 : 4 }}">
                                         <p class="admin-card-text" style="margin:0;">No players in this subgroup yet. Assign them from <strong>Unassigned</strong> below or <strong>All players</strong>.</p>
                                     </td>
-                                    <td><span style="opacity:.6;">—</span></td>
-                                    <td><span style="opacity:.6;">—</span></td>
-                                    <td><span style="opacity:.6;">—</span></td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -203,6 +214,9 @@
                                 <th>Player</th>
                                 <th>Photo</th>
                                 <th>Payment</th>
+                                @if ($isDoublesGroupCard ?? false)
+                                    <th>Partner</th>
+                                @endif
                                 <th>Assign to subgroup</th>
                                 @if ($otherGroupCards->isNotEmpty())
                                     <th>Move to group</th>
@@ -224,6 +238,17 @@
                                     <td>
                                         <span class="admin-badge">{{ ucfirst($reg->payment_status ?? 'pending') }}</span>
                                     </td>
+                                    @if ($isDoublesGroupCard ?? false)
+                                        <td>
+                                            @include('admin.league-management.partials.partner-assign-field', [
+                                                'league' => $league,
+                                                'groupCard' => $groupCard,
+                                                'reg' => $reg,
+                                                'partnerOptionsByRegId' => $partnerOptionsByRegId,
+                                                'currentPartnerRegIdByRegId' => $currentPartnerRegIdByRegId,
+                                            ])
+                                        </td>
+                                    @endif
                                     <td>
                                         <form method="POST" action="{{ route('admin.league-management.players.update-group', [$league, $groupCard, $reg]) }}" class="admin-assign">
                                             @csrf

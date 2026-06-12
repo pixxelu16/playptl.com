@@ -46,6 +46,22 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $allRegistrations = $registrationsQuery->get();
         $rosterEntries = LeagueRegistrationRoster::collapseForDisplay($allRegistrations);
+        $isDoublesGroupCard = LeagueRegistrationRoster::isDoublesSubGroup($groupCard);
+        $partnerOptionsByRegId = [];
+        $currentPartnerRegIdByRegId = [];
+
+        if ($isDoublesGroupCard) {
+            foreach ($rosterEntries as $entry) {
+                /** @var LeagueRegistration $registration */
+                $registration = $entry['registration'];
+                $partnerOptionsByRegId[(int) $registration->id] = LeagueRegistrationRoster::partnerOptionsFor(
+                    $registration,
+                    $allRegistrations,
+                )->all();
+                $currentPartnerRegIdByRegId[(int) $registration->id] = LeagueRegistrationRoster::partnerRegistrationIdFor($registration);
+            }
+        }
+
         $perPage = 25;
         $page = max(1, (int) $request->query('page', 1));
         $rosterPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -65,6 +81,9 @@ class AdminLeagueGroupCardPlayerController extends Controller
             'schemaReady' => Schema::hasTable('league_registrations')
                 && Schema::hasColumn('league_registrations', 'group_id')
                 && Schema::hasColumn('league_registrations', 'age_group_key'),
+            'isDoublesGroupCard' => $isDoublesGroupCard,
+            'partnerOptionsByRegId' => $partnerOptionsByRegId,
+            'currentPartnerRegIdByRegId' => $currentPartnerRegIdByRegId,
         ]);
     }
 
@@ -83,7 +102,7 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $groupId = isset($validated['group_id']) ? (int) $validated['group_id'] : null;
 
-        LeagueRegistrationRoster::updateGroupForEntry($registration, $groupId);
+        LeagueRegistrationRoster::syncSubgroupForPartners($registration, $groupId);
 
         $scheduleNote = '';
         if ($groupId !== null) {
@@ -104,6 +123,67 @@ class AdminLeagueGroupCardPlayerController extends Controller
         }
 
         return back()->with('status', 'Player subgroup updated.'.$scheduleNote);
+    }
+
+    public function updatePartner(Request $request, League $league, GroupCard $groupCard, LeagueRegistration $registration): RedirectResponse
+    {
+        abort_unless($league->groupCards()->whereKey($groupCard->id)->exists(), 404);
+        abort_unless($registration->league_id === $league->id && $registration->group_card_id === $groupCard->id, 404);
+        abort_unless(LeagueRegistrationRoster::isDoublesSubGroup($groupCard), 404);
+
+        $partnerRegistrationId = $request->input('partner_registration_id');
+        if ($partnerRegistrationId === null || $partnerRegistrationId === '') {
+            LeagueRegistrationRoster::unlinkPartner($registration);
+
+            return back()->with('status', 'Partner removed.');
+        }
+
+        $validated = $request->validate([
+            'partner_registration_id' => ['required', 'integer', Rule::exists('league_registrations', 'id')],
+        ]);
+
+        $partnerRegistrationId = (int) $validated['partner_registration_id'];
+        $partnerRegistration = LeagueRegistration::query()->findOrFail($partnerRegistrationId);
+        abort_unless($partnerRegistration->league_id === $league->id && $partnerRegistration->group_card_id === $groupCard->id, 422);
+
+        if (! LeagueRegistrationRoster::isAvailableAsPartner($partnerRegistration, (int) $registration->user_id)) {
+            return back()->withErrors([
+                'partner_registration_id' => 'That player already has a partner in this group.',
+            ]);
+        }
+
+        $targetGroupId = $registration->group_id ?? $partnerRegistration->group_id;
+        if ($targetGroupId !== null) {
+            if ($registration->group_id !== null && $partnerRegistration->group_id !== null
+                && (int) $registration->group_id !== (int) $partnerRegistration->group_id) {
+                return back()->withErrors([
+                    'partner_registration_id' => 'Partner must be in the same subgroup or unassigned.',
+                ]);
+            }
+
+            LeagueRegistrationRoster::updateGroupForEntry($registration, (int) $targetGroupId);
+            LeagueRegistrationRoster::updateGroupForEntry($partnerRegistration, (int) $targetGroupId);
+        }
+
+        try {
+            LeagueRegistrationRoster::linkPartners($registration, $partnerRegistration);
+        } catch (\InvalidArgumentException $exception) {
+            return back()->withErrors([
+                'partner_registration_id' => $exception->getMessage(),
+            ]);
+        }
+
+        if ($targetGroupId !== null) {
+            $group = Group::query()->find($targetGroupId);
+            if ($group instanceof Group) {
+                $ageKey = Schema::hasColumn('league_registrations', 'age_group_key')
+                    ? ($registration->age_group_key ?: null)
+                    : null;
+                SubgroupRoundRobinScheduler::sync($league, $groupCard, $group, $ageKey);
+            }
+        }
+
+        return back()->with('status', 'Doubles partner updated.');
     }
 
     public function updateSubGroup(Request $request, League $league, GroupCard $groupCard, LeagueRegistration $registration): RedirectResponse

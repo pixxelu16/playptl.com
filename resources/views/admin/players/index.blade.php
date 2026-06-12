@@ -6,9 +6,10 @@
 @section('content')
     @php
         $indexQuery = array_filter([
-            'tab' => $tab,
             'league_id' => $leagueId,
             'skill_sort' => $skillSort,
+            'search' => $search ?? '',
+            'page' => $players->currentPage() > 1 ? $players->currentPage() : null,
         ], fn ($value) => $value !== null && $value !== '');
         $nextSkillSort = $skillSort === 'asc' ? 'desc' : 'asc';
         $skillSortQuery = array_merge($indexQuery, ['skill_sort' => $nextSkillSort]);
@@ -18,7 +19,7 @@
         <div class="admin-page-header">
             <div>
                 <h1 class="admin-card-title">All Players</h1>
-                <p class="admin-card-text">View registered players. Use tabs to switch between Singles and Doubles, then filter by tournament.</p>
+                <p class="admin-card-text">View registered players. New players join via the website register page or their player profile — not from admin.</p>
             </div>
         </div>
 
@@ -27,30 +28,26 @@
         @endif
 
         <div class="admin-table-wrap" style="margin-bottom: 14px;">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-                <a class="admin-button admin-button-link {{ $tab === 'singles' ? '' : 'admin-button-secondary' }}"
-                   href="{{ route('admin.players.index', array_merge($indexQuery, ['tab' => 'singles'])) }}">
-                    Singles
-                </a>
-                <a class="admin-button admin-button-link {{ $tab === 'doubles' ? '' : 'admin-button-secondary' }}"
-                   href="{{ route('admin.players.index', array_merge($indexQuery, ['tab' => 'doubles'])) }}">
-                    Doubles
-                </a>
-
-                <form method="GET" action="{{ route('admin.players.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-                    <input type="hidden" name="tab" value="{{ $tab }}">
-                    <input type="hidden" name="skill_sort" value="{{ $skillSort }}">
-                    <div>
-                        <label class="admin-label" for="league_id">Tournament</label>
-                        <select class="admin-input" name="league_id" id="league_id" onchange="this.form.submit()">
-                            <option value="" @selected($leagueId === null)>All</option>
-                            @foreach ($leagues as $league)
-                                <option value="{{ $league->id }}" @selected($leagueId === (int) $league->id)>{{ $league->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </form>
-            </div>
+            <form method="GET" action="{{ route('admin.players.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                <input type="hidden" name="skill_sort" value="{{ $skillSort }}">
+                <div>
+                    <label class="admin-label" for="search">Search</label>
+                    <input class="admin-input" type="text" name="search" id="search" value="{{ $search ?? '' }}" placeholder="Name, email, phone, city..." style="min-width:220px;">
+                </div>
+                <div>
+                    <label class="admin-label" for="league_id">Tournament</label>
+                    <select class="admin-input" name="league_id" id="league_id">
+                        <option value="" @selected($leagueId === null)>All</option>
+                        @foreach ($leagues as $league)
+                            <option value="{{ $league->id }}" @selected($leagueId === (int) $league->id)>{{ $league->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button class="admin-button" type="submit" style="padding:10px 16px;">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <span>Search</span>
+                </button>
+            </form>
         </div>
 
         <div class="admin-table-wrap">
@@ -60,6 +57,7 @@
                         <th>ID</th>
                         <th>Photo</th>
                         <th>Name</th>
+                        <th>Login as</th>
                         <th>Email</th>
                         <th>Phone</th>
                         <th>City</th>
@@ -76,6 +74,7 @@
                             </a>
                         </th>
                         <th>Status</th>
+                        <th>Active tournaments</th>
                         <th>Registered</th>
                         <th>Actions</th>
                     </tr>
@@ -95,6 +94,14 @@
                                 @endphp
                                 <strong>{{ $displayName !== '' ? $displayName : '—' }}</strong>
                             </td>
+                            <td>
+                                @php $loginAs = strtolower((string) ($player->registration_type ?? '')); @endphp
+                                @if ($loginAs === 'singles' || $loginAs === 'doubles')
+                                    <span class="admin-badge">{{ ucfirst($loginAs) }}</span>
+                                @else
+                                    <span class="admin-muted">—</span>
+                                @endif
+                            </td>
                             <td>{{ $player->email }}</td>
                             <td>{{ $player->phone ?? '-' }}</td>
                             <td>{{ $player->city ?? '-' }}</td>
@@ -111,6 +118,30 @@
                                 @endif
                             </td>
                             <td><span class="admin-badge">{{ ucfirst($player->status ?? 'active') }}</span></td>
+                            <td style="min-width:200px;">
+                                @php $activeTournaments = $playerActiveTournaments[(int) $player->id] ?? []; @endphp
+                                @if ($activeTournaments !== [])
+                                    <div style="display:flex;flex-direction:column;gap:8px;">
+                                        @foreach ($activeTournaments as $tournament)
+                                            <div style="padding:6px 8px;border:1px solid #d7ead9;border-radius:6px;background:#f9fbf9;">
+                                                <div style="font-weight:700;font-size:13px;color:#333;">{{ $tournament['tournament'] }}</div>
+                                                <div style="font-size:11px;color:#5a9048;margin-top:2px;">{{ $tournament['window'] }}</div>
+                                                @foreach ($tournament['registrations'] as $entry)
+                                                    <div style="font-size:11px;color:#666;margin-top:4px;">
+                                                        {{ $entry['group'] }}
+                                                        @if (($entry['subgroup'] ?? '') !== 'Unassigned')
+                                                            · {{ $entry['subgroup'] }}
+                                                        @endif
+                                                        · {{ $entry['format'] }}
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="admin-muted">—</span>
+                                @endif
+                            </td>
                             <td>{{ $player->created_at?->format('M d, Y') ?? '-' }}</td>
                             <td>
                                 <div class="admin-table-actions">
@@ -129,10 +160,10 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12">
+                            <td colspan="14">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-user" aria-hidden="true"></i>
-                                    <p>No {{ $tab }} players found{{ $leagueId ? ' for this tournament' : '' }}.</p>
+                                    <p>No players found{{ $leagueId ? ' for this tournament' : '' }}{{ ($search ?? '') !== '' ? ' matching your search' : '' }}.</p>
                                 </div>
                             </td>
                         </tr>
@@ -141,7 +172,17 @@
             </table>
         </div>
 
+        @if ($players->total() > 0)
+            <p class="admin-muted" style="margin-top:14px;">
+                Showing {{ $players->firstItem() }}–{{ $players->lastItem() }} of {{ $players->total() }} players
+            </p>
+        @endif
+
         @if ($players->hasPages())
+            @php
+                $pageStart = max(1, $players->currentPage() - 2);
+                $pageEnd = min($players->lastPage(), $players->currentPage() + 2);
+            @endphp
             <div class="admin-pagination">
                 @if ($players->onFirstPage())
                     <span>Previous</span>
@@ -149,7 +190,27 @@
                     <a href="{{ $players->previousPageUrl() }}">Previous</a>
                 @endif
 
-                <strong>Page {{ $players->currentPage() }} of {{ $players->lastPage() }}</strong>
+                @if ($pageStart > 1)
+                    <a href="{{ $players->url(1) }}">1</a>
+                    @if ($pageStart > 2)
+                        <span>…</span>
+                    @endif
+                @endif
+
+                @for ($page = $pageStart; $page <= $pageEnd; $page++)
+                    @if ($page === $players->currentPage())
+                        <strong>{{ $page }}</strong>
+                    @else
+                        <a href="{{ $players->url($page) }}">{{ $page }}</a>
+                    @endif
+                @endfor
+
+                @if ($pageEnd < $players->lastPage())
+                    @if ($pageEnd < $players->lastPage() - 1)
+                        <span>…</span>
+                    @endif
+                    <a href="{{ $players->url($players->lastPage()) }}">{{ $players->lastPage() }}</a>
+                @endif
 
                 @if ($players->hasMorePages())
                     <a href="{{ $players->nextPageUrl() }}">Next</a>

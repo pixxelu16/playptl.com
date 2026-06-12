@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Helpers\LeagueMenuHelper;
 use App\Models\GroupCard;
+use App\Models\League;
 use App\Models\LeagueRegistration;
 use App\Models\User;
 use App\Support\AdminPlayerLeagueRegistrationService;
 use App\Support\LeagueRegistrationFlow;
+use App\Support\LeagueSeasonWindow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
@@ -21,11 +23,6 @@ class AdminPlayerController extends Controller
 {
     public function index(Request $request): View
     {
-        $tab = (string) $request->query('tab', 'singles');
-        if (! in_array($tab, ['singles', 'doubles'], true)) {
-            $tab = 'singles';
-        }
-
         $leagues = LeagueMenuHelper::activeLeagues(latestFirst: true);
 
         $leagueIdParam = (string) $request->query('league_id', '');
@@ -36,22 +33,33 @@ class AdminPlayerController extends Controller
             $skillSort = 'asc';
         }
 
+        $search = trim((string) $request->query('search', ''));
+
         $skillFieldList = implode("', '", AdminPlayerLeagueRegistrationService::skillLevelValues());
 
         $playersQuery = User::query()
-            ->where('users.role', UserRole::Player)
-            ->where('users.registration_type', $tab);
+            ->where('users.role', UserRole::Player);
+
+        if ($search !== '') {
+            $playersQuery->where(function ($query) use ($search) {
+                $like = '%'.$search.'%';
+                $query->where('users.name', 'like', $like)
+                    ->orWhere('users.first_name', 'like', $like)
+                    ->orWhere('users.last_name', 'like', $like)
+                    ->orWhere('users.email', 'like', $like)
+                    ->orWhere('users.phone', 'like', $like)
+                    ->orWhere('users.city', 'like', $like)
+                    ->orWhere('users.state', 'like', $like);
+            });
+        }
 
         if ($leagueIdInt !== null) {
             $playersQuery
-                ->whereHas('leagueRegistrations', fn ($query) => $query
-                    ->where('league_id', $leagueIdInt)
-                    ->where('registration_type', $tab))
+                ->whereHas('leagueRegistrations', fn ($query) => $query->where('league_id', $leagueIdInt))
                 ->joinSub(
                     LeagueRegistration::query()
                         ->selectRaw('user_id, MAX(id) as latest_reg_id')
                         ->where('league_id', $leagueIdInt)
-                        ->where('registration_type', $tab)
                         ->groupBy('user_id'),
                     'player_league_regs',
                     'users.id',
@@ -75,17 +83,61 @@ class AdminPlayerController extends Controller
         $players = $playersQuery
             ->with(['leagueRegistrations' => fn ($query) => $query
                 ->when($leagueIdInt !== null, fn ($inner) => $inner->where('league_id', $leagueIdInt))
-                ->where('registration_type', $tab)
                 ->orderByDesc('id')])
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
 
+        $playerActiveTournaments = [];
+        $playerIds = $players->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        if ($playerIds !== []) {
+            $registrations = LeagueRegistration::query()
+                ->whereIn('user_id', $playerIds)
+                ->whereHas('league', fn ($query) => $query->whereNull('finished_at'))
+                ->with([
+                    'league:id,name,start_date,end_date,stats,finished_at',
+                    'groupCard:id,name',
+                    'group:id,name',
+                ])
+                ->orderByDesc('id')
+                ->get();
+
+            foreach ($registrations as $registration) {
+                $league = $registration->league;
+                if (! $league instanceof League || ! LeagueSeasonWindow::isCurrent($league)) {
+                    continue;
+                }
+
+                $userId = (int) $registration->user_id;
+                $leagueId = (int) $league->id;
+
+                if (! isset($playerActiveTournaments[$userId][$leagueId])) {
+                    $playerActiveTournaments[$userId][$leagueId] = [
+                        'tournament' => trim((string) $league->name) ?: '—',
+                        'window' => LeagueSeasonWindow::label($league),
+                        'registrations' => [],
+                    ];
+                }
+
+                $playerActiveTournaments[$userId][$leagueId]['registrations'][] = [
+                    'group' => trim((string) ($registration->groupCard?->name ?? '')) ?: '—',
+                    'subgroup' => trim((string) ($registration->group?->name ?? '')) ?: 'Unassigned',
+                    'format' => ucfirst((string) ($registration->registration_type ?? 'singles')),
+                ];
+            }
+
+            foreach ($playerActiveTournaments as $userId => $byLeague) {
+                $playerActiveTournaments[$userId] = array_values($byLeague);
+            }
+        }
+
         return view('admin.players.index', [
-            'tab' => $tab,
             'players' => $players,
             'leagues' => $leagues,
             'leagueId' => $leagueIdInt,
             'skillSort' => $skillSort,
+            'search' => $search,
+            'playerActiveTournaments' => $playerActiveTournaments,
         ]);
     }
 
@@ -173,17 +225,11 @@ class AdminPlayerController extends Controller
     {
         abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
 
-        $tab = (string) $request->query('tab', 'singles');
-        if (! in_array($tab, ['singles', 'doubles'], true)) {
-            $tab = 'singles';
-        }
-
-        $registration = $this->registrationForPlayerEdit($player, $tab, $request);
+        $registration = $this->registrationForPlayerEdit($player, $request);
 
         return view('admin.players.edit', [
-            'tab' => $tab,
             'player' => $player,
-            'indexQuery' => $this->playerIndexQuery($request, $tab),
+            'indexQuery' => $this->playerIndexQuery($request),
             'ageBrackets' => AdminPlayerLeagueRegistrationService::ageBrackets(),
             'currentAgeGroupKey' => old('age_group_key', $registration?->age_group_key),
             'canEditAgeGroup' => $registration instanceof LeagueRegistration,
@@ -194,10 +240,9 @@ class AdminPlayerController extends Controller
     {
         abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
 
-        $tab = (string) $request->query('tab', (string) $player->registration_type);
-        if (! in_array($tab, ['singles', 'doubles'], true)) {
-            $tab = 'singles';
-        }
+        $tab = in_array($player->registration_type, ['singles', 'doubles'], true)
+            ? (string) $player->registration_type
+            : 'singles';
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -248,7 +293,7 @@ class AdminPlayerController extends Controller
             'skill_level' => $skillLevel,
         ]);
 
-        $registration = $this->registrationForPlayerEdit($player, $tab, $request);
+        $registration = $this->registrationForPlayerEdit($player, $request);
         if ($registration instanceof LeagueRegistration && $ageGroupKey !== null) {
             $groupCard = $registration->group_card_id
                 ? GroupCard::query()->find($registration->group_card_id)
@@ -265,7 +310,7 @@ class AdminPlayerController extends Controller
         }
 
         return redirect()
-            ->route('admin.players.index', $this->playerIndexQuery($request, $tab))
+            ->route('admin.players.index', $this->playerIndexQuery($request))
             ->with('status', 'Player updated successfully.');
     }
 
@@ -273,20 +318,19 @@ class AdminPlayerController extends Controller
     {
         abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
 
-        $tab = (string) $request->query('tab', 'singles');
-        if (! in_array($tab, ['singles', 'doubles'], true)) {
-            $tab = 'singles';
-        }
-
         $player->delete();
 
         return redirect()
-            ->route('admin.players.index', $this->playerIndexQuery($request, $tab))
+            ->route('admin.players.index', $this->playerIndexQuery($request))
             ->with('status', 'Player deleted successfully.');
     }
 
-    private function registrationForPlayerEdit(User $player, string $tab, Request $request): ?LeagueRegistration
+    private function registrationForPlayerEdit(User $player, Request $request): ?LeagueRegistration
     {
+        $tab = in_array($player->registration_type, ['singles', 'doubles'], true)
+            ? (string) $player->registration_type
+            : 'singles';
+
         $leagueIdParam = (string) $request->query('league_id', '');
         $leagueIdInt = $leagueIdParam !== '' && ctype_digit($leagueIdParam) ? (int) $leagueIdParam : null;
 
@@ -306,9 +350,9 @@ class AdminPlayerController extends Controller
     /**
      * @return array<string, int|string>
      */
-    private function playerIndexQuery(Request $request, string $tab): array
+    private function playerIndexQuery(Request $request): array
     {
-        $query = ['tab' => $tab];
+        $query = [];
 
         $leagueId = (string) $request->query('league_id', '');
         if ($leagueId !== '' && ctype_digit($leagueId)) {
@@ -318,6 +362,16 @@ class AdminPlayerController extends Controller
         $skillSort = strtolower((string) $request->query('skill_sort', ''));
         if (in_array($skillSort, ['asc', 'desc'], true)) {
             $query['skill_sort'] = $skillSort;
+        }
+
+        $search = trim((string) $request->query('search', ''));
+        if ($search !== '') {
+            $query['search'] = $search;
+        }
+
+        $page = (string) $request->query('page', '');
+        if ($page !== '' && ctype_digit($page) && (int) $page > 1) {
+            $query['page'] = (int) $page;
         }
 
         return $query;

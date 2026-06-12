@@ -57,7 +57,8 @@ final class TournamentRegistrationOptions
     }
 
     /**
-     * Group card for a player skill: exact skill_level_match on the league, or lowest tier when "not-sure".
+     * Group card for a player skill: lowest tier whose ceiling is >= player skill,
+     * or highest tier if the player is above all configured tiers ("not-sure" → lowest tier).
      */
     public static function resolveGroupCardBySkill(League $league, string $tab, string $skillLevel): ?GroupCard
     {
@@ -94,18 +95,33 @@ final class TournamentRegistrationOptions
 
         $userSkill = (float) $skillLevel;
 
+        $tiers = [];
+
         foreach (self::groupCardsFor($league, $tab) as $group) {
             $tierSkill = trim((string) ($group['skill_level'] ?? ''));
             if ($tierSkill === '' || ! is_numeric($tierSkill)) {
                 continue;
             }
 
-            if ((float) $tierSkill === $userSkill) {
-                return $group;
+            $tiers[] = [
+                'skill' => (float) $tierSkill,
+                'group' => $group,
+            ];
+        }
+
+        if ($tiers === []) {
+            return null;
+        }
+
+        usort($tiers, fn (array $a, array $b): int => $a['skill'] <=> $b['skill']);
+
+        foreach ($tiers as $tier) {
+            if ($userSkill <= $tier['skill']) {
+                return $tier['group'];
             }
         }
 
-        return null;
+        return $tiers[array_key_last($tiers)]['group'];
     }
 
     /**
