@@ -32,7 +32,7 @@ class RegisteredUserController extends Controller
 {
     public function create(): View
     {
-        $registrationLeagues = LeagueMenuHelper::activeLeagues();
+        $registrationLeagues = LeagueMenuHelper::registrationLeagues();
 
         return view('auth.register', [
             'registrationLeagues' => $registrationLeagues,
@@ -127,6 +127,10 @@ class RegisteredUserController extends Controller
         $state = (string) ($tab === 'singles' ? $specific['state_singles'] : $specific['state_doubles']);
 
         $league = League::query()->findOrFail($leagueId);
+
+        if (! LeagueMenuHelper::acceptsRegistration($league)) {
+            return $this->fail($request, 'Registration is not open for this tournament.');
+        }
 
         if (PaymentHistory::query()->where('transaction_id', $base['payment_intent_id'])->exists()) {
             return $this->fail($request, 'This payment was already used.');

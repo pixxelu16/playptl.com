@@ -18,7 +18,7 @@ class AdminPlayerLeagueRegistrationController extends Controller
     {
         abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
 
-        $leagues = LeagueMenuHelper::activeLeagues(latestFirst: true);
+        $leagues = LeagueMenuHelper::registrationLeagues(latestFirst: true);
 
         return view('admin.players.league-registrations.create', [
             'player' => $player,
