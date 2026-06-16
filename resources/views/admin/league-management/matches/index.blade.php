@@ -582,6 +582,7 @@
                         <div>
                             <label for="start_time">Start time <span style="color:#c62828;">*</span></label>
                             <input class="admin-input" id="start_time" type="time" name="start_time" step="300" value="{{ old('start_time', \App\Support\MatchStartTime::toInputValue('10:00')) }}" required>
+                            <div id="add-match-schedule-info" class="admin-alert" style="display:none;margin-top:0.5rem;font-size:0.85rem;background:#fff8e6;border:1px solid #f0d78c;color:#7a5b00;" role="status"></div>
                         </div>
                         <div>
                             <label for="venue">Venue</label>
@@ -814,12 +815,49 @@
             <script>
                 window.PLAYER_SCHEDULE_BY_DAY = @json($playerScheduleByDay ?? []);
                 window.MATCH_PLAYER_NAMES = @json($playerNamesById);
+                window.MATCH_SCHEDULE_GAP_HOURS = @json((int) config('services.match_schedule.minimum_gap_hours', 4));
             </script>
             <script>
                 (function () {
+                    var gapHours = parseInt(window.MATCH_SCHEDULE_GAP_HOURS, 10) || 4;
+                    var gapMinutes = gapHours * 60;
+
                     function nameOf(id) {
                         var n = window.MATCH_PLAYER_NAMES && window.MATCH_PLAYER_NAMES[String(id)];
                         return n || ('Player #' + id);
+                    }
+
+                    function timeToMinutes(hi) {
+                        if (! hi || typeof hi !== 'string') {
+                            return null;
+                        }
+                        var parts = hi.split(':');
+                        if (parts.length < 2) {
+                            return null;
+                        }
+                        return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+                    }
+
+                    function minutesToHi(minutes) {
+                        minutes = Math.max(0, Math.min((23 * 60) + 55, minutes));
+                        var h = Math.floor(minutes / 60);
+                        var m = minutes % 60;
+                        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                    }
+
+                    function formatDisplayHi(hi) {
+                        var minutes = timeToMinutes(hi);
+                        if (minutes === null) {
+                            return hi;
+                        }
+                        var h24 = Math.floor(minutes / 60);
+                        var m = minutes % 60;
+                        var ampm = h24 >= 12 ? 'PM' : 'AM';
+                        var h12 = h24 % 12;
+                        if (h12 === 0) {
+                            h12 = 12;
+                        }
+                        return h12 + ':' + String(m).padStart(2, '0') + ' ' + ampm;
                     }
 
                     function collectParticipantIds(form) {
@@ -865,7 +903,36 @@
                         });
                     }
 
-                    function warningLines(dateYmd, playerIds, ignoreGroupMatchId) {
+                    function resolveStartTime(dateYmd, playerIds, preferredHi, ignoreGroupMatchId) {
+                        preferredHi = preferredHi || '10:00';
+                        var preferredMinutes = timeToMinutes(preferredHi);
+                        if (preferredMinutes === null) {
+                            preferredMinutes = 600;
+                        }
+                        var requiredStart = preferredMinutes;
+                        var index = window.PLAYER_SCHEDULE_BY_DAY || {};
+                        var ignoreId = ignoreGroupMatchId ? parseInt(ignoreGroupMatchId, 10) : 0;
+
+                        playerIds.forEach(function (userId) {
+                            var daySlots = (index[userId] && index[userId][dateYmd]) ? index[userId][dateYmd] : [];
+                            daySlots.forEach(function (slot) {
+                                if (ignoreId && parseInt(slot.group_match_id, 10) === ignoreId) {
+                                    return;
+                                }
+                                var existingMinutes = timeToMinutes(slot.time || '');
+                                if (existingMinutes === null) {
+                                    existingMinutes = 600;
+                                }
+                                if (preferredMinutes < existingMinutes + gapMinutes) {
+                                    requiredStart = Math.max(requiredStart, existingMinutes + gapMinutes);
+                                }
+                            });
+                        });
+
+                        return minutesToHi(requiredStart);
+                    }
+
+                    function sameDayInfoLines(dateYmd, playerIds, ignoreGroupMatchId) {
                         var lines = [];
                         var index = window.PLAYER_SCHEDULE_BY_DAY || {};
                         var ignoreId = ignoreGroupMatchId ? parseInt(ignoreGroupMatchId, 10) : 0;
@@ -881,121 +948,148 @@
                             var parts = slots.map(function (slot) {
                                 return (slot.time_label || 'Time TBA') + ' (' + (slot.league || 'Tournament') + ')';
                             });
-                            lines.push(nameOf(userId) + ' already has a match on this date at ' + parts.join(', '));
+                            lines.push(nameOf(userId) + ' already has a match on this date at ' + parts.join(', ') + '.');
                         });
 
                         return lines;
                     }
 
-                    var conflictModal = document.getElementById('match-schedule-conflict-modal');
-                    var conflictList = document.getElementById('match-schedule-conflict-list');
-                    var conflictConfirmBtn = document.getElementById('match-schedule-conflict-confirm');
-                    var pendingScheduleForm = null;
-
-                    function openScheduleConflictModal(lines, form) {
-                        if (! conflictModal || ! conflictList) {
-                            return;
+                    function timeInfoLines(dateYmd, timeHi, playerIds, ignoreGroupMatchId) {
+                        var lines = [];
+                        if (! dateYmd || ! timeHi || ! playerIds.length) {
+                            return lines;
                         }
-                        pendingScheduleForm = form;
-                        conflictList.innerHTML = '';
-                        lines.forEach(function (line) {
-                            var row = document.createElement('div');
-                            row.className = 'admin-modal-option';
-                            row.setAttribute('role', 'listitem');
 
-                            var icon = document.createElement('span');
-                            icon.className = 'admin-modal-option-icon';
-                            icon.setAttribute('aria-hidden', 'true');
-                            icon.innerHTML = '<i class="fa-solid fa-exclamation"></i>';
+                        var proposedMinutes = timeToMinutes(timeHi);
+                        if (proposedMinutes === null) {
+                            return lines;
+                        }
 
-                            var text = document.createElement('span');
-                            text.className = 'admin-modal-option-text';
-                            text.textContent = line;
+                        var index = window.PLAYER_SCHEDULE_BY_DAY || {};
+                        var ignoreId = ignoreGroupMatchId ? parseInt(ignoreGroupMatchId, 10) : 0;
 
-                            row.appendChild(icon);
-                            row.appendChild(text);
-                            conflictList.appendChild(row);
+                        playerIds.forEach(function (userId) {
+                            var daySlots = (index[userId] && index[userId][dateYmd]) ? index[userId][dateYmd] : [];
+                            daySlots.forEach(function (slot) {
+                                if (ignoreId && parseInt(slot.group_match_id, 10) === ignoreId) {
+                                    return;
+                                }
+
+                                var timeLabel = slot.time_label || 'Time TBA';
+                                var leagueName = slot.league || 'Tournament';
+                                var baseLine = nameOf(userId) + ' already has a match on this date at ' + timeLabel + ' in ' + leagueName + '.';
+                                var existingMinutes = timeToMinutes(slot.time || '');
+
+                                if (existingMinutes === null) {
+                                    lines.push(baseLine);
+                                    return;
+                                }
+
+                                if (Math.abs(proposedMinutes - existingMinutes) < gapMinutes) {
+                                    var suggested = resolveStartTime(dateYmd, [userId], timeHi, ignoreGroupMatchId);
+                                    lines.push(
+                                        baseLine + ' Leave at least ' + gapHours
+                                        + ' hours between matches (suggested start: ' + formatDisplayHi(suggested) + ').'
+                                    );
+                                } else {
+                                    lines.push(baseLine);
+                                }
+                            });
                         });
-                        conflictModal.hidden = false;
-                        conflictModal.classList.add('is-open');
-                        conflictModal.setAttribute('aria-hidden', 'false');
-                        document.body.classList.add('admin-modal-open');
-                    }
 
-                    function closeScheduleConflictModal() {
-                        if (! conflictModal) {
-                            return;
-                        }
-                        conflictModal.hidden = true;
-                        conflictModal.classList.remove('is-open');
-                        conflictModal.setAttribute('aria-hidden', 'true');
-                        document.body.classList.remove('admin-modal-open');
-                        pendingScheduleForm = null;
-                    }
-
-                    if (conflictConfirmBtn) {
-                        conflictConfirmBtn.addEventListener('click', function () {
-                            if (! pendingScheduleForm) {
-                                return;
-                            }
-                            var confirmEl = pendingScheduleForm.querySelector('[name="confirm_schedule_conflict"]');
-                            if (confirmEl) {
-                                confirmEl.value = '1';
-                            }
-                            var formToSubmit = pendingScheduleForm;
-                            if (window.AdminFormSubmitLock) {
-                                window.AdminFormSubmitLock.lockButton(conflictConfirmBtn);
-                                window.AdminFormSubmitLock.lockForm(formToSubmit);
-                            }
-                            closeScheduleConflictModal();
-                            if (formToSubmit.requestSubmit) {
-                                formToSubmit.requestSubmit();
-                            } else {
-                                formToSubmit.submit();
-                            }
+                        return lines.filter(function (line, i, arr) {
+                            return arr.indexOf(line) === i;
                         });
                     }
 
-                    document.querySelectorAll('[data-match-schedule-modal-cancel]').forEach(function (btn) {
-                        btn.addEventListener('click', closeScheduleConflictModal);
-                    });
-
-                    document.addEventListener('keydown', function (e) {
-                        if (e.key === 'Escape' && conflictModal && conflictModal.classList.contains('is-open')) {
-                            closeScheduleConflictModal();
+                    function infoElementForForm(form) {
+                        if (form.id === 'add-match-form') {
+                            return document.getElementById('add-match-schedule-info');
                         }
-                    });
+                        return form.querySelector('.match-schedule-time-info');
+                    }
+
+                    function refreshScheduleInfo(form, autoSuggestTime) {
+                        var infoEl = infoElementForForm(form);
+                        if (! infoEl) {
+                            return;
+                        }
+
+                        var dateEl = form.querySelector('[name="match_date"]');
+                        var timeEl = form.querySelector('[name="start_time"]');
+                        if (! dateEl || ! dateEl.value) {
+                            infoEl.style.display = 'none';
+                            infoEl.textContent = '';
+                            return;
+                        }
+
+                        var playerIds = collectParticipantIds(form);
+                        if (! playerIds.length) {
+                            infoEl.style.display = 'none';
+                            infoEl.textContent = '';
+                            return;
+                        }
+
+                        var ignoreId = form.getAttribute('data-ignore-group-match-id');
+                        var lines = [];
+
+                        if (! timeEl || ! timeEl.value) {
+                            lines = sameDayInfoLines(dateEl.value, playerIds, ignoreId);
+                        } else {
+                            lines = timeInfoLines(dateEl.value, timeEl.value, playerIds, ignoreId);
+                            var suggested = resolveStartTime(dateEl.value, playerIds, timeEl.value, ignoreId);
+
+                            if (autoSuggestTime && suggested !== timeEl.value) {
+                                timeEl.value = suggested;
+                                lines = timeInfoLines(dateEl.value, timeEl.value, playerIds, ignoreId);
+                            }
+                        }
+
+                        if (! lines.length) {
+                            infoEl.style.display = 'none';
+                            infoEl.textContent = '';
+                            return;
+                        }
+
+                        infoEl.style.display = 'block';
+                        infoEl.innerHTML = lines.map(function (line) {
+                            return '<div style="margin:0 0 0.35rem;">' + line + '</div>';
+                        }).join('');
+                    }
+
+                    function bindScheduleInfo(form) {
+                        var fields = ['match_date', 'start_time', 'home_user_id', 'away_user_id', 'home_partner_user_id', 'away_partner_user_id'];
+                        fields.forEach(function (field) {
+                            form.querySelectorAll('[name="' + field + '"]').forEach(function (el) {
+                                el.addEventListener('change', function () {
+                                    refreshScheduleInfo(form, form.id === 'add-match-form');
+                                });
+                                el.addEventListener('input', function () {
+                                    refreshScheduleInfo(form, false);
+                                });
+                            });
+                        });
+
+                        var formatEl = document.getElementById('format');
+                        if (formatEl && form.id === 'add-match-form') {
+                            formatEl.addEventListener('change', function () {
+                                refreshScheduleInfo(form, true);
+                            });
+                        }
+
+                        ['home_team_key', 'away_team_key'].forEach(function (field) {
+                            var el = form.querySelector('[name="' + field + '"]');
+                            if (el) {
+                                el.addEventListener('change', function () {
+                                    refreshScheduleInfo(form, form.id === 'add-match-form');
+                                });
+                            }
+                        });
+                    }
 
                     document.querySelectorAll('.match-schedule-form').forEach(function (form) {
-                        form.addEventListener('submit', function (e) {
-                            var confirmEl = form.querySelector('[name="confirm_schedule_conflict"]');
-                            if (confirmEl && confirmEl.value === '1') {
-                                return;
-                            }
-
-                            var dateEl = form.querySelector('[name="match_date"]');
-                            if (! dateEl || ! dateEl.value) {
-                                return;
-                            }
-
-                            var playerIds = collectParticipantIds(form);
-                            if (! playerIds.length) {
-                                return;
-                            }
-
-                            var lines = warningLines(
-                                dateEl.value,
-                                playerIds,
-                                form.getAttribute('data-ignore-group-match-id')
-                            );
-
-                            if (! lines.length) {
-                                return;
-                            }
-
-                            e.preventDefault();
-                            openScheduleConflictModal(lines, form);
-                        });
+                        bindScheduleInfo(form);
+                        refreshScheduleInfo(form, false);
                     });
                 })();
             </script>
@@ -1108,6 +1202,7 @@
                                         <div class="match-edit-field">
                                             <label for="mt-{{ $match->id }}">Time <span style="color:#c62828;">*</span></label>
                                             <input class="admin-input" id="mt-{{ $match->id }}" type="time" name="start_time" step="300" value="{{ \App\Support\MatchStartTime::toInputValue(old('start_time', $match->start_time)) }}" required>
+                                            <div class="match-schedule-time-info admin-alert" style="display:none;margin-top:0.35rem;font-size:0.8rem;background:#fff8e6;border:1px solid #f0d78c;color:#7a5b00;" role="status"></div>
                                         </div>
                                         <div class="match-edit-field">
                                             <label for="mv-{{ $match->id }}">Venue</label>

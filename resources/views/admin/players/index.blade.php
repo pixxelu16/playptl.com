@@ -74,7 +74,7 @@
                             </a>
                         </th>
                         <th>Status</th>
-                        <th>Active tournaments</th>
+                        <th>Tournaments</th>
                         <th>Registered</th>
                         <th>Actions</th>
                     </tr>
@@ -124,7 +124,14 @@
                                     <div style="display:flex;flex-direction:column;gap:8px;">
                                         @foreach ($activeTournaments as $tournament)
                                             <div style="padding:6px 8px;border:1px solid #d7ead9;border-radius:6px;background:#f9fbf9;">
-                                                <div style="font-weight:700;font-size:13px;color:#333;">{{ $tournament['tournament'] }}</div>
+                                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                                    <div style="font-weight:700;font-size:13px;color:#333;">{{ $tournament['tournament'] }}</div>
+                                                    @if (($tournament['status_label'] ?? '') === 'Upcoming')
+                                                        <span class="admin-badge" style="background:#fff8e6;color:#9a6700;font-size:10px;">Upcoming</span>
+                                                    @elseif (($tournament['status_label'] ?? '') === 'Active')
+                                                        <span class="admin-badge" style="background:#e8f5e9;color:#2e7d32;font-size:10px;">Active</span>
+                                                    @endif
+                                                </div>
                                                 <div style="font-size:11px;color:#5a9048;margin-top:2px;">{{ $tournament['window'] }}</div>
                                                 @foreach ($tournament['registrations'] as $entry)
                                                     <div style="font-size:11px;color:#666;margin-top:4px;">

@@ -43,5 +43,8 @@ return [
         'doubles_amount_cents' => (int) env('STRIPE_DOUBLES_AMOUNT_CENTS', 4500),
     ],
 
+    'match_schedule' => [
+        'minimum_gap_hours' => (int) env('MATCH_SCHEDULE_MINIMUM_GAP_HOURS', 4),
+    ],
 
 ];

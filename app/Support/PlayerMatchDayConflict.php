@@ -8,10 +8,173 @@ use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Players may play multiple matches per day (any league), but admins get a confirm prompt first.
+ * Players may play multiple matches per day (any league) when start times are spaced apart.
  */
 final class PlayerMatchDayConflict
 {
+    public static function minimumGapHours(): int
+    {
+        return max(1, (int) config('services.match_schedule.minimum_gap_hours', 4));
+    }
+
+    /**
+     * Bump start time so every participant is at least minimumGapHours after any other match that day.
+     */
+    public static function resolveStartTimeForDay(
+        string $dateYmd,
+        array $playerIds,
+        string $preferredHi,
+        ?int $ignoreGroupMatchId = null,
+        ?int $ignorePlayoffMatchId = null,
+    ): string {
+        $preferredHi = MatchStartTime::normalizeFromRequest($preferredHi);
+        if ($preferredHi === '') {
+            $preferredHi = '10:00';
+        }
+
+        $preferredMinutes = self::timeToMinutes($preferredHi) ?? 600;
+        $gapMinutes = self::minimumGapHours() * 60;
+        $requiredStart = $preferredMinutes;
+
+        $index = self::scheduleIndexForPlayerIds($playerIds, $ignoreGroupMatchId, $ignorePlayoffMatchId);
+        foreach ($playerIds as $userId) {
+            $slots = self::filteredSlotsForDay(
+                $index[$userId][$dateYmd] ?? [],
+                $ignoreGroupMatchId,
+                $ignorePlayoffMatchId,
+            );
+
+            foreach ($slots as $slot) {
+                $existingMinutes = self::timeToMinutes((string) ($slot['time'] ?? ''));
+                if ($existingMinutes === null) {
+                    $existingMinutes = 600;
+                }
+
+                if ($preferredMinutes < $existingMinutes + $gapMinutes) {
+                    $requiredStart = max($requiredStart, $existingMinutes + $gapMinutes);
+                }
+            }
+        }
+
+        return self::minutesToHi($requiredStart);
+    }
+
+    /**
+     * Same-day schedule info (date only — before a time is chosen).
+     *
+     * @param  array<int>  $playerIds
+     * @return list<string>
+     */
+    public static function infoLinesForDate(
+        string $dateYmd,
+        array $playerIds,
+        ?int $ignoreGroupMatchId = null,
+        ?int $ignorePlayoffMatchId = null,
+    ): array {
+        return self::warningLinesForDate($dateYmd, $playerIds, $ignoreGroupMatchId, $ignorePlayoffMatchId);
+    }
+
+    /**
+     * Info lines when a specific start time is chosen (manual scheduling UI).
+     *
+     * @param  array<int>  $playerIds
+     * @return list<string>
+     */
+    public static function infoLinesForDateTime(
+        string $dateYmd,
+        string $timeHi,
+        array $playerIds,
+        ?int $ignoreGroupMatchId = null,
+        ?int $ignorePlayoffMatchId = null,
+    ): array {
+        $playerIds = array_values(array_unique(array_filter($playerIds)));
+        $timeHi = MatchStartTime::normalizeFromRequest($timeHi);
+        if ($dateYmd === '' || $timeHi === '' || $playerIds === []) {
+            return [];
+        }
+
+        $proposedMinutes = self::timeToMinutes($timeHi);
+        if ($proposedMinutes === null) {
+            return [];
+        }
+
+        $gapMinutes = self::minimumGapHours() * 60;
+        $index = self::scheduleIndexForPlayerIds($playerIds, $ignoreGroupMatchId, $ignorePlayoffMatchId);
+        $namesById = User::query()->whereIn('id', $playerIds)->pluck('name', 'id')->all();
+        $lines = [];
+
+        foreach ($playerIds as $userId) {
+            $slots = self::filteredSlotsForDay(
+                $index[$userId][$dateYmd] ?? [],
+                $ignoreGroupMatchId,
+                $ignorePlayoffMatchId,
+            );
+
+            foreach ($slots as $slot) {
+                $timeLabel = trim((string) ($slot['time_label'] ?? '')) ?: 'Time TBA';
+                $leagueName = trim((string) ($slot['league'] ?? 'another tournament')) ?: 'another tournament';
+                $name = trim((string) ($namesById[$userId] ?? 'Player'));
+                $baseLine = $name.' already has a match on this date at '.$timeLabel.' in '.$leagueName.'.';
+
+                $existingMinutes = self::timeToMinutes((string) ($slot['time'] ?? ''));
+                if ($existingMinutes === null) {
+                    $lines[] = $baseLine;
+
+                    continue;
+                }
+
+                if (abs($proposedMinutes - $existingMinutes) < $gapMinutes) {
+                    $suggested = self::resolveStartTimeForDay(
+                        $dateYmd,
+                        [$userId],
+                        $timeHi,
+                        $ignoreGroupMatchId,
+                        $ignorePlayoffMatchId,
+                    );
+                    $suggestedLabel = MatchStartTime::formatDisplay($suggested) ?: $suggested;
+                    $lines[] = $baseLine.' Leave at least '.self::minimumGapHours()
+                        .' hours between matches (suggested start: '.$suggestedLabel.').';
+                } else {
+                    $lines[] = $baseLine;
+                }
+            }
+        }
+
+        return array_values(array_unique($lines));
+    }
+
+    public static function timeAdjustmentNotice(string $originalHi, string $resolvedHi): ?string
+    {
+        $originalHi = MatchStartTime::normalizeFromRequest($originalHi);
+        $resolvedHi = MatchStartTime::normalizeFromRequest($resolvedHi);
+        if ($originalHi === '' || $resolvedHi === '' || $originalHi === $resolvedHi) {
+            return null;
+        }
+
+        $originalLabel = MatchStartTime::formatDisplay($originalHi) ?: $originalHi;
+        $resolvedLabel = MatchStartTime::formatDisplay($resolvedHi) ?: $resolvedHi;
+
+        return 'Start time adjusted from '.$originalLabel.' to '.$resolvedLabel
+            .' ('.self::minimumGapHours().'+ hour gap between matches on the same day).';
+    }
+
+    private static function timeToMinutes(string $hi): ?int
+    {
+        $hi = MatchStartTime::toInputValue($hi);
+        if ($hi === '' || ! preg_match('/^(\d{2}):(\d{2})$/', $hi, $m)) {
+            return null;
+        }
+
+        return ((int) $m[1] * 60) + (int) $m[2];
+    }
+
+    private static function minutesToHi(int $minutes): string
+    {
+        $minutes = max(0, min((23 * 60) + 55, $minutes));
+
+        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
+    }
+
     /**
      * @param  array<int>  $playerIds
      * @return array<int, array<string, list<array{time: string, time_label: string, league: string, group_match_id: int|null, playoff_match_id: int|null}>>>

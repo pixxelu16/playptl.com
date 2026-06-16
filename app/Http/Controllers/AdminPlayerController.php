@@ -23,7 +23,7 @@ class AdminPlayerController extends Controller
 {
     public function index(Request $request): View
     {
-        $leagues = LeagueMenuHelper::activeLeagues(latestFirst: true);
+        $leagues = LeagueMenuHelper::registrationLeagues(latestFirst: true);
 
         $leagueIdParam = (string) $request->query('league_id', '');
         $leagueIdInt = $leagueIdParam !== '' && ctype_digit($leagueIdParam) ? (int) $leagueIdParam : null;
@@ -93,7 +93,9 @@ class AdminPlayerController extends Controller
         if ($playerIds !== []) {
             $registrations = LeagueRegistration::query()
                 ->whereIn('user_id', $playerIds)
-                ->whereHas('league', fn ($query) => $query->whereNull('finished_at'))
+                ->whereHas('league', fn ($query) => $query
+                    ->whereNull('finished_at')
+                    ->whereIn('stats', LeagueMenuHelper::REGISTRATION_STATUSES))
                 ->with([
                     'league:id,name,start_date,end_date,stats,finished_at',
                     'groupCard:id,name',
@@ -104,7 +106,7 @@ class AdminPlayerController extends Controller
 
             foreach ($registrations as $registration) {
                 $league = $registration->league;
-                if (! $league instanceof League || ! LeagueSeasonWindow::isCurrent($league)) {
+                if (! $league instanceof League || ! LeagueSeasonWindow::isListedForAdminPlayers($league)) {
                     continue;
                 }
 
@@ -115,6 +117,7 @@ class AdminPlayerController extends Controller
                     $playerActiveTournaments[$userId][$leagueId] = [
                         'tournament' => trim((string) $league->name) ?: '—',
                         'window' => LeagueSeasonWindow::label($league),
+                        'status_label' => LeagueSeasonWindow::adminPlayerListStatusLabel($league),
                         'registrations' => [],
                     ];
                 }
