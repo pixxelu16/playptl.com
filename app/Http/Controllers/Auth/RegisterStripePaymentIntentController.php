@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\League;
 use App\Models\User;
+use App\Helpers\LeagueMenuHelper;
 use App\Support\LeagueEntryFee;
 use App\Support\LeagueRegistrationGate;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +31,10 @@ class RegisterStripePaymentIntentController extends Controller
         ]);
 
         $league = League::query()->findOrFail((int) $validated['league_id']);
+        if (! LeagueMenuHelper::acceptsRegistration($league)) {
+            return response()->json(['message' => 'Registration is not open for this tournament.'], 422);
+        }
+
         $registrationClosed = LeagueRegistrationGate::closedReasonForSelection(
             $league,
             (string) $validated['registration_tab'],

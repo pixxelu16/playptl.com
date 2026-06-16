@@ -134,6 +134,10 @@ class PlayerProfileController extends Controller
         $league = League::query()->findOrFail((int) $validated['league_id']);
         $tab = (string) $validated['registration_tab'];
 
+        if (! LeagueMenuHelper::acceptsRegistration($league)) {
+            return response()->json(['message' => 'Registration is not open for this tournament.'], 422);
+        }
+
         if ($this->userIsRegisteredInLeague($user, (int) $league->id)) {
             return response()->json(['message' => 'You are already registered in this tournament.'], 422);
         }
@@ -253,6 +257,10 @@ class PlayerProfileController extends Controller
         }
 
         $league = League::query()->findOrFail($leagueId);
+
+        if (! LeagueMenuHelper::acceptsRegistration($league)) {
+            return response()->json(['message' => 'Registration is not open for this tournament.'], 422);
+        }
 
         $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
         if (! $expectedCard instanceof GroupCard) {
@@ -1812,7 +1820,7 @@ class PlayerProfileController extends Controller
         $user = $request->user();
         $registeredLeagueIds = $this->registeredLeagueIdsForUser($user);
 
-        $allLeagues = LeagueMenuHelper::activeLeagues();
+        $allLeagues = LeagueMenuHelper::registrationLeagues();
         $registrationLeagues = $allLeagues
             ->filter(fn ($league) => ! in_array((int) $league->id, $registeredLeagueIds, true))
             ->values();
