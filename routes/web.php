@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminGroupCardController;
 use App\Http\Controllers\AdminGroupController;
 use App\Http\Controllers\AdminGroupMatchController;
 use App\Http\Controllers\AdminLeagueController;
+use App\Http\Controllers\AdminLeagueGroupCardAssignPlayerController;
 use App\Http\Controllers\AdminLeagueGroupCardGroupController;
 use App\Http\Controllers\AdminLeagueGroupCardPlayerController;
 use App\Http\Controllers\AdminLeagueGroupCardPointsController;
@@ -95,6 +96,9 @@ Route::middleware('auth')->group(function () {
         Route::get('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'index'])->name('league-management.groups.index');
         Route::get('league-management/{league}/group-cards/{groupCard}/groups/create', [AdminLeagueGroupCardGroupController::class, 'create'])->name('league-management.groups.create');
         Route::post('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'store'])->name('league-management.groups.store');
+
+        Route::get('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'index'])->name('league-management.assign-players.index');
+        Route::post('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'store'])->name('league-management.assign-players.store');
 
         Route::get('league-management/{league}/group-cards/{groupCard}/players', [AdminLeagueGroupCardPlayerController::class, 'index'])->name('league-management.players.index');
         Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}', [AdminLeagueGroupCardPlayerController::class, 'updateGroup'])->name('league-management.players.update-group');
