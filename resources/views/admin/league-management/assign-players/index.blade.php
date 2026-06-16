@@ -14,6 +14,7 @@
                 </p>
                 <p class="admin-card-text" style="margin-top: 8px; font-size: 13px;">
                     Only players <strong>not yet assigned</strong> to this group are listed below.
+                    Account register-as (singles/doubles) does not matter — only this tournament group.
                     Each player can only be in <strong>one {{ $registrationType }} group</strong> per tournament (but may play both singles and doubles in the same tournament).
                     @if (! empty($groupSkillLevel))
                         This group skill tier: <strong>{{ $groupSkillLevel }}</strong>.

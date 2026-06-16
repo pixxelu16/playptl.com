@@ -50,4 +50,35 @@ class LeagueSeasonWindow
 
         return 'Dates not announced';
     }
+
+    /**
+     * Tournaments shown on admin player list (active season + upcoming).
+     */
+    public static function isListedForAdminPlayers(League $league): bool
+    {
+        if ($league->isFinished()) {
+            return false;
+        }
+
+        return in_array((string) ($league->stats ?? ''), ['active', 'upcoming'], true);
+    }
+
+    public static function adminPlayerListStatusLabel(League $league): string
+    {
+        if (($league->stats ?? '') === 'upcoming') {
+            return 'Upcoming';
+        }
+
+        $season = self::status($league);
+
+        if ($season['label'] === 'Upcoming') {
+            return 'Upcoming';
+        }
+
+        if ($season['is_current']) {
+            return 'Active';
+        }
+
+        return $season['label'];
+    }
 }

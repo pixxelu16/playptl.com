@@ -33,13 +33,10 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
             ->all();
 
         $playersQuery = User::query()
-            ->where('role', UserRole::Player)
-            ->where('registration_type', $registrationType);
-
-        $excludeUserIds = $registeredInSubGroupUserIds;
+            ->where('role', UserRole::Player);
 
         $excludeUserIds = array_values(array_unique(array_merge(
-            $excludeUserIds,
+            $registeredInSubGroupUserIds,
             LeagueRegistrationRoster::userIdsInLeagueSubGroupsForType($league->id, $registrationType, $groupCard->id),
         )));
 
@@ -105,7 +102,6 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
 
         $player = User::query()->findOrFail((int) $validated['user_id']);
         abort_unless($player->role === UserRole::Player, 404);
-        abort_unless((string) ($player->registration_type ?? 'singles') === $registrationType, 422);
 
         $alreadyInSubGroup = LeagueRegistration::query()
             ->where('user_id', $player->id)

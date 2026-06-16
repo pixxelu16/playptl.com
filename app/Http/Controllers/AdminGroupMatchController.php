@@ -398,12 +398,10 @@ class AdminGroupMatchController extends Controller
         }
 
         $dateYmd = $matchDateCarbon->toDateString();
-        $scheduleWarnings = PlayerMatchDayConflict::warningLinesForDate($dateYmd, $participantIds);
-        if ($scheduleWarnings !== [] && ! $request->boolean('confirm_schedule_conflict')) {
-            return back()->withErrors([
-                'schedule' => implode(' ', $scheduleWarnings).' Do you want to schedule anyway? Confirm and submit again.',
-            ])->withInput();
-        }
+        $originalStart = $startTimeNorm;
+        $startTimeNorm = PlayerMatchDayConflict::resolveStartTimeForDay($dateYmd, $participantIds, $startTimeNorm);
+        $timeNotice = PlayerMatchDayConflict::timeAdjustmentNotice($originalStart, $startTimeNorm);
+        $scheduleInfoLines = PlayerMatchDayConflict::infoLinesForDateTime($dateYmd, $startTimeNorm, $participantIds);
 
         $seedByUserId = $this->seedMap($league, $groupCard, $group, $ageGroupKey);
 
@@ -437,7 +435,7 @@ class AdminGroupMatchController extends Controller
                 'groupCard' => $groupCard,
                 'group' => $group->id,
             ] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
-            ->with('status', 'Match scheduled.');
+            ->with('status', $this->matchScheduleStatusMessage('Match scheduled.', $timeNotice, $scheduleInfoLines));
     }
 
     public function update(Request $request, League $league, GroupCard $groupCard, GroupMatch $groupMatch): RedirectResponse
@@ -510,11 +508,25 @@ class AdminGroupMatchController extends Controller
             $groupMatch->home_partner_user_id ? (int) $groupMatch->home_partner_user_id : null,
             $groupMatch->away_partner_user_id ? (int) $groupMatch->away_partner_user_id : null,
         ]));
-        $scheduleWarnings = PlayerMatchDayConflict::warningLinesForDate($dateYmd, $participantIds, $groupMatch->id);
-        if ($scheduleWarnings !== [] && ! $request->boolean('confirm_schedule_conflict')) {
-            return back()->withErrors([
-                'schedule' => implode(' ', $scheduleWarnings).' Do you want to save anyway? Confirm and submit again.',
-            ])->withInput();
+
+        if (! $isQuickResult) {
+            $originalStart = $startTime;
+            $startTime = PlayerMatchDayConflict::resolveStartTimeForDay(
+                $dateYmd,
+                $participantIds,
+                $startTime,
+                $groupMatch->id,
+            );
+            $timeNotice = PlayerMatchDayConflict::timeAdjustmentNotice($originalStart, $startTime);
+            $scheduleInfoLines = PlayerMatchDayConflict::infoLinesForDateTime(
+                $dateYmd,
+                $startTime,
+                $participantIds,
+                $groupMatch->id,
+            );
+        } else {
+            $timeNotice = null;
+            $scheduleInfoLines = [];
         }
 
         $oldDate = $groupMatch->match_date?->toDateString();
@@ -573,15 +585,18 @@ class AdminGroupMatchController extends Controller
             $this->notifyParticipantsMatchSchedule($groupMatch);
         }
 
+        $statusMessage = $scheduleChanged && ! $isQuickResult
+            ? 'Match updated. Players have been emailed.'
+            : 'Match updated.';
+        $statusMessage = $this->matchScheduleStatusMessage($statusMessage, $timeNotice ?? null, $scheduleInfoLines ?? []);
+
         return redirect()
             ->route('admin.league-management.matches.index', [
                 'league' => $league,
                 'groupCard' => $groupCard,
                 'group' => $groupMatch->group_id,
             ] + ($ageGroupKey ? ['age_group_key' => $ageGroupKey] : []))
-            ->with('status', $scheduleChanged && ! $isQuickResult
-                ? 'Match updated. Players have been emailed.'
-                : 'Match updated.');
+            ->with('status', $statusMessage);
     }
 
     public function cancelSchedule(Request $request, League $league, GroupCard $groupCard): RedirectResponse
@@ -916,5 +931,21 @@ class AdminGroupMatchController extends Controller
         }
 
         return SubgroupRoundRobinScheduler::formatDivisionSyncSummary($totals, '');
+    }
+
+    /**
+     * @param  list<string>  $scheduleInfoLines
+     */
+    private function matchScheduleStatusMessage(string $base, ?string $timeNotice, array $scheduleInfoLines): string
+    {
+        $message = $base;
+
+        if ($timeNotice !== null && $timeNotice !== '') {
+            $message .= ' '.$timeNotice;
+        } elseif ($scheduleInfoLines !== []) {
+            $message .= ' Note: '.implode(' ', $scheduleInfoLines);
+        }
+
+        return $message;
     }
 }
