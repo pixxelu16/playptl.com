@@ -53,6 +53,9 @@
                             <td>{{ $s['assigned_count'] }}</td>
                             <td>
                                 <div class="admin-table-actions">
+                                    <a href="{{ route('admin.league-management.assign-players.index', [$league, $groupCard]) }}" title="Assign player">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    </a>
                                     <a href="{{ route('admin.league-management.groups.index', [$league, $groupCard]) }}" title="Subgroups &amp; players">
                                         <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
                                     </a>
