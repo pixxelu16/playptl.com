@@ -35,10 +35,24 @@ class AdminPlayerController extends Controller
 
         $search = trim((string) $request->query('search', ''));
 
+        $statusFilter = strtolower((string) $request->query('status', 'active'));
+        if (! in_array($statusFilter, ['active', 'pending', 'suspend', 'all'], true)) {
+            $statusFilter = 'active';
+        }
+
         $skillFieldList = implode("', '", AdminPlayerLeagueRegistrationService::skillLevelValues());
 
         $playersQuery = User::query()
             ->where('users.role', UserRole::Player);
+
+        if ($statusFilter === 'active') {
+            $playersQuery->where(function ($query) {
+                $query->where('users.status', 'active')
+                    ->orWhereNull('users.status');
+            });
+        } elseif ($statusFilter !== 'all') {
+            $playersQuery->where('users.status', $statusFilter);
+        }
 
         if ($search !== '') {
             $playersQuery->where(function ($query) use ($search) {
@@ -84,8 +98,14 @@ class AdminPlayerController extends Controller
             ->with(['leagueRegistrations' => fn ($query) => $query
                 ->when($leagueIdInt !== null, fn ($inner) => $inner->where('league_id', $leagueIdInt))
                 ->orderByDesc('id')])
-            ->paginate(10)
-            ->withQueryString();
+            ->paginate(10);
+
+        $players->appends(array_filter([
+            'search' => $search !== '' ? $search : null,
+            'league_id' => $leagueIdInt,
+            'skill_sort' => $skillSort,
+            'status' => $statusFilter,
+        ], fn ($value) => $value !== null && $value !== ''));
 
         $playerActiveTournaments = [];
         $playerIds = $players->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -140,6 +160,7 @@ class AdminPlayerController extends Controller
             'leagueId' => $leagueIdInt,
             'skillSort' => $skillSort,
             'search' => $search,
+            'statusFilter' => $statusFilter,
             'playerActiveTournaments' => $playerActiveTournaments,
         ]);
     }
