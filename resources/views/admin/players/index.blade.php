@@ -9,6 +9,7 @@
             'league_id' => $leagueId,
             'skill_sort' => $skillSort,
             'search' => $search ?? '',
+            'status' => $statusFilter ?? 'active',
             'page' => $players->currentPage() > 1 ? $players->currentPage() : null,
         ], fn ($value) => $value !== null && $value !== '');
         $nextSkillSort = $skillSort === 'asc' ? 'desc' : 'asc';
@@ -33,6 +34,15 @@
                 <div>
                     <label class="admin-label" for="search">Search</label>
                     <input class="admin-input" type="text" name="search" id="search" value="{{ $search ?? '' }}" placeholder="Name, email, phone, city..." style="min-width:220px;">
+                </div>
+                <div>
+                    <label class="admin-label" for="status">Status</label>
+                    <select class="admin-input" name="status" id="status">
+                        <option value="active" @selected(($statusFilter ?? 'active') === 'active')>Active</option>
+                        <option value="pending" @selected(($statusFilter ?? 'active') === 'pending')>Pending</option>
+                        <option value="suspend" @selected(($statusFilter ?? 'active') === 'suspend')>Suspend</option>
+                        <option value="all" @selected(($statusFilter ?? 'active') === 'all')>All</option>
+                    </select>
                 </div>
                 <div>
                     <label class="admin-label" for="league_id">Tournament</label>
@@ -170,7 +180,7 @@
                             <td colspan="14">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-user" aria-hidden="true"></i>
-                                    <p>No players found{{ $leagueId ? ' for this tournament' : '' }}{{ ($search ?? '') !== '' ? ' matching your search' : '' }}.</p>
+                                    <p>No players found{{ ($statusFilter ?? 'active') !== 'all' ? ' with status '.ucfirst($statusFilter ?? 'active') : '' }}{{ $leagueId ? ' for this tournament' : '' }}{{ ($search ?? '') !== '' ? ' matching your search' : '' }}.</p>
                                 </div>
                             </td>
                         </tr>
