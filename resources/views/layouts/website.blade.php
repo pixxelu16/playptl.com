@@ -78,13 +78,29 @@
         $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : $defaultHeaderLogo;
         $activeLeagueMenuItems = \App\Helpers\LeagueMenuHelper::activeLeagues();
     @endphp
-    <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass){{ $authHeaderBottomBorder ? ' border-b border-solid border-[#ddd]' : '' }}">
-        <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
-            <a href="{{ url('/') }}" class="group flex items-center gap-3">
-                <img src="{{ asset($headerLogoSrc) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
+    <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass){{ $authHeaderBottomBorder ? ' border-b border-solid border-[#ddd]' : '' }}" data-header-theme="{{ $headerLight ? 'light' : 'dark' }}">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between gap-4">
+            <a href="{{ url('/') }}" class="group flex shrink-0 items-center gap-3">
+                <img src="{{ asset($headerLogoSrc) }}" alt="Premier Tennis League Logo" class="h-[72px] w-auto sm:h-[92px] lg:h-[110px]">
             </a>
 
-            <nav class="relative z-10 flex flex-wrap items-center justify-center gap-8 text-[16px] font-medium sm:gap-10" aria-label="Main">
+            <button
+                type="button"
+                class="site-nav-toggle lg:hidden"
+                data-mobile-nav-toggle
+                aria-controls="site-mobile-nav"
+                aria-expanded="false"
+                aria-label="Open menu"
+            >
+                <svg class="site-nav-toggle__icon site-nav-toggle__icon--open" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <svg class="site-nav-toggle__icon site-nav-toggle__icon--close" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <nav class="relative z-10 hidden flex-wrap items-center justify-center gap-8 text-[16px] font-medium lg:flex lg:gap-10" aria-label="Main">
                 <a href="{{ url('/') }}" @class([
                     'transition-colors',
                     'text-[#c1e82c]' => ! $headerLight && $navActive === 'home',
@@ -132,7 +148,7 @@
                 ])>Charity</a>
             </nav>
 
-            <div class="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-end">
+            <div class="hidden items-center justify-end gap-3 lg:flex">
                 @auth
                     @php
                         $headerUser = auth()->user();
@@ -169,6 +185,59 @@
                 @endauth
             </div>
         </div>
+
+        <div id="site-mobile-nav" class="site-mobile-nav lg:hidden" data-mobile-nav hidden>
+            <nav class="site-mobile-nav__links" aria-label="Mobile">
+                <a href="{{ url('/') }}" @class([
+                    'site-mobile-nav__link',
+                    'is-active' => $navActive === 'home',
+                ])>Home</a>
+
+                <div class="site-mobile-nav__group">
+                    <span class="site-mobile-nav__group-label">League</span>
+                    @forelse ($activeLeagueMenuItems as $leagueMenuItem)
+                        <a href="{{ route('league.overview', ['slug' => $leagueMenuItem->slug]) }}" class="site-mobile-nav__sublink">{{ $leagueMenuItem->name }}</a>
+                    @empty
+                        <span class="site-mobile-nav__sublink is-muted">No active leagues</span>
+                    @endforelse
+                </div>
+
+                <a href="{{ url('/gallery') }}" @class([
+                    'site-mobile-nav__link',
+                    'is-active' => $navActive === 'gallery',
+                ])>Gallery</a>
+
+                <a href="{{ url('/charity') }}" @class([
+                    'site-mobile-nav__link',
+                    'is-active' => $navActive === 'charity',
+                ])>Charity</a>
+            </nav>
+
+            <div class="site-mobile-nav__auth">
+                @auth
+                    @php
+                        $mobileHeaderUser = auth()->user();
+                        $mobileHeaderAvatar = asset($mobileHeaderUser->avatar_path ?: 'upload/user-avatar/default-user-pic.png');
+                        $mobileHeaderProfileUrl = $mobileHeaderUser->role === \App\Enums\UserRole::Player
+                            ? route('player.my-profile')
+                            : ($mobileHeaderUser->role === \App\Enums\UserRole::Admin ? route('admin.profile') : route('dashboard'));
+                    @endphp
+                    <a href="{{ $mobileHeaderProfileUrl }}" class="site-mobile-nav__profile">
+                        <img src="{{ $mobileHeaderAvatar }}" alt="" class="h-10 w-10 rounded-full border border-white/30 object-cover">
+                        <span>{{ $mobileHeaderUser->name }}</span>
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="site-mobile-nav__button site-mobile-nav__button--secondary">Logout</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="site-mobile-nav__button site-mobile-nav__button--primary">Login</a>
+                    <a href="{{ route('register') }}" class="site-mobile-nav__button site-mobile-nav__button--accent">Register</a>
+                @endauth
+            </div>
+        </div>
+
+        <button type="button" class="site-mobile-nav-backdrop lg:hidden" data-mobile-nav-backdrop hidden aria-label="Close menu"></button>
     </header>
 
     @hasSection('suppress_global_errors')

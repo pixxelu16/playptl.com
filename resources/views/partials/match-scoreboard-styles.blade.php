@@ -201,4 +201,33 @@
         -moz-appearance: textfield;
         appearance: textfield;
     }
+
+    @media (max-width: 640px) {
+        .match-scoreboard {
+            padding: 0.5rem 0.55rem;
+        }
+
+        .match-scoreboard__layout {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+
+        .match-scoreboard__player-line {
+            white-space: normal;
+            font-size: 0.85rem;
+        }
+
+        .match-scoreboard__scores {
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .match-score-entry__grid {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
 </style>

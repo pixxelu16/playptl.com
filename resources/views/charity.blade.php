@@ -9,7 +9,7 @@
 
 @section('content')
     <main>
-        <section class="relative flex h-[685px] min-h-[685px] flex-col overflow-hidden">
+        <section class="site-hero relative flex flex-col overflow-hidden">
             <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
                 <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
             </video>

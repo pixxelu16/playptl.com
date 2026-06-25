@@ -14,7 +14,7 @@
 
 @section('content')
     <main class="bg-[#E8F7E9] font-['Montserrat',ui-sans-serif,system-ui,sans-serif] text-[#333333] antialiased">
-        <section class="relative flex h-[685px] min-h-[685px] flex-col overflow-hidden">
+        <section class="site-hero relative flex flex-col overflow-hidden">
             <video class="absolute inset-0 z-0 h-full min-h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
                 <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
             </video>
@@ -26,7 +26,7 @@
                 <div class="absolute right-[5%] top-[38%] h-10 w-10 rounded-full bg-[#f5e85a] blur-lg"></div>
             </div>
 
-            <div class="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-5 pb-24 pt-36 sm:px-8 sm:pb-28 sm:pt-40 lg:px-14 lg:pb-32 lg:pt-44">
+            <div class="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-5 pb-16 pt-28 sm:px-8 sm:pb-24 sm:pt-36 lg:px-14 lg:pb-32 lg:pt-44">
                 <header class="max-w-5xl">
                     <nav class="mb-6 flex flex-wrap items-center gap-x-1 gap-y-2 text-[14px] font-semibold uppercase tracking-[0.28em] text-[#B4F000] sm:mb-8" aria-label="Breadcrumb">
                         <a href="{{ url('/') }}" class="text-[#B4F000] transition-opacity hover:opacity-90">Home</a>
@@ -40,7 +40,7 @@
                         @endif
                     </nav>
 
-                    <h1 class="league-1 text-[clamp(4.5rem,11vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.02em]">
+                    <h1 class="league-1 text-[clamp(2.75rem,11vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.02em]">
                         <span class="text-white">MY</span><span class="text-[#B4F000]"> PROFILE</span>
                     </h1>
 
@@ -57,7 +57,7 @@
         </section>
 
         <section class="mx-auto max-w-[1400px] px-5 py-10 sm:px-8 sm:py-12 lg:px-14 lg:py-16">
-            <div class="flex flex-col gap-6 overflow-x-auto pb-1 lg:flex-row lg:items-start lg:gap-6">
+            <div class="flex min-w-0 flex-col gap-6 pb-1 lg:flex-row lg:items-start lg:gap-6">
                 <aside class="w-full shrink-0 lg:w-[450px] lg:min-w-[450px] lg:max-w-[450px]">
                     <div class="overflow-hidden rounded-[12px] bg-white p-[5px] shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-[#E0E0E0]">
                         <div class="rounded-[5px] bg-[#E8F5E9] px-5 py-6 text-center">

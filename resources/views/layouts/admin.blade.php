@@ -75,6 +75,8 @@
             </nav>
         </aside>
 
+        <button type="button" class="admin-sidebar-backdrop" data-admin-sidebar-backdrop hidden aria-label="Close navigation"></button>
+
         <div class="admin-main">
             <header class="admin-topbar">
                 <button class="admin-menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="true" data-sidebar-toggle>
@@ -136,12 +138,70 @@
     <script src="{{ asset('admin/js/admin-form-submit-lock.js') }}?v={{ $adminJsV }}" defer></script>
     <script src="{{ asset('admin/js/admin-confirm.js') }}?v={{ $adminJsV }}" defer></script>
     <script>
-        document.querySelector('[data-sidebar-toggle]')?.addEventListener('click', function () {
+        (function () {
             const shell = document.querySelector('[data-admin-shell]');
-            const collapsed = shell?.classList.toggle('is-sidebar-collapsed') ?? false;
+            const toggle = document.querySelector('[data-sidebar-toggle]');
+            const backdrop = document.querySelector('[data-admin-sidebar-backdrop]');
+            const mobileQuery = window.matchMedia('(max-width: 1023px)');
 
-            this.setAttribute('aria-expanded', String(! collapsed));
-        });
+            function isMobileNav() {
+                return mobileQuery.matches;
+            }
+
+            function closeMobileNav() {
+                shell?.classList.remove('is-mobile-nav-open');
+                if (backdrop) {
+                    backdrop.hidden = true;
+                }
+                toggle?.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('admin-mobile-nav-open');
+            }
+
+            function openMobileNav() {
+                shell?.classList.add('is-mobile-nav-open');
+                if (backdrop) {
+                    backdrop.hidden = false;
+                }
+                toggle?.setAttribute('aria-expanded', 'true');
+                document.body.classList.add('admin-mobile-nav-open');
+            }
+
+            toggle?.addEventListener('click', function () {
+                if (isMobileNav()) {
+                    if (shell?.classList.contains('is-mobile-nav-open')) {
+                        closeMobileNav();
+                    } else {
+                        openMobileNav();
+                    }
+                    return;
+                }
+
+                const collapsed = shell?.classList.toggle('is-sidebar-collapsed') ?? false;
+                this.setAttribute('aria-expanded', String(! collapsed));
+            });
+
+            backdrop?.addEventListener('click', closeMobileNav);
+
+            document.querySelectorAll('.admin-sidebar a, .admin-sidebar .admin-nav-button').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    if (isMobileNav()) {
+                        closeMobileNav();
+                    }
+                });
+            });
+
+            mobileQuery.addEventListener('change', function () {
+                if (! isMobileNav()) {
+                    closeMobileNav();
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeMobileNav();
+                }
+            });
+        })();
 
         const userMenuToggle = document.querySelector('[data-user-menu-toggle]');
         const userDropdown = document.querySelector('[data-user-dropdown]');
