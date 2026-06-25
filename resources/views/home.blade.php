@@ -21,7 +21,7 @@
                         <p class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 sm:mb-5 sm:text-sm">
                             Season 2026 - Now Open
                         </p>
-                        <h1 class="text-[72px] font-bold uppercase leading-[1.05] tracking-[3px] sm:text-[96px] lg:text-[120px]">
+                        <h1 class="text-[clamp(2.75rem,12vw,7.5rem)] font-bold uppercase leading-[1.05] tracking-[2px] sm:tracking-[3px] lg:text-[120px]">
                             <span class="champions-1 block text-white">Where Champions</span>
                             <span class="league-1 block text-lime">Are Forged.</span>
                         </h1>
