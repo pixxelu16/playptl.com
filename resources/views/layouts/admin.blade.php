@@ -60,6 +60,14 @@
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></span>
                         <span>Announcements</span>
                     </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.official-partners.*') ? 'is-active' : '' }}" href="{{ route('admin.official-partners.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-handshake"></i></span>
+                        <span>Official Partners</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.contact-settings.*') ? 'is-active' : '' }}" href="{{ route('admin.contact-settings.edit') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gear"></i></span>
+                        <span>Site Settings</span>
+                    </a>
                 </div>
 
                 <div class="admin-nav-section">

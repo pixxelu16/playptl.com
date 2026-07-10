@@ -9,38 +9,16 @@
 
 @section('content')
     <main>
-        <section class="site-hero relative flex flex-col overflow-hidden">
-            <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
-            </video>
-
-            <div class="pointer-events-none absolute inset-0 z-[1] bg-[rgba(0,0,0,0.6)]" aria-hidden="true"></div>
-
-            <div class="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-start justify-center px-5 py-12 text-left sm:py-16">
-                <header class="w-full max-w-5xl text-left">
-                    <nav class="mb-6 flex flex-wrap items-center justify-start gap-x-1 gap-y-2 text-[14px] font-semibold uppercase tracking-[0.28em] text-[#C1D72E] sm:mb-8" aria-label="Breadcrumb">
-                        <a href="{{ url('/') }}" class="text-[#C1D72E] transition-opacity hover:opacity-90">Home</a>
-                        <span class="mx-1 sm:mx-2">&gt;&gt;</span>
-                        <span class="text-[#C1D72E]">Charity</span>
-                    </nav>
-
-                    <h1 class="league-1 text-[clamp(4.5rem,11vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.02em]">
-                        <span class="text-white">BEYOND THE </span><span class="text-[#C1D72E]">BASELINE</span>
-                    </h1>
-
-                    <p class="mt-8 max-w-4xl font-['Montserrat',ui-sans-serif,system-ui,sans-serif] text-[18px] font-medium leading-relaxed text-white sm:mt-10">
-                        @if ($charityCausesCount > 0)
-                            <span class="text-[#C1D72E]">&#8226;</span>
-                            <span class="mx-2">{{ $charityCausesCount }} {{ Str::plural('Charity Cause', $charityCausesCount) }}</span>
-                        @endif
-                        <span class="text-[#C1D72E]">&#8226;</span>
-                        <span class="mx-2">Season 2026</span>
-                        <span class="text-[#C1D72E]">&#8226;</span>
-                        <span class="mx-2">Every match gives back</span>
-                    </p>
-                </header>
-            </div>
-        </section>
+        @include('partials.site-page-hero', [
+            'heroBreadcrumb' => 'Charity',
+            'heroTitleLight' => 'BEYOND THE',
+            'heroTitleAccent' => 'BASELINE',
+            'heroMetaItems' => array_values(array_filter([
+                $charityCausesCount > 0 ? $charityCausesCount.' '.Str::plural('Charity Cause', $charityCausesCount) : null,
+                'Season 2026',
+                'Every match gives back',
+            ])),
+        ])
 
         @include('partials.charity-total-raised')
 
