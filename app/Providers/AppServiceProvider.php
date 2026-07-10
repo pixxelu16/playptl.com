@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\SiteSetting;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer('layouts.website', function ($view): void {
+            $view->with('contactSettings', SiteSetting::contact());
+            $view->with('headerSettings', SiteSetting::header());
+            $view->with('footerSettings', SiteSetting::footer());
+        });
     }
 }

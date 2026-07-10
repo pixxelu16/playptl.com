@@ -6,6 +6,7 @@ use App\Enums\GroupMatchFormat;
 use App\Models\Announcement;
 use App\Models\GroupMatch;
 use App\Models\GroupMatchPlayerUpload;
+use App\Models\OfficialPartner;
 use App\Models\User;
 use App\Support\GalleryUploadPresenter;
 use App\Support\MatchStartTime;
@@ -44,6 +45,13 @@ class HomeController extends Controller
 
         $homeScheduleDays = $this->homeRecentScheduleDays(4);
         $announcements = $this->homeAnnouncementsPayload();
+        $officialPartners = Schema::hasTable('official_partners')
+            ? OfficialPartner::query()
+                ->where('is_active', true)
+                ->orderBy('display_order')
+                ->orderBy('name')
+                ->get()
+            : collect();
 
         return view('home', [
             'homeGalleryToday' => $todayPhotos,
@@ -52,6 +60,7 @@ class HomeController extends Controller
             'homeScheduleDays' => $homeScheduleDays,
             'homeFeaturedAnnouncement' => $announcements['featured'],
             'homeAnnouncementRows' => $announcements['rows'],
+            'officialPartners' => $officialPartners,
         ]);
     }
 

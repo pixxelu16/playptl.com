@@ -15,9 +15,9 @@
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 
-            <div class="relative z-10 flex flex-1 items-center px-5 pb-16 pt-40 sm:px-8 lg:px-14 lg:pb-20">
-                <div class="mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-16 xl:grid-cols-[minmax(0,1fr)_320px]">
-                    <div class="max-w-3xl">
+            <div class="relative z-10 flex flex-1 items-center justify-center px-5 pb-16 pt-40 sm:px-8 lg:px-14 lg:pb-20">
+                <div class="mx-auto w-full max-w-[1400px] text-center">
+                    <div class="mx-auto max-w-3xl">
                         <p class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 sm:mb-5 sm:text-sm">
                             Season 2026 - Now Open
                         </p>
@@ -27,6 +27,7 @@
                         </h1>
                     </div>
 
+                    {{-- Stats sidebar hidden per client request
                     <aside class="border-t border-white/15 pt-8 lg:border-0 lg:pt-0 lg:text-right">
                         <ul class="divide-y divide-white/15">
                             <li class="py-6 first:pt-0">
@@ -47,6 +48,7 @@
                             </li>
                         </ul>
                     </aside>
+                    --}}
                 </div>
             </div>
         </section>
@@ -160,6 +162,7 @@
             </div>
         </section>
 
+        @if ($officialPartners->isNotEmpty())
         <section class="relative overflow-hidden bg-[#f5f9f6] py-12 font-sans text-[#1a1a1a] antialiased sm:py-16" aria-labelledby="partners-heading">
             <div class="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-14">
                 <div class="mb-10 flex items-center justify-center gap-3 sm:gap-5">
@@ -172,66 +175,15 @@
             <div class="relative w-full min-w-0 overflow-hidden">
                 <div class="flex w-max select-none will-change-transform motion-reduce:animate-none animate-marquee">
                     <ul class="flex shrink-0 items-center gap-10 pr-10 sm:gap-14 sm:pr-14 md:gap-16 md:pr-16" role="list">
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-1.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-2.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-3.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-4.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-5.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-6.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-7.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-8.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-9.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
+                        @include('partials.official-partners-marquee-items', ['officialPartners' => $officialPartners])
                     </ul>
                     <ul class="flex shrink-0 items-center gap-10 pr-10 sm:gap-14 sm:pr-14 md:gap-16 md:pr-16" role="presentation" aria-hidden="true">
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-1.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-2.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-3.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-4.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-5.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-6.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-7.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-8.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
-                        <li class="flex h-20 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm">
-                            <img src="{{ asset('frontend/images/partner-9.png') }}" alt="Partner logo" class="max-h-16 max-w-32 object-contain" loading="lazy">
-                        </li>
+                        @include('partials.official-partners-marquee-items', ['officialPartners' => $officialPartners])
                     </ul>
                 </div>
             </div>
         </section>
+        @endif
 
         @push('styles')
             @include('partials.gallery-photo-styles')

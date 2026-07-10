@@ -8,12 +8,13 @@ use App\Http\Controllers\AdminGroupMatchController;
 use App\Http\Controllers\AdminLeagueController;
 use App\Http\Controllers\AdminLeagueGroupCardAssignPlayerController;
 use App\Http\Controllers\AdminLeagueGroupCardGroupController;
-use App\Http\Controllers\AdminLeagueGroupCardPlayerController;
+use App\Http\Controllers\AdminOfficialPartnerController;
 use App\Http\Controllers\AdminLeagueGroupCardPointsController;
 use App\Http\Controllers\AdminLeagueGroupCardQualifierController;
 use App\Http\Controllers\AdminLeagueManagementController;
 use App\Http\Controllers\AdminCharityCauseController;
 use App\Http\Controllers\AdminCharityDonationController;
+use App\Http\Controllers\AdminContactSettingController;
 use App\Http\Controllers\AdminPaymentHistoryController;
 use App\Http\Controllers\CharityCauseContributionController;
 use App\Http\Controllers\CharityController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeagueController;
+use App\Http\Controllers\LegalPageController;
 use App\Http\Controllers\PlayerProfileController;
 use App\Models\Announcement;
 use App\Models\Group;
@@ -50,6 +52,9 @@ Route::get('/charity/cause/{charityCause:slug}', [CharityController::class, 'sho
 Route::post('/charity/cause/{charityCause:slug}/contribute', [CharityCauseContributionController::class, 'store'])->name('charity.cause.contribute');
 Route::post('/charity/donation/payment-intent', [CharityDonationController::class, 'createPaymentIntent'])->name('charity.donation.payment-intent');
 Route::post('/charity/donation', [CharityDonationController::class, 'store'])->name('charity.donation.store');
+
+Route::get('/privacy-policy', [LegalPageController::class, 'privacyPolicy'])->name('privacy-policy');
+Route::get('/terms-and-conditions', [LegalPageController::class, 'termsAndConditions'])->name('terms-and-conditions');
 
 Route::get('/league', function () {
     abort(404);
@@ -126,6 +131,9 @@ Route::middleware('auth')->group(function () {
         Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/pull-winners', [AdminPlayoffMatchController::class, 'pullWinners'])->name('league-management.playoffs.pull-winners');
         Route::put('league-management/{league}/group-cards/{groupCard}/playoffs/{playoffMatch}', [AdminPlayoffMatchController::class, 'update'])->name('league-management.playoffs.update');
         Route::resource('announcements', AdminAnnouncementController::class);
+        Route::resource('official-partners', AdminOfficialPartnerController::class)->except(['show']);
+        Route::get('contact-settings', [AdminContactSettingController::class, 'edit'])->name('contact-settings.edit');
+        Route::put('contact-settings', [AdminContactSettingController::class, 'update'])->name('contact-settings.update');
         Route::resource('groups', AdminGroupController::class);
         Route::resource('group-cards', AdminGroupCardController::class);
         Route::resource('players', AdminPlayerController::class)->only(['index', 'edit', 'update', 'destroy']);

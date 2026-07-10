@@ -71,12 +71,12 @@
                 : 'relative z-30 bg-[#E4F7E7] px-5 py-5 sm:px-8 lg:px-14 lg:py-6')
             : 'relative z-30 bg-[#0a0f18] px-5 py-5 sm:px-8 lg:px-14 lg:py-6';
         $headerLogoPath = trim((string) $__env->yieldContent('header_logo_path'));
-        if ($headerLogoPath === '' && $authHeaderBottomBorder) {
-            $headerLogoPath = 'frontend/images/logo-2.png';
+        if ($headerLogoPath === '') {
+            $headerLogoPath = $headerSettings['logo_path'] ?? 'frontend/images/home-logo.png';
         }
-        $defaultHeaderLogo = 'frontend/images/home-logo.png';
-        $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : $defaultHeaderLogo;
+        $headerLogoSrc = $headerLogoPath;
         $activeLeagueMenuItems = \App\Helpers\LeagueMenuHelper::activeLeagues();
+        $footerLeagueItems = \App\Helpers\LeagueMenuHelper::latestLeagues(5);
     @endphp
     <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass){{ $authHeaderBottomBorder ? ' border-b border-solid border-[#ddd]' : '' }}" data-header-theme="{{ $headerLight ? 'light' : 'dark' }}">
         <div class="mx-auto flex max-w-[1400px] items-center justify-between gap-4">
@@ -276,48 +276,62 @@
         <div class="mx-auto max-w-[1400px] px-5 py-14 sm:px-8 lg:px-14 lg:py-16">
             <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[130px]">
                 <div class="max-w-sm lg:max-w-none">
+                    @php
+                        $footerLogoPath = $footerSettings['logo_path'] ?? 'frontend/images/home-logo.png';
+                        $footerDescription = $footerSettings['description'] ?? "The region's premier competitive tennis league. Forging champions, building community, raising funds for causes that matter.";
+                    @endphp
                     <a href="{{ url('/') }}" class="inline-block">
-                        <img src="{{ asset('frontend/images/home-logo.png') }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
+                        <img src="{{ asset($footerLogoPath) }}" alt="Premier Tennis League" width="152" height="120" class="h-[100px] w-auto object-contain object-left sm:h-[110px]" loading="lazy">
                     </a>
                     <p class="mt-6 text-[15px] leading-[1.65] text-[rgba(255,255,255,0.56)]">
-                        The region's premier competitive tennis league. Forging champions, building community, raising funds for causes that matter.
+                        {{ $footerDescription }}
                     </p>
                 </div>
 
                 <nav aria-label="League">
                     <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">League</h2>
                     <ul class="space-y-3 text-[15px]">
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Tournaments</a></li>
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Standings</a></li>
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Players</a></li>
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Match Results</a></li>
+                        @forelse ($footerLeagueItems as $footerLeague)
+                            <li>
+                                <a href="{{ route('league.overview', ['slug' => $footerLeague->slug]) }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">
+                                    {{ $footerLeague->name }}
+                                </a>
+                            </li>
+                        @empty
+                            <li><span class="text-[rgba(255,255,255,0.56)]">No leagues yet</span></li>
+                        @endforelse
                     </ul>
                 </nav>
 
                 <nav aria-label="Community">
                     <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">Community</h2>
                     <ul class="space-y-3 text-[15px]">
-                        <li><a href="{{ url('/charity') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Charity Partners</a></li>
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Junior Program</a></li>
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Volunteer</a></li>
-                        <li><a href="#" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Sponsors</a></li>
+                        <li><a href="{{ route('charity') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Charity</a></li>
+                        <li><a href="{{ route('privacy-policy') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Privacy Policy</a></li>
+                        <li><a href="{{ route('terms-and-conditions') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Terms and Conditions</a></li>
                     </ul>
                 </nav>
 
                 <div>
                     <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">Contact us</h2>
+                    @php
+                        $contactPhone = $contactSettings['phone'] ?? '+91 98765 43210';
+                        $contactEmail = $contactSettings['email'] ?? 'player.one@example.com';
+                        $contactAddress = $contactSettings['address'] ?? '18 Sector 22, Chandigarh, India';
+                        $contactPhoneTel = preg_replace('/\D+/', '', $contactPhone);
+                    @endphp
                     <div class="space-y-5 text-[15px] leading-relaxed text-[rgba(255,255,255,0.56)]">
                         <div>
                             <p class="mb-1 text-[rgba(255,255,255,0.56)]">Call Us:</p>
-                            <p><a href="tel:+919876543210" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">+91 98765 43210</a></p>
+                            <p><a href="tel:{{ $contactPhoneTel }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">{{ $contactPhone }}</a></p>
                         </div>
                         <div>
                             <p class="mb-1 text-[rgba(255,255,255,0.56)]">Email:</p>
-                            <p><a href="mailto:player.one@example.com" class="break-all text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">player.one@example.com</a></p>
+                            <p><a href="mailto:{{ $contactEmail }}" class="break-all text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">{{ $contactEmail }}</a></p>
                         </div>
                         <div>
                             <p class="mb-1 text-[rgba(255,255,255,0.56)]">Address:</p>
-                            <p>18 Sector 22, Chandigarh, India</p>
+                            <p>{{ $contactAddress }}</p>
                         </div>
                     </div>
                 </div>

@@ -59,6 +59,22 @@ class LeagueMenuHelper
         return $query->get();
     }
 
+    /**
+     * @return Collection<int, League>
+     */
+    public static function latestLeagues(int $limit = 5): Collection
+    {
+        if (! Schema::hasTable('leagues')) {
+            return collect();
+        }
+
+        return League::query()
+            ->select(['id', 'name', 'slug'])
+            ->latest('id')
+            ->limit($limit)
+            ->get();
+    }
+
     public static function acceptsRegistration(League $league): bool
     {
         return $league->finished_at === null

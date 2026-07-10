@@ -1,0 +1,104 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\SiteSetting;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\View\View;
+
+class AdminContactSettingController extends Controller
+{
+    public function edit(): View
+    {
+        return view('admin.contact-settings.edit', [
+            'contact' => SiteSetting::contact(),
+            'header' => SiteSetting::header(),
+            'footer' => SiteSetting::footer(),
+        ]);
+    }
+
+    public function update(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'header_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'footer_description' => ['required', 'string', 'max:1000'],
+            'footer_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'contact_phone' => ['required', 'string', 'max:32'],
+            'contact_email' => ['required', 'email', 'max:255'],
+            'contact_address' => ['required', 'string', 'max:500'],
+        ]);
+
+        $this->updateLogoSetting(
+            $request,
+            'header_logo',
+            'header_logo_path',
+            'frontend/images/home-logo.png',
+            'upload/header-logo',
+            'header-logo-'
+        );
+
+        SiteSetting::setValue('footer_description', $validated['footer_description']);
+
+        $this->updateLogoSetting(
+            $request,
+            'footer_logo',
+            'footer_logo_path',
+            'frontend/images/home-logo.png',
+            'upload/footer-logo',
+            'footer-logo-'
+        );
+
+        SiteSetting::setValue('contact_phone', $validated['contact_phone']);
+        SiteSetting::setValue('contact_email', $validated['contact_email']);
+        SiteSetting::setValue('contact_address', $validated['contact_address']);
+
+        return back()->with('status', 'Site settings updated successfully.');
+    }
+
+    protected function updateLogoSetting(
+        Request $request,
+        string $inputName,
+        string $settingKey,
+        string $defaultPath,
+        string $uploadDirectory,
+        string $filenamePrefix
+    ): void {
+        if (! $request->hasFile($inputName)) {
+            return;
+        }
+
+        $currentLogo = SiteSetting::getValue($settingKey, $defaultPath);
+        $newLogoPath = $this->storeUploadedLogo($request->file($inputName), $uploadDirectory, $filenamePrefix);
+
+        if ($newLogoPath !== null) {
+            $this->deleteUploadedLogo($currentLogo, $uploadDirectory.'/');
+            SiteSetting::setValue($settingKey, $newLogoPath);
+        }
+    }
+
+    protected function storeUploadedLogo(UploadedFile $file, string $uploadDirectory, string $filenamePrefix): ?string
+    {
+        $directory = public_path($uploadDirectory);
+        File::ensureDirectoryExists($directory);
+
+        $filename = $filenamePrefix.bin2hex(random_bytes(6)).'.'.strtolower($file->getClientOriginalExtension());
+        $file->move($directory, $filename);
+
+        return $uploadDirectory.'/'.$filename;
+    }
+
+    protected function deleteUploadedLogo(?string $path, string $uploadPrefix): void
+    {
+        if ($path === null || $path === '' || ! str_starts_with($path, $uploadPrefix)) {
+            return;
+        }
+
+        $fullPath = public_path($path);
+        if (File::exists($fullPath)) {
+            File::delete($fullPath);
+        }
+    }
+}
