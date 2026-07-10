@@ -81,6 +81,8 @@
                         <option value="suspend" @selected($status === 'suspend')>Suspend</option>
                     </select>
                 </div>
+
+                @include('admin.players._skill-level-field')
             </div>
 
             <div style="display:flex; gap: 10px; margin-top: 18px;">

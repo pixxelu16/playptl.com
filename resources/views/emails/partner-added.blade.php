@@ -1,35 +1,28 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Account setup</title>
-</head>
-<body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-    <div style="max-width:640px;margin:0 auto;padding:24px;">
-        <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;">
-            <h2 style="margin:0 0 10px;font-size:18px;">You were added as a doubles partner</h2>
+@extends('emails.layout')
 
-            <p style="margin:0 0 14px;font-size:14px;line-height:1.5;">
-                {{ $inviterName }} added you to a doubles registration for <strong>{{ $leagueName }}</strong>.
-            </p>
+@section('title', 'Doubles partner invitation')
+@section('header', 'You were added as a doubles partner')
+@section('preheader', $inviterName.' added you to a doubles registration for '.$leagueName.'.')
 
-            <p style="margin:0 0 14px;font-size:14px;line-height:1.5;">
-                To set up your account (same email), click the button below and create your password:
-            </p>
+@section('content')
+    <p style="margin:0 0 14px;">Hello,</p>
+    <p style="margin:0 0 14px;">
+        <strong>{{ $inviterName }}</strong> added you as a doubles partner for <strong>{{ $leagueName }}</strong>.
+    </p>
+    <p style="margin:0 0 14px;">
+        Set up your account with the same email address and create your password to join the league.
+    </p>
 
-            <p style="margin:18px 0;">
-                <a href="{{ $setupUrl }}"
-                   style="display:inline-block;background:#5FA252;color:#ffffff;text-decoration:none;padding:10px 14px;border-radius:10px;font-size:14px;font-weight:bold;">
-                    Set up my account
-                </a>
-            </p>
+    @include('emails.partials.button', [
+        'url' => $setupUrl,
+        'label' => 'Set up my account',
+    ])
 
-            <p style="margin:0;font-size:12px;line-height:1.5;color:#6b7280;">
-                If you did not expect this, you can ignore this email.
-            </p>
-        </div>
-    </div>
-</body>
-</html>
+    <p style="margin:0;font-size:12px;color:#666666;">
+        If you did not expect this invitation, you can safely ignore this email.
+    </p>
+@endsection
 
+@section('footer')
+    Need help? Contact your league administrator.
+@endsection

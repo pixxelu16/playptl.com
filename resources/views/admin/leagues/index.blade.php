@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Manage Leagues | '.config('app.name', 'playptl'))
-@section('meta_description', 'Manage leagues from the admin dashboard.')
+@section('title', 'Manage Tournaments | '.config('app.name', 'playptl'))
+@section('meta_description', 'Manage tournaments from the admin dashboard.')
 
 @section('content')
     @php
@@ -10,12 +10,12 @@
     <section class="admin-card">
         <div class="admin-page-header">
             <div>
-                <h1 class="admin-card-title">Manage Leagues</h1>
-                <p class="admin-card-text">Create, edit, view, and delete league records.</p>
+                <h1 class="admin-card-title">Manage Tournaments</h1>
+                <p class="admin-card-text">Create, edit, view, and delete tournament records.</p>
             </div>
             <a class="admin-button admin-button-link" href="{{ route('admin.leagues.create') }}">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                <span>Add League</span>
+                <span>Add Tournament</span>
             </a>
         </div>
 
@@ -28,7 +28,7 @@
                 <thead>
                     <tr>
                         <th>Logo</th>
-                        <th>League Name</th>
+                        <th>Tournament Name</th>
                         <th>Start Date</th>
                         <th>End Date</th>
                         <th>Actions</th>
@@ -56,7 +56,7 @@
                                 <div class="admin-table-actions">
                                     <a href="{{ route('admin.leagues.show', $league) }}" title="View"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
                                     <a href="{{ route('admin.leagues.edit', $league) }}" title="Edit"><i class="fa-solid fa-pen" aria-hidden="true"></i></a>
-                                    <form method="POST" action="{{ route('admin.leagues.destroy', $league) }}" onsubmit="return confirm('Delete this league?')">
+                                    <form method="POST" action="{{ route('admin.leagues.destroy', $league) }}" onsubmit="return confirm('Delete this tournament?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" title="Delete"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
@@ -69,7 +69,7 @@
                             <td colspan="6">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-trophy" aria-hidden="true"></i>
-                                    <p>No leagues found. Create your first league.</p>
+                                    <p>No tournaments found. Create your first tournament.</p>
                                 </div>
                             </td>
                         </tr>

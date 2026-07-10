@@ -3,11 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <title>@yield('title', 'Premier Tennis League')</title>
     <meta name="description" content="@yield('meta_description', 'Premier Tennis League official website.')">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @if (request()->routeIs('register'))
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://js.stripe.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://*.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://*.stripe.com;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://js.stripe.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://api.stripe.com https://js.stripe.com https://r.stripe.com https://m.stripe.com https://merchant-ui-api.stripe.com https://q.stripe.com https://hooks.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://*.stripe.com;">
     @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,13 +78,29 @@
         $headerLogoSrc = $headerLogoPath !== '' ? $headerLogoPath : $defaultHeaderLogo;
         $activeLeagueMenuItems = \App\Helpers\LeagueMenuHelper::activeLeagues();
     @endphp
-    <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass){{ $authHeaderBottomBorder ? ' border-b border-solid border-[#ddd]' : '' }}">
-        <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6">
-            <a href="{{ url('/') }}" class="group flex items-center gap-3">
-                <img src="{{ asset($headerLogoSrc) }}" alt="Premier Tennis League Logo" class="h-[92px] w-auto sm:h-[110px]">
+    <header class="pointer-events-auto @yield('header_class', $defaultHeaderClass){{ $authHeaderBottomBorder ? ' border-b border-solid border-[#ddd]' : '' }}" data-header-theme="{{ $headerLight ? 'light' : 'dark' }}">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between gap-4">
+            <a href="{{ url('/') }}" class="group flex shrink-0 items-center gap-3">
+                <img src="{{ asset($headerLogoSrc) }}" alt="Premier Tennis League Logo" class="h-[72px] w-auto sm:h-[92px] lg:h-[110px]">
             </a>
 
-            <nav class="relative z-10 flex flex-wrap items-center justify-center gap-8 text-[16px] font-medium sm:gap-10" aria-label="Main">
+            <button
+                type="button"
+                class="site-nav-toggle lg:hidden"
+                data-mobile-nav-toggle
+                aria-controls="site-mobile-nav"
+                aria-expanded="false"
+                aria-label="Open menu"
+            >
+                <svg class="site-nav-toggle__icon site-nav-toggle__icon--open" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <svg class="site-nav-toggle__icon site-nav-toggle__icon--close" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <nav class="relative z-10 hidden flex-wrap items-center justify-center gap-8 text-[16px] font-medium lg:flex lg:gap-10" aria-label="Main">
                 <a href="{{ url('/') }}" @class([
                     'transition-colors',
                     'text-[#c1e82c]' => ! $headerLight && $navActive === 'home',
@@ -131,7 +148,7 @@
                 ])>Charity</a>
             </nav>
 
-            <div class="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-end">
+            <div class="hidden items-center justify-end gap-3 lg:flex">
                 @auth
                     @php
                         $headerUser = auth()->user();
@@ -168,6 +185,59 @@
                 @endauth
             </div>
         </div>
+
+        <div id="site-mobile-nav" class="site-mobile-nav lg:hidden" data-mobile-nav hidden>
+            <nav class="site-mobile-nav__links" aria-label="Mobile">
+                <a href="{{ url('/') }}" @class([
+                    'site-mobile-nav__link',
+                    'is-active' => $navActive === 'home',
+                ])>Home</a>
+
+                <div class="site-mobile-nav__group">
+                    <span class="site-mobile-nav__group-label">League</span>
+                    @forelse ($activeLeagueMenuItems as $leagueMenuItem)
+                        <a href="{{ route('league.overview', ['slug' => $leagueMenuItem->slug]) }}" class="site-mobile-nav__sublink">{{ $leagueMenuItem->name }}</a>
+                    @empty
+                        <span class="site-mobile-nav__sublink is-muted">No active leagues</span>
+                    @endforelse
+                </div>
+
+                <a href="{{ url('/gallery') }}" @class([
+                    'site-mobile-nav__link',
+                    'is-active' => $navActive === 'gallery',
+                ])>Gallery</a>
+
+                <a href="{{ url('/charity') }}" @class([
+                    'site-mobile-nav__link',
+                    'is-active' => $navActive === 'charity',
+                ])>Charity</a>
+            </nav>
+
+            <div class="site-mobile-nav__auth">
+                @auth
+                    @php
+                        $mobileHeaderUser = auth()->user();
+                        $mobileHeaderAvatar = asset($mobileHeaderUser->avatar_path ?: 'upload/user-avatar/default-user-pic.png');
+                        $mobileHeaderProfileUrl = $mobileHeaderUser->role === \App\Enums\UserRole::Player
+                            ? route('player.my-profile')
+                            : ($mobileHeaderUser->role === \App\Enums\UserRole::Admin ? route('admin.profile') : route('dashboard'));
+                    @endphp
+                    <a href="{{ $mobileHeaderProfileUrl }}" class="site-mobile-nav__profile">
+                        <img src="{{ $mobileHeaderAvatar }}" alt="" class="h-10 w-10 rounded-full border border-white/30 object-cover">
+                        <span>{{ $mobileHeaderUser->name }}</span>
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="site-mobile-nav__button site-mobile-nav__button--secondary">Logout</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="site-mobile-nav__button site-mobile-nav__button--primary">Login</a>
+                    <a href="{{ route('register') }}" class="site-mobile-nav__button site-mobile-nav__button--accent">Register</a>
+                @endauth
+            </div>
+        </div>
+
+        <button type="button" class="site-mobile-nav-backdrop lg:hidden" data-mobile-nav-backdrop hidden aria-label="Close menu"></button>
     </header>
 
     @hasSection('suppress_global_errors')
@@ -266,7 +336,11 @@
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/validate.js/0.13.1/validate.min.js"></script>
         <script src="https://js.stripe.com/v3/"></script>
-        <script src="{{ asset('frontend/js/customer-ajax.js') }}"></script>
+        <script src="{{ asset('frontend/js/customer-ajax.js') }}?v={{ @filemtime(public_path('frontend/js/customer-ajax.js')) ?: time() }}"></script>
+    @endif
+    @if (request()->routeIs('charity', 'charity.cause'))
+        <script src="https://js.stripe.com/v3/"></script>
+        <script src="{{ asset('frontend/js/charity-donate.js') }}?v={{ @filemtime(public_path('frontend/js/charity-donate.js')) ?: time() }}"></script>
     @endif
     @stack('scripts')
 </body>

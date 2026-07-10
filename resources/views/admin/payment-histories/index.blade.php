@@ -24,11 +24,11 @@
                     </select>
                 </div>
                 <div>
-                    <label class="admin-label" for="league_id">League</label>
+                    <label class="admin-label" for="league_id">Tournament</label>
                     <select class="admin-input" name="league_id" id="league_id">
                         <option value="" @selected($leagueId === null)>All</option>
                         @foreach ($leagues as $l)
-                            <option value="{{ $l->id }}" @selected($leagueId === $l->id)>{{ $l->name }} (ID: {{ $l->id }})</option>
+                            <option value="{{ $l->id }}" @selected($leagueId === $l->id)>{{ $l->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -49,7 +49,7 @@
                         <th>ID</th>
                         <th>Date</th>
                         <th>Player</th>
-                        <th>League</th>
+                        <th>Tournament</th>
                         <th>Amount</th>
                         <th>Currency</th>
                         <th>Status</th>

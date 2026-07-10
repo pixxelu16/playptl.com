@@ -51,6 +51,250 @@
     }
   }
 
+  function closedDivisionSet() {
+    var raw = $('#register-league-gate').data('closed-divisions');
+    if (!raw) return {};
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        return {};
+      }
+    }
+    var set = {};
+    if (Array.isArray(raw)) {
+      raw.forEach(function (key) {
+        set[key] = true;
+      });
+    }
+    return set;
+  }
+
+  function isDivisionClosed(leagueId, tab, skill) {
+    if (!leagueId || !skill) return false;
+    return !!closedDivisionSet()[leagueId + ':' + tab + ':' + skill];
+  }
+
+  function closedGroupCardSet() {
+    var raw = $('#register-league-gate').attr('data-closed-group-cards');
+    if (!raw) return {};
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        return {};
+      }
+    }
+    var set = {};
+    if (Array.isArray(raw)) {
+      raw.forEach(function (key) {
+        set[key] = true;
+      });
+    }
+    return set;
+  }
+
+  function isGroupCardClosed(leagueId, groupCardId) {
+    if (!leagueId || !groupCardId) return false;
+    return !!closedGroupCardSet()[leagueId + ':' + groupCardId];
+  }
+
+  function leagueFeesMap() {
+    var raw = $('#register-league-gate').attr('data-league-fees');
+    if (!raw) return { default: { singles: '0.00', doubles: '0.00' } };
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        return { default: { singles: '0.00', doubles: '0.00' } };
+      }
+    }
+    return raw || { default: { singles: '0.00', doubles: '0.00' } };
+  }
+
+  function entryFeeForLeague(leagueId, tab) {
+    var fees = leagueFeesMap();
+    var key = leagueId ? String(leagueId) : '';
+    var row = key && fees[key] ? fees[key] : fees.default || { singles: '0.00', doubles: '0.00' };
+    return tab === 'doubles' ? row.doubles || '0.00' : row.singles || '0.00';
+  }
+
+  function syncRegisterEntryFee($form) {
+    if (!$form || !$form.length) return;
+    var tab = $form.data('registration-tab') || 'singles';
+    var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
+    var amount = entryFeeForLeague(leagueId, tab);
+    $form.find('.entry-fee-amount').text(amount);
+    $form.data('fee', amount);
+  }
+
+  function tournamentGroupsUrl() {
+    return $('#register-league-gate').attr('data-tournament-groups-url') || '';
+  }
+
+  function registerFormForTab(tab) {
+    return tab === 'doubles' ? $('#doubles-register-form') : $('#singles-register-form');
+  }
+
+  function loadTournamentGroups(tab) {
+    if (tab === 'singles') {
+      loadSinglesAssignedGroup();
+      return;
+    }
+
+    loadDoublesAssignedGroup();
+  }
+
+  function assignedGroupUi($form, tab) {
+    return {
+      $wrap: $form.find('.tournament-group-wrap[data-tab="' + tab + '"]'),
+      $preview: $form.find('.tournament-group-wrap[data-tab="' + tab + '"] .tournament-group-preview'),
+      $hiddenId: $form.find('.tournament-group-wrap[data-tab="' + tab + '"] .tournament-group-id'),
+      $hint: $form.find('.tournament-group-wrap[data-tab="' + tab + '"] .tournament-group-hint'),
+      $loading: $form.find('.tournament-group-wrap[data-tab="' + tab + '"] .tournament-group-loading'),
+      $error: $form.find('.tournament-group-wrap[data-tab="' + tab + '"] .tournament-group-error'),
+    };
+  }
+
+  function resetAssignedGroupUi(ui) {
+    ui.$error.addClass('hidden').text('');
+    ui.$preview.removeClass('border-red-500');
+  }
+
+  function loadSinglesAssignedGroup() {
+    var $form = $('#singles-register-form');
+    if (!$form.length) return;
+
+    var ui = assignedGroupUi($form, 'singles');
+    var leagueId = $form.find('select[name="tournament_singles"]').val();
+    var skill = $form.find('select[name="skill_singles"]').val();
+    var url = tournamentGroupsUrl();
+
+    resetAssignedGroupUi(ui);
+
+    if (!leagueId || !skill) {
+      ui.$wrap.addClass('hidden');
+      ui.$preview.val('');
+      ui.$hiddenId.val('');
+      ui.$hint.addClass('hidden');
+      ui.$loading.addClass('hidden');
+      return;
+    }
+
+    ui.$wrap.removeClass('hidden');
+
+    if (!url) {
+      ui.$preview.val('');
+      ui.$hiddenId.val('');
+      ui.$error.removeClass('hidden').text('Could not load group assignment.');
+      return;
+    }
+
+    ui.$loading.removeClass('hidden');
+    ui.$hint.addClass('hidden');
+
+    $.getJSON(url, { league_id: leagueId, tab: 'singles', skill_level: skill })
+      .done(function (payload) {
+        applyAssignedGroupPayload(ui, payload);
+      })
+      .fail(function () {
+        ui.$preview.val('');
+        ui.$hiddenId.val('');
+        ui.$error.removeClass('hidden').text('Could not load your group. Please try again.');
+      })
+      .always(function () {
+        ui.$loading.addClass('hidden');
+      });
+  }
+
+  function loadDoublesAssignedGroup() {
+    var $form = $('#doubles-register-form');
+    if (!$form.length) return;
+
+    var ui = assignedGroupUi($form, 'doubles');
+    var leagueId = $form.find('select[name="tournament_doubles"]').val();
+    var skillOne = $form.find('select[name="skill_doubles"]').val();
+    var skillTwo = $form.find('select[name="d2_skill"]').val();
+    var url = tournamentGroupsUrl();
+
+    resetAssignedGroupUi(ui);
+
+    if (!leagueId || !skillOne || !skillTwo) {
+      ui.$wrap.addClass('hidden');
+      ui.$preview.val('');
+      ui.$hiddenId.val('');
+      ui.$hint.addClass('hidden');
+      ui.$loading.addClass('hidden');
+      return;
+    }
+
+    ui.$wrap.removeClass('hidden');
+
+    if (!url) {
+      ui.$preview.val('');
+      ui.$hiddenId.val('');
+      ui.$error.removeClass('hidden').text('Could not load group assignment.');
+      return;
+    }
+
+    ui.$loading.removeClass('hidden');
+    ui.$hint.addClass('hidden');
+
+    $.getJSON(url, {
+      league_id: leagueId,
+      tab: 'doubles',
+      skill_level: skillOne,
+      skill_level_2: skillTwo,
+    })
+      .done(function (payload) {
+        applyAssignedGroupPayload(ui, payload, true);
+      })
+      .fail(function () {
+        ui.$preview.val('');
+        ui.$hiddenId.val('');
+        ui.$error.removeClass('hidden').text('Could not load your group. Please try again.');
+      })
+      .always(function () {
+        ui.$loading.addClass('hidden');
+      });
+  }
+
+  function applyAssignedGroupPayload(ui, payload, showAverage) {
+    var assigned = payload && payload.assigned_group ? payload.assigned_group : null;
+    var averageSkill = payload && payload.average_skill ? payload.average_skill : null;
+
+    if (!assigned) {
+      ui.$preview.val('');
+      ui.$hiddenId.val('');
+      ui.$error.removeClass('hidden').text('No group matches your skill level for this tournament.');
+      return;
+    }
+
+    if (!assigned.registration_open) {
+      ui.$preview.val(assigned.label || assigned.name || 'Group');
+      ui.$hiddenId.val('');
+      ui.$error
+        .removeClass('hidden')
+        .text(assigned.closed_reason || 'Registration is closed for this group.');
+      ui.$preview.addClass('border-red-500');
+      return;
+    }
+
+    ui.$preview.val(assigned.label || assigned.name || 'Group');
+    ui.$hiddenId.val(String(assigned.id));
+    ui.$hint.removeClass('hidden');
+    if (showAverage && averageSkill) {
+      ui.$hint.text('Team average skill: ' + averageSkill + '. Subgroup is assigned automatically.');
+    } else {
+      ui.$hint.text('Subgroup (A, B, C…) is assigned automatically when you register.');
+    }
+  }
+
+  function refreshTournamentGroupsForVisibleTab() {
+    var tab = $('#doubles-register-form').hasClass('hidden') ? 'singles' : 'doubles';
+    loadTournamentGroups(tab);
+  }
+
   function initRegisterForm(formSelector) {
     var $form = $(formSelector);
     if (!$form.length) return;
@@ -65,8 +309,12 @@
     var registerUrl = $form.data('register-url') || $form.attr('action') || '';
     var csrf = $form.data('csrf') || '';
 
-    var stripe = stripeKey && window.Stripe ? Stripe(stripeKey) : null;
-    var elements = stripe ? stripe.elements() : null;
+    var stripe = stripeKey && window.Stripe ? Stripe(stripeKey, { advancedFraudSignals: false }) : null;
+    var elements = stripe
+      ? stripe.elements({
+          wallets: { applePay: 'never', googlePay: 'never' },
+        })
+      : null;
     var card = null;
     var cardComplete = false;
     var pendingSuccessRedirect = false;
@@ -89,6 +337,7 @@
       if (!mount) return;
       card = elements.create('card', {
         hidePostalCode: true,
+        wallets: { applePay: 'never', googlePay: 'never' },
         style: {
           base: {
             color: '#111827',
@@ -168,6 +417,11 @@
         d2_last: { presence: { allowEmpty: false } },
         d2_email: { presence: { allowEmpty: false }, email: true },
         d2_phone: { presence: { allowEmpty: false } },
+        d2_city: { presence: { allowEmpty: false } },
+        d2_state: { presence: { allowEmpty: false } },
+        d2_age_group: { presence: { allowEmpty: false } },
+        d2_skill: { presence: { allowEmpty: false } },
+        d2_sex: { presence: { allowEmpty: false } },
       });
     }
 
@@ -222,6 +476,30 @@
         return;
       }
 
+      var $groupHidden = $form.find('.tournament-group-id');
+      if (tab === 'singles' || tab === 'doubles') {
+        if (!$groupHidden.val()) {
+          $form.find('.tournament-group-preview').addClass('border-red-500');
+          $form.find('.tournament-group-error').removeClass('hidden').text(
+            tab === 'singles'
+              ? 'Please select tournament and skill level to assign your group.'
+              : 'Please select tournament and both skill levels to assign your group.'
+          );
+          renderResponse(
+            $responseBox,
+            'error',
+            tab === 'singles'
+              ? 'Your group could not be assigned. Check tournament and skill level.'
+              : 'Your group could not be assigned. Check tournament and both players\' skill levels.'
+          );
+          return;
+        }
+      } else if ($groupSelect.length && $groupSelect.prop('required') && !$groupSelect.val()) {
+        $groupSelect.addClass('border-red-500');
+        renderResponse($responseBox, 'error', 'Please select a group for this tournament.');
+        return;
+      }
+
       if (!stripe || !elements) {
         setCardError('Payment is unavailable. Please refresh the page.');
         return;
@@ -250,11 +528,33 @@
       $form.find('.computed_name').val(computed);
 
       var leagueId = tab === 'singles' ? $form.find('select[name="tournament_singles"]').val() : $form.find('select[name="tournament_doubles"]').val();
+      var skill = tab === 'singles' ? $form.find('select[name="skill_singles"]').val() : $form.find('select[name="skill_doubles"]').val();
+      var $groupSelect = $form.find('.tournament-group-select');
+      var groupCardId = $form.find('.tournament-group-id').val() || ($groupSelect.length ? $groupSelect.val() : '');
       var email = tab === 'singles' ? $form.find('#singles_email').val() : $form.find('#doubles_email').val();
 
       if (!leagueId) {
         setCardError('Please select a tournament before payment.');
         $form.find('select[name="' + (tab === 'singles' ? 'tournament_singles' : 'tournament_doubles') + '"]').addClass('border-red-500');
+        $btn.prop('disabled', false);
+        if ($loader.length) $loader.addClass('hidden');
+        return;
+      }
+      if (!groupCardId) {
+        renderResponse($responseBox, 'error', tab === 'singles' || tab === 'doubles'
+          ? 'Your group could not be assigned. Check tournament and skill level(s).'
+          : 'Please select a group for this tournament.');
+        if (tab === 'singles' || tab === 'doubles') {
+          $form.find('.tournament-group-preview').addClass('border-red-500');
+        } else if ($groupSelect.length) {
+          $groupSelect.addClass('border-red-500');
+        }
+        $btn.prop('disabled', false);
+        if ($loader.length) $loader.addClass('hidden');
+        return;
+      }
+      if (isGroupCardClosed(leagueId, groupCardId)) {
+        renderResponse($responseBox, 'error', 'This group has started. Registration is closed for the selected group.');
         $btn.prop('disabled', false);
         if ($loader.length) $loader.addClass('hidden');
         return;
@@ -268,7 +568,12 @@
         contentType: 'application/json',
         dataType: 'json',
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf },
-        data: JSON.stringify({ league_id: leagueId, registration_tab: tab, email: email }),
+        data: JSON.stringify({
+          league_id: leagueId,
+          registration_tab: tab,
+          skill_level: skill,
+          email: email,
+        }),
       })
         .then(function (pi) {
           return stripe.confirmCardPayment(pi.client_secret, {
@@ -328,12 +633,36 @@
 
   $(function () {
     // Tabs
-    $('#tab-singles').on('click', function () { setTabUI('singles'); });
-    $('#tab-doubles').on('click', function () { setTabUI('doubles'); });
+    $('#tab-singles').on('click', function () {
+      setTabUI('singles');
+      loadTournamentGroups('singles');
+    });
+    $('#tab-doubles').on('click', function () {
+      setTabUI('doubles');
+      loadTournamentGroups('doubles');
+    });
 
     // Init both forms (independent validation + ajax)
     initRegisterForm('#singles-register-form');
     initRegisterForm('#doubles-register-form');
+
+    $('#singles-register-form select[name="tournament_singles"]').on('change', function () {
+      syncRegisterEntryFee($('#singles-register-form'));
+      loadSinglesAssignedGroup();
+    });
+    $('#singles-register-form select[name="skill_singles"]').on('change', function () {
+      loadSinglesAssignedGroup();
+    });
+    $('#doubles-register-form select[name="tournament_doubles"]').on('change', function () {
+      syncRegisterEntryFee($('#doubles-register-form'));
+      loadDoublesAssignedGroup();
+    });
+    $('#doubles-register-form select[name="skill_doubles"], #doubles-register-form select[name="d2_skill"]').on('change', function () {
+      loadDoublesAssignedGroup();
+    });
+    syncRegisterEntryFee($('#singles-register-form'));
+    syncRegisterEntryFee($('#doubles-register-form'));
+    refreshTournamentGroupsForVisibleTab();
   });
 })(window.jQuery);
 

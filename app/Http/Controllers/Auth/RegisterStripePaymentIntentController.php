@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\League;
 use App\Models\User;
+use App\Helpers\LeagueMenuHelper;
+use App\Support\LeagueEntryFee;
+use App\Support\LeagueRegistrationGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Stripe\Exception\ApiErrorException;
@@ -14,13 +17,32 @@ class RegisterStripePaymentIntentController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        if (! class_exists(StripeClient::class)) {
+            return response()->json([
+                'message' => 'Payments are temporarily unavailable. Please try again later.',
+            ], 503);
+        }
+
         $validated = $request->validate([
             'league_id' => ['required', 'integer', 'exists:leagues,id'],
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
+            'skill_level' => ['required', 'string', 'max:32'],
             'email' => ['required', 'string', 'email', 'max:255'],
         ]);
 
         $league = League::query()->findOrFail((int) $validated['league_id']);
+        if (! LeagueMenuHelper::acceptsRegistration($league)) {
+            return response()->json(['message' => 'Registration is not open for this tournament.'], 422);
+        }
+
+        $registrationClosed = LeagueRegistrationGate::closedReasonForSelection(
+            $league,
+            (string) $validated['registration_tab'],
+            (string) $validated['skill_level'],
+        );
+        if ($registrationClosed !== null) {
+            return response()->json(['message' => $registrationClosed], 422);
+        }
 
         $email = strtolower((string) $validated['email']);
         if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
@@ -29,9 +51,7 @@ class RegisterStripePaymentIntentController extends Controller
             ], 422);
         }
 
-        $amountCents = (int) ($validated['registration_tab'] === 'doubles'
-            ? config('services.stripe.doubles_amount_cents', 4500)
-            : config('services.stripe.singles_amount_cents', 3000));
+        $amountCents = LeagueEntryFee::centsForTab($league, (string) $validated['registration_tab']);
         $currency = (string) config('services.stripe.currency', 'USD');
 
         $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));

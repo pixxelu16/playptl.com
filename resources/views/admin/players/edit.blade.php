@@ -10,7 +10,7 @@
                 <h1 class="admin-card-title">Edit Player</h1>
                 <p class="admin-card-text">Update player details and registration type.</p>
             </div>
-            <a class="admin-link" href="{{ route('admin.players.index', ['tab' => $tab]) }}">
+            <a class="admin-link" href="{{ route('admin.players.index', $indexQuery ?? []) }}">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                 <span>Back</span>
             </a>
@@ -26,7 +26,7 @@
             </div>
         @endif
 
-        <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.players.update', ['player' => $player, 'tab' => $tab]) }}" enctype="multipart/form-data">
+        <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.players.update', ['player' => $player] + ($indexQuery ?? [])) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -85,11 +85,21 @@
                         <option value="suspend" @selected($status === 'suspend')>Suspend</option>
                     </select>
                 </div>
+
+                @include('admin.players._skill-level-field', [
+                    'currentSkillLevel' => old('skill_level', $player->skill_level),
+                ])
+
+                @include('admin.players._age-group-field', [
+                    'ageBrackets' => $ageBrackets,
+                    'currentAgeGroupKey' => $currentAgeGroupKey,
+                    'canEditAgeGroup' => $canEditAgeGroup,
+                ])
             </div>
 
             <div style="display:flex; gap: 10px; margin-top: 18px;">
                 <button class="admin-button" type="submit">Save Changes</button>
-                <a class="admin-button admin-button-secondary" href="{{ route('admin.players.index', ['tab' => $tab]) }}">Cancel</a>
+                <a class="admin-button admin-button-secondary" href="{{ route('admin.players.index', $indexQuery ?? []) }}">Cancel</a>
             </div>
         </form>
     </section>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -26,8 +27,11 @@ use Illuminate\Notifications\Notifiable;
     'city',
     'state',
     'home_court',
+    'preferred_play_date',
+    'preferred_play_time',
     'dominant_hand',
     'sex',
+    'skill_level',
     'registration_type',
     'transaction_id',
 ])]
@@ -57,6 +61,11 @@ class User extends Authenticatable
         return route('player.my-profile');
     }
 
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -67,6 +76,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'date_of_birth' => 'date',
+            'preferred_play_date' => 'date',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];

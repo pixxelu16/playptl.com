@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'logo_path', 'description', 'stats', 'start_date', 'end_date', 'type'])]
+#[Fillable(['name', 'slug', 'logo_path', 'description', 'stats', 'start_date', 'end_date', 'playoffs_started_at', 'playoffs_closed_at', 'playoff_start_date', 'playoff_end_date', 'finished_at', 'type', 'singles_entry_fee_cents', 'doubles_entry_fee_cents'])]
 class League extends Model
 {
     /** @use HasFactory<LeagueFactory> */
@@ -23,13 +23,26 @@ class League extends Model
     {
         return [
             'start_date' => 'date',
-            'end_date'   => 'date',
+            'end_date' => 'date',
+            'playoffs_started_at' => 'datetime',
+            'playoffs_closed_at' => 'datetime',
+            'playoff_start_date' => 'date',
+            'playoff_end_date' => 'date',
+            'finished_at' => 'datetime',
+            'singles_entry_fee_cents' => 'integer',
+            'doubles_entry_fee_cents' => 'integer',
         ];
+    }
+
+    public function isFinished(): bool
+    {
+        return $this->finished_at !== null;
     }
 
     public function groupCards(): BelongsToMany
     {
-        return $this->belongsToMany(GroupCard::class);
+        return $this->belongsToMany(GroupCard::class)
+            ->withPivot(['start_date', 'end_date']);
     }
 
     public function users(): HasMany

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\GroupCard;
 use App\Models\League;
 use App\Models\LeagueRegistration;
+use App\Support\LeagueEntryFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -32,15 +33,16 @@ class AdminLeagueController extends Controller
     {
         $validated = $this->validatedData($request);
         $groupCardIds = $this->normalizeGroupIds($validated['group_card_ids'] ?? []);
-        unset($validated['group_card_ids']);
+        unset($validated['group_card_ids'], $validated['singles_entry_fee'], $validated['doubles_entry_fee']);
         $validated['type'] = $validated['type'] ?? 'single';
         $validated['slug'] = $this->generateUniqueSlug($validated['name']);
         $validated['logo_path'] = $this->storeLogo($request);
 
+        /** @var League $league */
         $league = League::create($validated);
         $league->groupCards()->sync($groupCardIds);
 
-        return redirect()->route('admin.leagues.index')->with('status', 'League created successfully.');
+        return redirect()->route('admin.leagues.index')->with('status', 'Tournament created successfully.');
     }
 
     public function show(League $league): View
@@ -74,9 +76,9 @@ class AdminLeagueController extends Controller
 
     public function update(Request $request, League $league): RedirectResponse
     {
-        $validated = $this->validatedData($request);
+        $validated = $this->validatedData($request, $league);
         $groupCardIds = $this->normalizeGroupIds($validated['group_card_ids'] ?? []);
-        unset($validated['group_card_ids']);
+        unset($validated['group_card_ids'], $validated['singles_entry_fee'], $validated['doubles_entry_fee']);
         $validated['type'] = $validated['type'] ?? $league->type;
         $validated['slug'] = $this->generateUniqueSlug($validated['name'], $league->id);
         $logoPath = $this->storeLogo($request);
@@ -89,7 +91,7 @@ class AdminLeagueController extends Controller
         $league->update($validated);
         $league->groupCards()->sync($groupCardIds);
 
-        return redirect()->route('admin.leagues.index')->with('status', 'League updated successfully.');
+        return redirect()->route('admin.leagues.index')->with('status', 'Tournament updated successfully.');
     }
 
     public function destroy(League $league): RedirectResponse
@@ -97,25 +99,32 @@ class AdminLeagueController extends Controller
         $this->deleteLogo($league->logo_path);
         $league->delete();
 
-        return redirect()->route('admin.leagues.index')->with('status', 'League deleted successfully.');
+        return redirect()->route('admin.leagues.index')->with('status', 'Tournament deleted successfully.');
     }
 
     /**
      * @return array<string, mixed>
      */
-    protected function validatedData(Request $request): array
+    protected function validatedData(Request $request, ?League $existing = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'logo'        => ['nullable', 'image', 'max:2048'],
             'description' => ['nullable', 'string'],
             'stats' => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
-            'start_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:today', 'after_or_equal:start_date'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'type' => ['nullable', Rule::in(['single', 'doubles'])],
+            'singles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],
+            'doubles_entry_fee' => ['required', 'numeric', 'min:0', 'max:99999'],
             'group_card_ids' => ['nullable', 'array'],
             'group_card_ids.*' => ['integer', 'exists:group_cards,id'],
         ]);
+
+        $validated['singles_entry_fee_cents'] = LeagueEntryFee::centsFromDollarsInput($validated['singles_entry_fee']);
+        $validated['doubles_entry_fee_cents'] = LeagueEntryFee::centsFromDollarsInput($validated['doubles_entry_fee']);
+
+        return $validated;
     }
 
     /**

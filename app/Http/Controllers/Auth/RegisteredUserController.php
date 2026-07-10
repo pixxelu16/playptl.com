@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
 use App\Helpers\LeagueMenuHelper;
+use App\Support\LeagueEntryFee;
+use App\Support\LeagueRegistrationFlow;
+use App\Support\LeagueRegistrationGate;
+use App\Support\TournamentRegistrationOptions;
+use App\Support\UserSkillLevel;
 use App\Http\Controllers\Controller;
 use App\Models\GroupCard;
 use App\Models\League;
-use App\Models\Group;
 use App\Models\LeagueRegistration;
 use App\Models\PaymentHistory;
 use App\Models\User;
@@ -17,7 +21,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -29,14 +32,24 @@ class RegisteredUserController extends Controller
 {
     public function create(): View
     {
+        $registrationLeagues = LeagueMenuHelper::registrationLeagues();
+
         return view('auth.register', [
-            'registrationLeagues' => LeagueMenuHelper::activeLeagues(),
+            'registrationLeagues' => $registrationLeagues,
+            'registrationClosedDivisions' => LeagueRegistrationGate::closedSelectionKeys(),
+            'registrationClosedGroupCards' => LeagueRegistrationGate::closedGroupCardKeys(),
+            'leagueEntryFees' => LeagueEntryFee::mapForLeagues($registrationLeagues),
             'stripePublishableKey' => (string) (config('services.stripe.key') ?: env('STRIPE_PUBLISHABLE_KEY', '')),
+            'tournamentGroupsUrl' => route('register.tournament-groups'),
         ]);
     }
 
     public function store(Request $request): Response
     {
+        if (! class_exists(StripeClient::class)) {
+            return $this->fail($request, 'Payments are temporarily unavailable. Please try again later.');
+        }
+
         $base = $request->validate([
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
             'name' => ['required', 'string', 'max:255'],
@@ -56,6 +69,7 @@ class RegisteredUserController extends Controller
                 'skill_singles' => ['required', 'string', 'max:32'],
                 'sex_singles' => ['required', 'string', 'max:32'],
                 'tournament_singles' => ['required', 'integer', 'exists:leagues,id'],
+                'group_card_singles' => ['required', 'integer', 'exists:group_cards,id'],
                 'singles_first' => ['nullable'],
                 'singles_last' => ['nullable'],
             ]);
@@ -68,8 +82,14 @@ class RegisteredUserController extends Controller
                 'skill_doubles' => ['required', 'string', 'max:32'],
                 'sex_doubles' => ['required', 'string', 'max:32'],
                 'tournament_doubles' => ['required', 'integer', 'exists:leagues,id'],
+                'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
                 'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
                 'd2_phone' => ['required', 'string', 'max:32'],
+                'd2_city' => ['required', 'string', 'max:255'],
+                'd2_state' => ['required', 'string', 'max:64'],
+                'd2_age_group' => ['required', 'string', 'max:32'],
+                'd2_skill' => ['required', 'string', 'max:32'],
+                'd2_sex' => ['required', 'string', 'max:32'],
                 'd1_first' => ['nullable'],
                 'd1_last' => ['nullable'],
                 'd2_first' => ['nullable'],
@@ -86,6 +106,20 @@ class RegisteredUserController extends Controller
 
         $leagueId = (int) ($tab === 'singles' ? $specific['tournament_singles'] : $specific['tournament_doubles']);
         $skillLevel = (string) ($tab === 'singles' ? $specific['skill_singles'] : $specific['skill_doubles']);
+        $assignmentSkill = $skillLevel;
+        if ($tab === 'doubles') {
+            $skillOne = (string) $specific['skill_doubles'];
+            $skillTwo = (string) $specific['d2_skill'];
+            if ($skillOne === 'not-sure' || $skillTwo === 'not-sure') {
+                $assignmentSkill = 'not-sure';
+            } else {
+                $averageSkill = TournamentRegistrationOptions::averageSkillLevels($skillOne, $skillTwo);
+                if ($averageSkill === null) {
+                    return $this->fail($request, 'Both players need a valid skill level for group assignment.');
+                }
+                $assignmentSkill = $averageSkill;
+            }
+        }
         $ageGroup = (string) ($tab === 'singles' ? $specific['age_group_singles'] : $specific['age_group_doubles']);
         $sex = (string) ($tab === 'singles' ? $specific['sex_singles'] : $specific['sex_doubles']);
         $phone = (string) ($tab === 'singles' ? $specific['phone_singles'] : $specific['phone_doubles']);
@@ -93,6 +127,10 @@ class RegisteredUserController extends Controller
         $state = (string) ($tab === 'singles' ? $specific['state_singles'] : $specific['state_doubles']);
 
         $league = League::query()->findOrFail($leagueId);
+
+        if (! LeagueMenuHelper::acceptsRegistration($league)) {
+            return $this->fail($request, 'Registration is not open for this tournament.');
+        }
 
         if (PaymentHistory::query()->where('transaction_id', $base['payment_intent_id'])->exists()) {
             return $this->fail($request, 'This payment was already used.');
@@ -106,9 +144,7 @@ class RegisteredUserController extends Controller
         $stripe = new StripeClient($secret);
         $intent = $stripe->paymentIntents->retrieve($base['payment_intent_id'], []);
 
-        $expectedAmountCents = (int) ($tab === 'doubles'
-            ? config('services.stripe.doubles_amount_cents', 4500)
-            : config('services.stripe.singles_amount_cents', 3000));
+        $expectedAmountCents = LeagueEntryFee::centsForTab($league, $tab);
         $expectedCurrency = strtolower((string) config('services.stripe.currency', 'USD'));
         $intentEmail = strtolower((string) ($intent->metadata['email'] ?? ''));
         $intentLeagueId = (string) ($intent->metadata['league_id'] ?? '');
@@ -125,104 +161,34 @@ class RegisteredUserController extends Controller
             return $this->fail($request, 'Payment not completed or does not match registration.');
         }
 
-        $groupCard = $league->groupCards()
-            ->where('group_cards.status', 'active')
-            ->whereIn('group_cards.tag', $tab === 'singles' ? ['single', 'singles'] : ['double', 'doubles'])
-            ->where('group_cards.skill_level_match', $skillLevel)
-            ->first();
+        $groupCardId = (int) ($tab === 'singles' ? $specific['group_card_singles'] : $specific['group_card_doubles']);
 
-        $groupId = null;
-        if (
-            $tab === 'doubles'
-            && $groupCard instanceof GroupCard
-            && Schema::hasTable('groups')
-        ) {
-            $groupsQuery = Group::query()
-                ->where('status', 'active');
-
-            // Groups can be linked to a GroupCard either via `groups.group_card_id` OR via the pivot `group_group_card`.
-            // Use the relation so it works in both schemas.
-            $groupsQuery->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id));
-
-            if (Schema::hasColumn('groups', 'age_group_key')) {
-                $groupsQuery->where(function ($q) use ($ageGroup) {
-                    $q->whereNull('age_group_key')
-                        ->orWhere('age_group_key', $ageGroup);
-                });
+        if ($tab === 'singles') {
+            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
+            if (! $expectedCard instanceof GroupCard) {
+                return $this->fail($request, 'No group is available for your skill level in this tournament.');
             }
-
-            $candidateGroups = $groupsQuery->orderBy('id')->get();
-
-            if ($candidateGroups->isNotEmpty()) {
-                $bestGroup = null;
-                $bestCount = null;
-
-                foreach ($candidateGroups as $candidate) {
-                    $currentCount = LeagueRegistration::query()
-                        ->where('league_id', $leagueId)
-                        ->where('group_card_id', $groupCard->id)
-                        ->where('group_id', $candidate->id)
-                        ->where('registration_type', 'doubles')
-                        ->count();
-
-                    if ($bestCount === null || $currentCount < $bestCount) {
-                        $bestCount = $currentCount;
-                        $bestGroup = $candidate;
-                    }
-                }
-
-                if ($bestGroup) {
-                    $groupId = $bestGroup->id;
-                }
+            if ($groupCardId !== (int) $expectedCard->id) {
+                return $this->fail($request, 'Group assignment does not match your skill level.');
             }
+            $groupCard = $expectedCard;
+        } else {
+            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
+            if (! $expectedCard instanceof GroupCard) {
+                return $this->fail($request, 'No group is available for your team skill level in this tournament.');
+            }
+            if ($groupCardId !== (int) $expectedCard->id) {
+                return $this->fail($request, 'Group assignment does not match your team skill level.');
+            }
+            $groupCard = $expectedCard;
         }
 
-        // Singles: auto-assign the least-filled active group (same idea as doubles).
-        // Keep doubles logic above unchanged.
-        if (
-            $tab === 'singles'
-            && $groupCard instanceof GroupCard
-            && Schema::hasTable('groups')
-        ) {
-            $groupsQuery = Group::query()
-                ->where('status', 'active');
-
-            // Groups can be linked to a GroupCard either via `groups.group_card_id` OR via the pivot `group_group_card`.
-            // Use the relation so it works in both schemas.
-            $groupsQuery->whereHas('groupCards', fn ($q) => $q->whereKey($groupCard->id));
-
-            if (Schema::hasColumn('groups', 'age_group_key')) {
-                $groupsQuery->where(function ($q) use ($ageGroup) {
-                    $q->whereNull('age_group_key')
-                        ->orWhere('age_group_key', $ageGroup);
-                });
-            }
-
-            $candidateGroups = $groupsQuery->orderBy('id')->get();
-
-            if ($candidateGroups->isNotEmpty()) {
-                $bestGroup = null;
-                $bestCount = null;
-
-                foreach ($candidateGroups as $candidate) {
-                    $currentCount = LeagueRegistration::query()
-                        ->where('league_id', $leagueId)
-                        ->where('group_card_id', $groupCard->id)
-                        ->where('group_id', $candidate->id)
-                        ->where('registration_type', 'singles')
-                        ->count();
-
-                    if ($bestCount === null || $currentCount < $bestCount) {
-                        $bestCount = $currentCount;
-                        $bestGroup = $candidate;
-                    }
-                }
-
-                if ($bestGroup) {
-                    $groupId = $bestGroup->id;
-                }
-            }
+        $registrationClosed = LeagueRegistrationGate::closedReason($league, $groupCard, $ageGroup);
+        if ($registrationClosed !== null) {
+            return $this->fail($request, $registrationClosed);
         }
+
+        $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $tab, $ageGroup);
 
         $user = User::create([
             'name' => $base['name'],
@@ -236,6 +202,7 @@ class RegisteredUserController extends Controller
             'city' => $city,
             'state' => $state,
             'sex' => $sex,
+            'skill_level' => $skillLevel,
             'registration_type' => $tab,
             'transaction_id' => (string) $intent->id,
         ]);
@@ -274,6 +241,8 @@ class RegisteredUserController extends Controller
             ]
         );
 
+        UserSkillLevel::syncToUser($user, $skillLevel);
+
         // Doubles: create/attach second player as separate user + registration, send invite/setup email
         if ($tab === 'doubles') {
             $partnerEmail = strtolower((string) $specific['d2_email']);
@@ -287,11 +256,17 @@ class RegisteredUserController extends Controller
                     'last_name' => $specific['d2_last'] ?? null,
                     'email' => $partnerEmail,
                     'phone' => (string) $specific['d2_phone'],
+                    'city' => (string) $specific['d2_city'],
+                    'state' => (string) $specific['d2_state'],
+                    'sex' => (string) $specific['d2_sex'],
                     'role' => UserRole::Player,
                     'status' => 'active',
                     'password' => Hash::make(Str::random(32)),
                     'registration_type' => 'doubles',
+                    'skill_level' => (string) $specific['d2_skill'],
                 ]);
+            } else {
+                UserSkillLevel::syncToUser($partner, (string) $specific['d2_skill']);
             }
 
             LeagueRegistration::updateOrCreate(
@@ -299,8 +274,8 @@ class RegisteredUserController extends Controller
                 [
                     'group_card_id' => $groupCard instanceof GroupCard ? $groupCard->id : null,
                     'group_id' => $groupId,
-                    'skill_level' => $skillLevel,
-                    'age_group_key' => $ageGroup,
+                    'skill_level' => (string) $specific['d2_skill'],
+                    'age_group_key' => (string) $specific['d2_age_group'],
                     'registration_type' => 'doubles',
                     'team_key' => $primaryTeamKey,
                     'payment_status' => 'completed',

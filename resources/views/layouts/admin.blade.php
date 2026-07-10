@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <title>@yield('title', 'Admin Dashboard')</title>
     <meta name="description" content="@yield('meta_description', 'Admin dashboard for managing '.config('app.name', 'playptl').'.')">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,17 +28,17 @@
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gauge-high"></i></span>
                         <span>Dashboard</span>
                     </a>
-                    <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
+                    <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*', 'admin.league-management.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span>
-                        <span>Leagues</span>
-                    </a>
-                    <a class="admin-nav-link {{ request()->routeIs('admin.groups.*') ? 'is-active' : '' }}" href="{{ route('admin.groups.index') }}">
-                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
-                        <span>Groups</span>
+                        <span>Tournaments</span>
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.group-cards.*') ? 'is-active' : '' }}" href="{{ route('admin.group-cards.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
-                        <span>Sub Groups</span>
+                        <span>Groups</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.groups.*') ? 'is-active' : '' }}" href="{{ route('admin.groups.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
+                        <span>Subgroups</span>
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.players.*') ? 'is-active' : '' }}" href="{{ route('admin.players.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
@@ -46,6 +47,14 @@
                     <a class="admin-nav-link {{ request()->routeIs('admin.payment-histories.*') ? 'is-active' : '' }}" href="{{ route('admin.payment-histories.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
                         <span>Payment History</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.charity-causes.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-causes.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-heart"></i></span>
+                        <span>Charity Causes</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.charity-donations.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-donations.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-heart"></i></span>
+                        <span>Charity Donations</span>
                     </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.announcements.*') ? 'is-active' : '' }}" href="{{ route('admin.announcements.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></span>
@@ -65,6 +74,8 @@
                 </div>
             </nav>
         </aside>
+
+        <button type="button" class="admin-sidebar-backdrop" data-admin-sidebar-backdrop hidden aria-label="Close navigation"></button>
 
         <div class="admin-main">
             <header class="admin-topbar">
@@ -107,13 +118,90 @@
             </main>
         </div>
     </div>
+    <div id="admin-confirm-modal" class="admin-modal" hidden aria-hidden="true">
+        <button type="button" class="admin-modal-backdrop" data-admin-confirm-cancel aria-label="Close"></button>
+        <div class="admin-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
+            <h2 id="admin-confirm-title" class="admin-modal-title">Are you sure?</h2>
+            <p id="admin-confirm-message" class="admin-modal-footer-note"></p>
+            <div class="admin-modal-actions">
+                <button type="button" class="admin-modal-btn-cancel" data-admin-confirm-cancel>Cancel</button>
+                <button type="button" class="admin-modal-btn-primary" id="admin-confirm-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
+    @php
+        $adminJsV = max(
+            @filemtime(public_path('admin/js/admin-form-submit-lock.js')) ?: 0,
+            @filemtime(public_path('admin/js/admin-confirm.js')) ?: 0
+        );
+    @endphp
+    <script src="{{ asset('admin/js/admin-form-submit-lock.js') }}?v={{ $adminJsV }}" defer></script>
+    <script src="{{ asset('admin/js/admin-confirm.js') }}?v={{ $adminJsV }}" defer></script>
     <script>
-        document.querySelector('[data-sidebar-toggle]')?.addEventListener('click', function () {
+        (function () {
             const shell = document.querySelector('[data-admin-shell]');
-            const collapsed = shell?.classList.toggle('is-sidebar-collapsed') ?? false;
+            const toggle = document.querySelector('[data-sidebar-toggle]');
+            const backdrop = document.querySelector('[data-admin-sidebar-backdrop]');
+            const mobileQuery = window.matchMedia('(max-width: 1023px)');
 
-            this.setAttribute('aria-expanded', String(! collapsed));
-        });
+            function isMobileNav() {
+                return mobileQuery.matches;
+            }
+
+            function closeMobileNav() {
+                shell?.classList.remove('is-mobile-nav-open');
+                if (backdrop) {
+                    backdrop.hidden = true;
+                }
+                toggle?.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('admin-mobile-nav-open');
+            }
+
+            function openMobileNav() {
+                shell?.classList.add('is-mobile-nav-open');
+                if (backdrop) {
+                    backdrop.hidden = false;
+                }
+                toggle?.setAttribute('aria-expanded', 'true');
+                document.body.classList.add('admin-mobile-nav-open');
+            }
+
+            toggle?.addEventListener('click', function () {
+                if (isMobileNav()) {
+                    if (shell?.classList.contains('is-mobile-nav-open')) {
+                        closeMobileNav();
+                    } else {
+                        openMobileNav();
+                    }
+                    return;
+                }
+
+                const collapsed = shell?.classList.toggle('is-sidebar-collapsed') ?? false;
+                this.setAttribute('aria-expanded', String(! collapsed));
+            });
+
+            backdrop?.addEventListener('click', closeMobileNav);
+
+            document.querySelectorAll('.admin-sidebar a, .admin-sidebar .admin-nav-button').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    if (isMobileNav()) {
+                        closeMobileNav();
+                    }
+                });
+            });
+
+            mobileQuery.addEventListener('change', function () {
+                if (! isMobileNav()) {
+                    closeMobileNav();
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeMobileNav();
+                }
+            });
+        })();
 
         const userMenuToggle = document.querySelector('[data-user-menu-toggle]');
         const userDropdown = document.querySelector('[data-user-dropdown]');
@@ -130,5 +218,6 @@
             userMenuToggle?.setAttribute('aria-expanded', 'false');
         });
     </script>
+    @stack('scripts')
 </body>
 </html>
