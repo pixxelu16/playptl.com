@@ -20,17 +20,17 @@ class DatabaseSeeder extends Seeder
         $users = [
             [
                 'name' => 'Admin User',
-                'email' => 'admin@example.com',
+                'email' => 'adminuser@playptl.com',
                 'role' => UserRole::Admin,
             ],
             [
                 'name' => 'Organiser User',
-                'email' => 'organiser@example.com',
+                'email' => 'organiser@playptl.com',
                 'role' => UserRole::Organiser,
             ],
             [
                 'name' => 'Player User',
-                'email' => 'player@example.com',
+                'email' => 'player@playptl.com',
                 'role' => UserRole::Player,
             ],
         ];
@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'name' => $user['name'],
                     'role' => $user['role'],
-                    'password' => Hash::make('password'),
+                    'password' => Hash::make('s4E0t0WkL@#$23'),
                 ]
             );
         }
