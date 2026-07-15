@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\GroupCard;
 use App\Models\League;
 use App\Models\LeagueRegistration;
+use App\Models\Skill;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,7 @@ class AdminPlayerLeagueRegistrationService
      */
     public static function skillLevelValues(): array
     {
-        return ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
+        return Skill::allSkills();
     }
 
     /**

@@ -19,7 +19,12 @@ class LeagueRegistrationFlow
         return $league->groupCards()
             ->where('group_cards.status', 'active')
             ->whereIn('group_cards.tag', $tab === 'singles' ? ['single', 'singles'] : ['double', 'doubles'])
-            ->where('group_cards.skill_level_match', $skillLevel)
+            ->where(function ($q) use ($skillLevel) {
+                $q->where('group_cards.skill_level_match', $skillLevel)
+                    ->orWhere('group_cards.skill_level_match', 'like', $skillLevel.',%')
+                    ->orWhere('group_cards.skill_level_match', 'like', '%,'.$skillLevel)
+                    ->orWhere('group_cards.skill_level_match', 'like', '%,'.$skillLevel.',%');
+            })
             ->first();
     }
 

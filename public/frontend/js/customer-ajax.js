@@ -358,8 +358,10 @@
     }
 
     // Live UX
-    $form.on('input change', 'input, select, textarea', function () {
-      $(this).removeClass('border-red-500');
+    $form.on('focus input change', 'input, select, textarea', function () {
+      var $el = $(this);
+      $el.removeClass('border-red-500');
+      $el.parent().find('.validation-error-msg').remove();
     });
 
     $form.on('input', 'input[name="phone_singles"], input[name="phone_doubles"], input[name="d2_phone"]', function () {
@@ -369,14 +371,37 @@
     });
 
     function clearFieldErrors() {
-      $form.find('input,select').removeClass('border-red-500');
+      $form.find('input,select,textarea').removeClass('border-red-500');
+      $form.find('.validation-error-msg').remove();
     }
 
     function applyFieldErrors(errors) {
       if (!errors) return;
+      var firstErrElement = null;
       Object.keys(errors).forEach(function (name) {
-        $form.find('[name="' + name + '"]').addClass('border-red-500');
+        var $el = $form.find('[name="' + name + '"]');
+        if ($el.length) {
+          $el.addClass('border-red-500');
+          $el.parent().find('.validation-error-msg').remove();
+          var msg = errors[name][0];
+          if (msg.indexOf('^') === 0) {
+            msg = msg.substring(1);
+          } else {
+            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+          }
+          $el.after('<span class="validation-error-msg text-red-500 text-xs mt-1 block" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: block;">' + msg + '</span>');
+          if (!firstErrElement) {
+            firstErrElement = $el.get(0);
+          }
+        }
       });
+
+      if (firstErrElement) {
+        firstErrElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function() {
+          firstErrElement.focus();
+        }, 300);
+      }
     }
 
     function constraintsFor(tabKey) {

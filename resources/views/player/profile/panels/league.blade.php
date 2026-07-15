@@ -16,7 +16,7 @@
     $playerSkillLabel = $playerFixedSkillLabel ?? '—';
     $hasPlayerSkill = $hasPlayerSkillLevel ?? false;
     $tournamentCount = ($registrationLeagues ?? collect())->count();
-    $registrationSkillLevelValues = $registrationSkillLevelValues ?? ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
+    $registrationSkillLevelValues = $registrationSkillLevelValues ?? \App\Models\Skill::allSkills();
 @endphp
 
 <div
