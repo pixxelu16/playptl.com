@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminGroupMatchController;
 use App\Http\Controllers\AdminLeagueController;
 use App\Http\Controllers\AdminLeagueGroupCardAssignPlayerController;
 use App\Http\Controllers\AdminLeagueGroupCardGroupController;
+use App\Http\Controllers\AdminLeagueGroupCardPlayerController;
 use App\Http\Controllers\AdminOfficialPartnerController;
 use App\Http\Controllers\AdminLeagueGroupCardPointsController;
 use App\Http\Controllers\AdminLeagueGroupCardQualifierController;

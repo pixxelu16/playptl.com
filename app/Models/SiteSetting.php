@@ -75,10 +75,57 @@ class SiteSetting extends Model
         static::forgetCaches();
     }
 
+    /**
+     * @return array{mode: string, currency: string, test_publishable_key: string, test_secret_key: string, live_publishable_key: string, live_secret_key: string}
+     */
+    public static function stripe(): array
+    {
+        return Cache::remember('site_settings.stripe', 3600, function (): array {
+            $settings = static::query()
+                ->whereIn('key', [
+                    'stripe_mode',
+                    'stripe_currency',
+                    'stripe_test_publishable_key',
+                    'stripe_test_secret_key',
+                    'stripe_live_publishable_key',
+                    'stripe_live_secret_key',
+                ])
+                ->pluck('value', 'key');
+
+            return [
+                'mode' => (string) ($settings['stripe_mode'] ?? 'test'),
+                'currency' => (string) ($settings['stripe_currency'] ?? 'USD'),
+                'test_publishable_key' => (string) ($settings['stripe_test_publishable_key'] ?? ''),
+                'test_secret_key' => (string) ($settings['stripe_test_secret_key'] ?? ''),
+                'live_publishable_key' => (string) ($settings['stripe_live_publishable_key'] ?? ''),
+                'live_secret_key' => (string) ($settings['stripe_live_secret_key'] ?? ''),
+            ];
+        });
+    }
+
+    public static function stripePublishableKey(): string
+    {
+        $stripe = static::stripe();
+        return $stripe['mode'] === 'live' ? $stripe['live_publishable_key'] : $stripe['test_publishable_key'];
+    }
+
+    public static function stripeSecretKey(): string
+    {
+        $stripe = static::stripe();
+        return $stripe['mode'] === 'live' ? $stripe['live_secret_key'] : $stripe['test_secret_key'];
+    }
+
+    public static function stripeCurrency(): string
+    {
+        $stripe = static::stripe();
+        return $stripe['currency'];
+    }
+
     protected static function forgetCaches(): void
     {
         Cache::forget('site_settings.contact');
         Cache::forget('site_settings.header');
         Cache::forget('site_settings.footer');
+        Cache::forget('site_settings.stripe');
     }
 }
