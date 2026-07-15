@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CharityCause;
 use App\Models\CharityDonation;
+use App\Models\SiteSetting;
 use App\Support\CharityFundraisingStats;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,8 +37,8 @@ class CharityDonationController extends Controller
             return response()->json(['message' => 'Minimum donation is $1.'], 422);
         }
 
-        $currency = (string) config('services.stripe.currency', 'USD');
-        $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));
+        $currency = SiteSetting::stripeCurrency();
+        $secret = SiteSetting::stripeSecretKey();
         if ($secret === '') {
             return response()->json(['message' => 'Stripe is not configured.'], 500);
         }
@@ -102,7 +103,7 @@ class CharityDonationController extends Controller
             return response()->json(['message' => 'This donation was already recorded.'], 422);
         }
 
-        $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));
+        $secret = SiteSetting::stripeSecretKey();
         if ($secret === '') {
             return response()->json(['message' => 'Stripe is not configured.'], 500);
         }
@@ -116,7 +117,7 @@ class CharityDonationController extends Controller
         }
 
         $expectedAmountCents = (int) round(((float) $validated['amount']) * 100);
-        $expectedCurrency = strtolower((string) config('services.stripe.currency', 'USD'));
+        $expectedCurrency = strtolower(SiteSetting::stripeCurrency());
         $email = isset($validated['email']) ? strtolower((string) $validated['email']) : '';
         $meta = $intent->metadata ?? null;
         $metaType = is_object($meta) ? (string) ($meta->type ?? '') : '';

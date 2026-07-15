@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\League;
+use App\Models\SiteSetting;
 use App\Models\User;
 use App\Helpers\LeagueMenuHelper;
 use App\Support\LeagueEntryFee;
@@ -52,9 +53,9 @@ class RegisterStripePaymentIntentController extends Controller
         }
 
         $amountCents = LeagueEntryFee::centsForTab($league, (string) $validated['registration_tab']);
-        $currency = (string) config('services.stripe.currency', 'USD');
+        $currency = SiteSetting::stripeCurrency();
 
-        $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));
+        $secret = SiteSetting::stripeSecretKey();
         if ($secret === '') {
             return response()->json([
                 'message' => 'Stripe is not configured.',

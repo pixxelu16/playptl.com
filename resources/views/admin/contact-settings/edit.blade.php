@@ -77,7 +77,49 @@
                 </div>
             </div>
 
-            <button class="admin-button" type="submit">Save Site Settings</button>
+            <h2 class="admin-card-title" style="font-size: 1.1rem; margin: 28px 0 12px;">Stripe Gateway Configuration</h2>
+            <p class="admin-card-text" style="margin-bottom: 20px;">Set Stripe operating mode, currency, and API credentials.</p>
+
+            <div class="admin-form-grid">
+                <div class="admin-form-group">
+                    <label class="admin-label" for="stripe_mode">Payment Mode</label>
+                    <select class="admin-input" id="stripe_mode" name="stripe_mode" required>
+                        <option value="test" {{ old('stripe_mode', $stripe['mode']) === 'test' ? 'selected' : '' }}>Test Mode</option>
+                        <option value="live" {{ old('stripe_mode', $stripe['mode']) === 'live' ? 'selected' : '' }}>Live Mode</option>
+                    </select>
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label" for="stripe_currency">Currency</label>
+                    <select class="admin-input" id="stripe_currency" name="stripe_currency" required>
+                        @foreach(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'INR'] as $currency)
+                            <option value="{{ $currency }}" {{ old('stripe_currency', $stripe['currency']) === $currency ? 'selected' : '' }}>{{ $currency }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label" for="stripe_test_publishable_key">Test Publishable Key</label>
+                    <input class="admin-input" id="stripe_test_publishable_key" type="text" name="stripe_test_publishable_key" value="{{ old('stripe_test_publishable_key', $stripe['test_publishable_key']) }}">
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label" for="stripe_test_secret_key">Test Secret Key</label>
+                    <input class="admin-input" id="stripe_test_secret_key" type="password" name="stripe_test_secret_key" value="{{ old('stripe_test_secret_key', $stripe['test_secret_key']) }}">
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label" for="stripe_live_publishable_key">Live Publishable Key</label>
+                    <input class="admin-input" id="stripe_live_publishable_key" type="text" name="stripe_live_publishable_key" value="{{ old('stripe_live_publishable_key', $stripe['live_publishable_key']) }}">
+                </div>
+
+                <div class="admin-form-group">
+                    <label class="admin-label" for="stripe_live_secret_key">Live Secret Key</label>
+                    <input class="admin-input" id="stripe_live_secret_key" type="password" name="stripe_live_secret_key" value="{{ old('stripe_live_secret_key', $stripe['live_secret_key']) }}">
+                </div>
+            </div>
+
+            <button class="admin-button" type="submit" style="margin-top: 28px;">Save Site Settings</button>
         </form>
     </section>
 @endsection

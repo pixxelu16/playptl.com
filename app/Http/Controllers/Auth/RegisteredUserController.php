@@ -14,6 +14,7 @@ use App\Models\GroupCard;
 use App\Models\League;
 use App\Models\LeagueRegistration;
 use App\Models\PaymentHistory;
+use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,7 +40,7 @@ class RegisteredUserController extends Controller
             'registrationClosedDivisions' => LeagueRegistrationGate::closedSelectionKeys(),
             'registrationClosedGroupCards' => LeagueRegistrationGate::closedGroupCardKeys(),
             'leagueEntryFees' => LeagueEntryFee::mapForLeagues($registrationLeagues),
-            'stripePublishableKey' => (string) (config('services.stripe.key') ?: env('STRIPE_PUBLISHABLE_KEY', '')),
+            'stripePublishableKey' => SiteSetting::stripePublishableKey(),
             'tournamentGroupsUrl' => route('register.tournament-groups'),
         ]);
     }
@@ -136,7 +137,7 @@ class RegisteredUserController extends Controller
             return $this->fail($request, 'This payment was already used.');
         }
 
-        $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));
+        $secret = SiteSetting::stripeSecretKey();
         if ($secret === '') {
             return $this->fail($request, 'Stripe is not configured.');
         }
@@ -145,7 +146,7 @@ class RegisteredUserController extends Controller
         $intent = $stripe->paymentIntents->retrieve($base['payment_intent_id'], []);
 
         $expectedAmountCents = LeagueEntryFee::centsForTab($league, $tab);
-        $expectedCurrency = strtolower((string) config('services.stripe.currency', 'USD'));
+        $expectedCurrency = strtolower(SiteSetting::stripeCurrency());
         $intentEmail = strtolower((string) ($intent->metadata['email'] ?? ''));
         $intentLeagueId = (string) ($intent->metadata['league_id'] ?? '');
         $intentTab = (string) ($intent->metadata['registration_tab'] ?? '');
@@ -212,7 +213,7 @@ class RegisteredUserController extends Controller
             'user_id' => $user->id,
             'league_id' => $leagueId,
             'amount' => $amountDecimal,
-            'currency' => strtoupper((string) config('services.stripe.currency', 'USD')),
+            'currency' => strtoupper(SiteSetting::stripeCurrency()),
             'status' => 'completed',
             'transaction_id' => (string) $intent->id,
             'description' => 'Tournament registration fee',
@@ -304,7 +305,7 @@ class RegisteredUserController extends Controller
                 registrationType: $tab,
                 skillLevel: $skillLevel,
                 amount: $amountDecimal,
-                currency: strtoupper((string) config('services.stripe.currency', 'USD')),
+                currency: strtoupper(SiteSetting::stripeCurrency()),
                 paymentIntentId: (string) $intent->id,
             ));
         } catch (\Throwable $e) {

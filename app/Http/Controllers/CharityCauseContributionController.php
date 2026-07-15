@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CharityCause;
 use App\Models\CharityDonation;
+use App\Models\SiteSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -41,7 +42,7 @@ class CharityCauseContributionController extends Controller
             'amount' => 0,
             'quantity' => round((float) $validated['quantity'], 2),
             'material_detail' => $type === 'material' ? (string) ($validated['material_detail'] ?? '') : null,
-            'currency' => strtoupper((string) config('services.stripe.currency', 'USD')),
+            'currency' => strtoupper(SiteSetting::stripeCurrency()),
             'status' => 'submitted',
             'transaction_id' => null,
             'meta' => [

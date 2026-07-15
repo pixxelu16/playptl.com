@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CharityCause;
+use App\Models\SiteSetting;
 use App\Support\CharityFundraisingStats;
 use Illuminate\View\View;
 
@@ -19,7 +20,7 @@ class CharityController extends Controller
             ->get();
 
         return view('charity', array_merge([
-            'stripePublishableKey' => (string) config('services.stripe.key', ''),
+            'stripePublishableKey' => SiteSetting::stripePublishableKey(),
             'charityCauses' => $charityCauses,
             'charityCausesCount' => $charityCauses->count(),
             'selectedCharityCause' => null,
@@ -35,7 +36,7 @@ class CharityController extends Controller
         $stats = CharityFundraisingStats::current();
 
         return view('charity-cause', array_merge([
-            'stripePublishableKey' => (string) config('services.stripe.key', ''),
+            'stripePublishableKey' => SiteSetting::stripePublishableKey(),
             'charityCause' => $charityCause,
         ], $stats));
     }

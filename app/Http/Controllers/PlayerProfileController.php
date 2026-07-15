@@ -13,6 +13,7 @@ use App\Models\GroupMatchPlayerUpload;
 use App\Models\League;
 use App\Models\LeagueRegistration;
 use App\Models\PaymentHistory;
+use App\Models\SiteSetting;
 use App\Models\PlayoffMatch;
 use App\Models\PlayoffMatchPlayerUpload;
 use App\Models\User;
@@ -153,9 +154,9 @@ class PlayerProfileController extends Controller
         }
 
         $amountCents = \App\Support\LeagueEntryFee::centsForTab($league, $tab);
-        $currency = (string) config('services.stripe.currency', 'USD');
+        $currency = SiteSetting::stripeCurrency();
 
-        $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));
+        $secret = SiteSetting::stripeSecretKey();
         if ($secret === '') {
             return response()->json(['message' => 'Stripe is not configured.'], 500);
         }
@@ -303,7 +304,7 @@ class PlayerProfileController extends Controller
             return response()->json(['message' => 'This payment was already used.'], 422);
         }
 
-        $secret = (string) (config('services.stripe.secret') ?: env('STRIPE_SECRET_KEY', ''));
+        $secret = SiteSetting::stripeSecretKey();
         if ($secret === '') {
             return response()->json(['message' => 'Stripe is not configured.'], 500);
         }
@@ -312,7 +313,7 @@ class PlayerProfileController extends Controller
         $intent = $stripe->paymentIntents->retrieve($base['payment_intent_id'], []);
 
         $expectedAmountCents = \App\Support\LeagueEntryFee::centsForTab($league, $tab);
-        $expectedCurrency = strtolower((string) config('services.stripe.currency', 'USD'));
+        $expectedCurrency = strtolower(SiteSetting::stripeCurrency());
         $intentEmail = strtolower((string) ($intent->metadata['email'] ?? ''));
         $intentLeagueId = (string) ($intent->metadata['league_id'] ?? '');
         $intentTab = (string) ($intent->metadata['registration_tab'] ?? '');
@@ -339,7 +340,7 @@ class PlayerProfileController extends Controller
             'user_id' => $user->id,
             'league_id' => $leagueId,
             'amount' => $amountDecimal,
-            'currency' => strtoupper((string) config('services.stripe.currency', 'USD')),
+            'currency' => strtoupper(SiteSetting::stripeCurrency()),
             'status' => 'completed',
             'transaction_id' => (string) $intent->id,
             'description' => 'League registration fee',
@@ -417,7 +418,7 @@ class PlayerProfileController extends Controller
                 registrationType: $tab,
                 skillLevel: $skillLevel,
                 amount: $amountDecimal,
-                currency: strtoupper((string) config('services.stripe.currency', 'USD')),
+                currency: strtoupper(SiteSetting::stripeCurrency()),
                 paymentIntentId: (string) $intent->id,
             ));
         } catch (\Throwable) {
@@ -1835,7 +1836,7 @@ class PlayerProfileController extends Controller
             'registrationClosedDivisions' => \App\Support\LeagueRegistrationGate::closedSelectionKeys(),
             'registrationClosedGroupCards' => \App\Support\LeagueRegistrationGate::closedGroupCardKeys(),
             'leagueEntryFees' => \App\Support\LeagueEntryFee::mapForLeagues($allLeagues),
-            'stripePublishableKey' => (string) (config('services.stripe.key') ?: env('STRIPE_PUBLISHABLE_KEY', '')),
+            'stripePublishableKey' => SiteSetting::stripePublishableKey(),
             'tournamentGroupsUrl' => route('player.profile.league.tournament-groups'),
             'playerFixedSkillLevel' => $playerSkillLevel,
             'playerFixedSkillLabel' => $playerSkillLabel,

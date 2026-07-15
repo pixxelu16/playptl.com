@@ -17,6 +17,7 @@ class AdminContactSettingController extends Controller
             'contact' => SiteSetting::contact(),
             'header' => SiteSetting::header(),
             'footer' => SiteSetting::footer(),
+            'stripe' => SiteSetting::stripe(),
         ]);
     }
 
@@ -29,6 +30,12 @@ class AdminContactSettingController extends Controller
             'contact_phone' => ['required', 'string', 'max:32'],
             'contact_email' => ['required', 'email', 'max:255'],
             'contact_address' => ['required', 'string', 'max:500'],
+            'stripe_mode' => ['required', 'string', 'in:test,live'],
+            'stripe_currency' => ['required', 'string', 'in:USD,EUR,GBP,CAD,AUD,INR'],
+            'stripe_test_publishable_key' => ['nullable', 'string', 'max:255'],
+            'stripe_test_secret_key' => ['nullable', 'string', 'max:255'],
+            'stripe_live_publishable_key' => ['nullable', 'string', 'max:255'],
+            'stripe_live_secret_key' => ['nullable', 'string', 'max:255'],
         ]);
 
         $this->updateLogoSetting(
@@ -54,6 +61,13 @@ class AdminContactSettingController extends Controller
         SiteSetting::setValue('contact_phone', $validated['contact_phone']);
         SiteSetting::setValue('contact_email', $validated['contact_email']);
         SiteSetting::setValue('contact_address', $validated['contact_address']);
+
+        SiteSetting::setValue('stripe_mode', $validated['stripe_mode']);
+        SiteSetting::setValue('stripe_currency', $validated['stripe_currency']);
+        SiteSetting::setValue('stripe_test_publishable_key', $validated['stripe_test_publishable_key']);
+        SiteSetting::setValue('stripe_test_secret_key', $validated['stripe_test_secret_key']);
+        SiteSetting::setValue('stripe_live_publishable_key', $validated['stripe_live_publishable_key']);
+        SiteSetting::setValue('stripe_live_secret_key', $validated['stripe_live_secret_key']);
 
         return back()->with('status', 'Site settings updated successfully.');
     }
