@@ -98,15 +98,17 @@ final class TournamentRegistrationOptions
         $tiers = [];
 
         foreach (self::groupCardsFor($league, $tab) as $group) {
-            $tierSkill = trim((string) ($group['skill_level'] ?? ''));
-            if ($tierSkill === '' || ! is_numeric($tierSkill)) {
-                continue;
-            }
+            $tierSkills = array_filter(array_map('trim', explode(',', (string) ($group['skill_level'] ?? ''))));
+            foreach ($tierSkills as $tierSkill) {
+                if ($tierSkill === '' || ! is_numeric($tierSkill)) {
+                    continue;
+                }
 
-            $tiers[] = [
-                'skill' => (float) $tierSkill,
-                'group' => $group,
-            ];
+                $tiers[] = [
+                    'skill' => (float) $tierSkill,
+                    'group' => $group,
+                ];
+            }
         }
 
         if ($tiers === []) {
@@ -140,15 +142,17 @@ final class TournamentRegistrationOptions
         $lowestSkill = null;
 
         foreach (self::groupCardsFor($league, $tab) as $group) {
-            $tierSkill = trim((string) ($group['skill_level'] ?? ''));
-            if ($tierSkill === '' || ! is_numeric($tierSkill)) {
-                continue;
-            }
+            $tierSkills = array_filter(array_map('trim', explode(',', (string) ($group['skill_level'] ?? ''))));
+            foreach ($tierSkills as $tierSkill) {
+                if ($tierSkill === '' || ! is_numeric($tierSkill)) {
+                    continue;
+                }
 
-            $skill = (float) $tierSkill;
-            if ($lowestSkill === null || $skill < $lowestSkill) {
-                $lowestSkill = $skill;
-                $lowest = $group;
+                $skill = (float) $tierSkill;
+                if ($lowestSkill === null || $skill < $lowestSkill) {
+                    $lowestSkill = $skill;
+                    $lowest = $group;
+                }
             }
         }
 

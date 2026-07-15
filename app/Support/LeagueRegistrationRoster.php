@@ -223,7 +223,8 @@ class LeagueRegistrationRoster
         }
 
         if (Schema::hasColumn('group_cards', 'skill_level_match')
-            && filled($targetGroupCard->skill_level_match ?? null)) {
+            && filled($targetGroupCard->skill_level_match ?? null)
+            && ! str_contains($targetGroupCard->skill_level_match, ',')) {
             $attributes['skill_level'] = (string) $targetGroupCard->skill_level_match;
         }
 

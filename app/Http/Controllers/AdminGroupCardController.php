@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\GroupPlayoffFormat;
 use App\Models\GroupCard;
 use App\Models\Group;
+use App\Models\Skill;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -33,6 +34,7 @@ class AdminGroupCardController extends Controller
             ]),
             'playoffFormatOptions' => GroupPlayoffFormat::options(),
             'groups' => Group::query()->orderBy('name')->get(),
+            'skills' => Skill::allSkills(),
         ]);
     }
 
@@ -62,6 +64,7 @@ class AdminGroupCardController extends Controller
             'groupCard' => $groupCard->load('groups'),
             'groups' => Group::query()->orderBy('name')->get(),
             'playoffFormatOptions' => GroupPlayoffFormat::options(),
+            'skills' => Skill::allSkills(),
         ]);
     }
 
@@ -97,7 +100,8 @@ class AdminGroupCardController extends Controller
             'groups_count' => ['nullable', 'integer', 'min:0'],
             'display_order' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', Rule::in(['active', 'deactive'])],
-            'skill_level_match' => ['nullable', 'string', 'max:32', 'regex:/^$|^not-sure$|^[0-9]+(\.[0-9]+)?$/'],
+            'skill_level_match' => ['nullable', 'array'],
+            'skill_level_match.*' => ['string', 'max:32'],
             'playoff_format' => ['required', 'string', Rule::in(array_map(fn (GroupPlayoffFormat $f) => $f->value, GroupPlayoffFormat::cases()))],
             'playoff_quarter_spots' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:64'],
             'playoff_r16_spots' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:64'],
@@ -105,6 +109,10 @@ class AdminGroupCardController extends Controller
             'group_ids' => ['nullable', 'array'],
             'group_ids.*' => ['integer', 'exists:groups,id'],
         ]);
+
+        if (isset($validated['skill_level_match']) && is_array($validated['skill_level_match'])) {
+            $validated['skill_level_match'] = implode(',', array_filter(array_map('trim', $validated['skill_level_match'])));
+        }
 
         if (($validated['skill_level_match'] ?? '') === '') {
             $validated['skill_level_match'] = null;

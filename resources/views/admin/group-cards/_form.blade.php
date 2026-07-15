@@ -8,23 +8,28 @@
     $quarterSpots = old('playoff_quarter_spots', $groupCard->playoff_quarter_spots ?? $spotDefaults->quarterSpots);
     $r16Spots = old('playoff_r16_spots', $groupCard->playoff_r16_spots ?? $spotDefaults->r16Spots);
     $ppqSpots = old('playoff_ppq_spots', $groupCard->playoff_ppq_spots ?? $spotDefaults->ppqSpots);
+
+    $matchedSkills = array_filter(array_map('trim', explode(',', (string) ($groupCard->skill_level_match ?? ''))));
+    $oldMatchedSkills = old('skill_level_match');
+    $activeMatchedSkills = is_array($oldMatchedSkills) ? $oldMatchedSkills : $matchedSkills;
 @endphp
 
 <div class="admin-form-grid">
-    <div class="admin-form-group">
+    <div class="admin-form-group" style="grid-column: 1 / -1;">
         <label class="admin-label" for="name">Name</label>
         <input class="admin-input" id="name" type="text" name="name" value="{{ old('name', $groupCard->name) }}" required>
     </div>
 
-    <div class="admin-form-group">
-        <label class="admin-label" for="skill_level_match">Skill level match (optional)</label>
-        <select class="admin-input" id="skill_level_match" name="skill_level_match">
-            <option value="">—</option>
-            @foreach (['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5'] as $lvl)
-                <option value="{{ $lvl }}" @selected(old('skill_level_match', $groupCard->skill_level_match) == $lvl)>{{ $lvl }}</option>
+    <div class="admin-form-group" style="grid-column: 1 / -1;">
+        <label class="admin-label">Skill level match (optional)</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 8px; background: #fdfdfd; padding: 12px; border: 1px solid #d7ead9; border-radius: 8px;">
+            @foreach (($skills ?? []) as $lvl)
+                <label class="admin-checkbox-inline" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="skill_level_match[]" value="{{ $lvl }}" @checked(in_array($lvl, $activeMatchedSkills, true))>
+                    <span>{{ $lvl === 'not-sure' ? 'Not Sure' : $lvl }}</span>
+                </label>
             @endforeach
-            <option value="not-sure" @selected(old('skill_level_match', $groupCard->skill_level_match) === 'not-sure')>Not Sure</option>
-        </select>
+        </div>
     </div>
 
     <div class="admin-form-group" style="grid-column: 1 / -1;">

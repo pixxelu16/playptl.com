@@ -17,6 +17,7 @@ use App\Http\Controllers\AdminCharityCauseController;
 use App\Http\Controllers\AdminCharityDonationController;
 use App\Http\Controllers\AdminContactSettingController;
 use App\Http\Controllers\AdminPaymentHistoryController;
+use App\Http\Controllers\AdminSkillController;
 use App\Http\Controllers\CharityCauseContributionController;
 use App\Http\Controllers\CharityController;
 use App\Http\Controllers\CharityDonationController;
@@ -143,6 +144,7 @@ Route::middleware('auth')->group(function () {
         Route::get('charity-donations/email-recipient-count', [AdminCharityDonationController::class, 'recipientCount'])->name('charity-donations.email-recipient-count');
         Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
         Route::resource('charity-causes', AdminCharityCauseController::class);
+        Route::resource('skills', AdminSkillController::class);
 
         Route::get('/profile', function () {
             return view('admin.profile');

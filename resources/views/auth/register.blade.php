@@ -33,7 +33,7 @@
         '46-50' => '46–50',
         'above-50' => 'Above 50',
     ];
-    $registrationSkillLevelValues = ['3', '3.25', '3.5', '3.75', '4', '4.25', '4.5', '4.75', '5', 'not-sure'];
+    $registrationSkillLevelValues = \App\Models\Skill::allSkills();
 @endphp
 
 @section('body_class', 'min-h-screen overflow-x-hidden font-sans antialiased text-[#1a1a1a]')
