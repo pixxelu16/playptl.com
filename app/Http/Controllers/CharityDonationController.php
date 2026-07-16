@@ -67,8 +67,8 @@ class CharityDonationController extends Controller
                     'charity_cause_id' => $causeId ? (string) $causeId : null,
                 ]),
             ]);
-        } catch (ApiErrorException) {
-            return response()->json(['message' => 'Unable to create payment intent.'], 500);
+        } catch (ApiErrorException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
 
         return response()->json([
@@ -112,8 +112,8 @@ class CharityDonationController extends Controller
 
         try {
             $intent = $stripe->paymentIntents->retrieve($validated['payment_intent_id'], []);
-        } catch (ApiErrorException) {
-            return response()->json(['message' => 'Payment could not be verified.'], 422);
+        } catch (ApiErrorException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
         $expectedAmountCents = (int) round(((float) $validated['amount']) * 100);

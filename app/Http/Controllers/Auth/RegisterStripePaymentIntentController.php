@@ -81,7 +81,7 @@ class RegisterStripePaymentIntentController extends Controller
             ]);
         } catch (ApiErrorException $e) {
             return response()->json([
-                'message' => 'Unable to create payment intent.',
+                'message' => $e->getMessage(),
             ], 500);
         }
 

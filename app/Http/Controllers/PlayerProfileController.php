@@ -176,8 +176,8 @@ class PlayerProfileController extends Controller
                     'source' => 'player_profile',
                 ],
             ]);
-        } catch (ApiErrorException) {
-            return response()->json(['message' => 'Unable to create payment intent.'], 500);
+        } catch (ApiErrorException $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
         }
 
         return response()->json([
