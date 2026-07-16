@@ -636,6 +636,8 @@
           var msg = 'Something went wrong.';
           if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.message) {
             msg = jqXHR.responseJSON.message;
+          } else if (jqXHR && jqXHR.message) {
+            msg = jqXHR.message;
           }
           // Server / payment errors: show only below Submit (response box), not under the card field
           setCardError('');

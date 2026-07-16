@@ -565,6 +565,8 @@
           var msg = 'Something went wrong.';
           if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.message) {
             msg = jqXHR.responseJSON.message;
+          } else if (jqXHR && jqXHR.message) {
+            msg = jqXHR.message;
           }
           setCardError('');
           renderResponse($responseBox, 'error', msg);
