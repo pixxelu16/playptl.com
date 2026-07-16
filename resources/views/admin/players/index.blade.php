@@ -10,6 +10,7 @@
             'skill_sort' => $skillSort,
             'search' => $search ?? '',
             'status' => $statusFilter ?? 'active',
+            'role_filter' => $roleFilter ?? 'all',
             'page' => $players->currentPage() > 1 ? $players->currentPage() : null,
         ], fn ($value) => $value !== null && $value !== '');
         $nextSkillSort = $skillSort === 'asc' ? 'desc' : 'asc';
@@ -45,6 +46,15 @@
                     </select>
                 </div>
                 <div>
+                    <label class="admin-label" for="role_filter">Role</label>
+                    <select class="admin-input" name="role_filter" id="role_filter">
+                        <option value="all" @selected(($roleFilter ?? 'all') === 'all')>All</option>
+                        @foreach (\Spatie\Permission\Models\Role::all() as $r)
+                            <option value="{{ strtolower($r->name) }}" @selected(($roleFilter ?? 'all') === strtolower($r->name))>{{ $r->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
                     <label class="admin-label" for="league_id">Tournament</label>
                     <select class="admin-input" name="league_id" id="league_id">
                         <option value="" @selected($leagueId === null)>All</option>
@@ -67,6 +77,7 @@
                         <th>ID</th>
                         <th>Photo</th>
                         <th>Name</th>
+                        <th>Role</th>
                         <th>Login as</th>
                         <th>Email</th>
                         <th>Phone</th>
@@ -103,6 +114,12 @@
                                     $displayName = trim(preg_split('/\s*&\s*/', $rawName)[0] ?? $rawName);
                                 @endphp
                                 <strong>{{ $displayName !== '' ? $displayName : '—' }}</strong>
+                            </td>
+                            <td>
+                                @php $userRole = $player->roles->first()?->name ?? $player->role->value ?? 'Player'; @endphp
+                                <span style="font-size: 11px; background-color: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 6px; font-weight: 600; border: 1px solid #e5e7eb; text-transform: uppercase;">
+                                    {{ $userRole }}
+                                </span>
                             </td>
                             <td>
                                 @php $loginAs = strtolower((string) ($player->registration_type ?? '')); @endphp
@@ -177,7 +194,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14">
+                            <td colspan="15">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-user" aria-hidden="true"></i>
                                     <p>No players found{{ ($statusFilter ?? 'active') !== 'all' ? ' with status '.ucfirst($statusFilter ?? 'active') : '' }}{{ $leagueId ? ' for this tournament' : '' }}{{ ($search ?? '') !== '' ? ' matching your search' : '' }}.</p>

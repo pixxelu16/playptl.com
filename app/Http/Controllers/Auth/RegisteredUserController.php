@@ -47,6 +47,52 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): Response
     {
+        $roleInput = $request->input('role');
+        if (in_array($roleInput, ['mentor', 'coach', 'student'], true)) {
+            $validated = $request->validate([
+                'role' => ['required', 'string', 'in:mentor,coach,student'],
+                'first_name' => ['required', 'string', 'max:255'],
+                'last_name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+                'phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
+                'password' => ['required', 'confirmed', Password::defaults()],
+                'city' => ['required', 'string', 'max:255'],
+                'state' => ['required', 'string', 'max:64'],
+            ]);
+
+            $user = User::create([
+                'name' => trim($validated['first_name'] . ' ' . $validated['last_name']),
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
+                'username' => User::generateUniqueUsername($validated['email']),
+                'phone' => $validated['phone'],
+                'password' => Hash::make($validated['password']),
+                'role' => UserRole::from($validated['role']),
+                'status' => 'active',
+                'city' => $validated['city'],
+                'state' => $validated['state'],
+            ]);
+
+            $user->assignRole(ucfirst($validated['role']));
+
+            auth()->login($user);
+            $request->session()->regenerate();
+
+            $profileUrl = route(strtolower($user->role->value) . '.profile');
+            $ajaxSuccessMessage = 'Registration successful! Redirecting to complete your profile...';
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'redirect_url' => $profileUrl,
+                    'message' => $ajaxSuccessMessage,
+                    'redirect_delay_seconds' => 2,
+                ]);
+            }
+
+            return redirect()->route(strtolower($user->role->value) . '.profile')->with('status', 'Registration successful!');
+        }
+
         if (! class_exists(StripeClient::class)) {
             return $this->fail($request, 'Payments are temporarily unavailable. Please try again later.');
         }
@@ -63,7 +109,7 @@ class RegisteredUserController extends Controller
 
         if ($tab === 'singles') {
             $specific = $request->validate([
-                'phone_singles' => ['required', 'string', 'max:32'],
+                'phone_singles' => ['required', 'string', 'max:32', 'unique:users,phone'],
                 'city_singles' => ['required', 'string', 'max:255'],
                 'state_singles' => ['required', 'string', 'max:64'],
                 'age_group_singles' => ['required', 'string', 'max:32'],
@@ -76,7 +122,7 @@ class RegisteredUserController extends Controller
             ]);
         } else {
             $specific = $request->validate([
-                'phone_doubles' => ['required', 'string', 'max:32'],
+                'phone_doubles' => ['required', 'string', 'max:32', 'unique:users,phone'],
                 'city_doubles' => ['required', 'string', 'max:255'],
                 'state_doubles' => ['required', 'string', 'max:64'],
                 'age_group_doubles' => ['required', 'string', 'max:32'],
@@ -84,8 +130,8 @@ class RegisteredUserController extends Controller
                 'sex_doubles' => ['required', 'string', 'max:32'],
                 'tournament_doubles' => ['required', 'integer', 'exists:leagues,id'],
                 'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
-                'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
-                'd2_phone' => ['required', 'string', 'max:32'],
+                'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+                'd2_phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
                 'd2_city' => ['required', 'string', 'max:255'],
                 'd2_state' => ['required', 'string', 'max:64'],
                 'd2_age_group' => ['required', 'string', 'max:32'],
@@ -196,6 +242,7 @@ class RegisteredUserController extends Controller
             'first_name' => $tab === 'singles' ? ($specific['singles_first'] ?? null) : ($specific['d1_first'] ?? null),
             'last_name' => $tab === 'singles' ? ($specific['singles_last'] ?? null) : ($specific['d1_last'] ?? null),
             'email' => $base['email'],
+            'username' => User::generateUniqueUsername($base['email']),
             'phone' => $phone,
             'role' => UserRole::Player,
             'status' => 'active',
@@ -207,6 +254,8 @@ class RegisteredUserController extends Controller
             'registration_type' => $tab,
             'transaction_id' => (string) $intent->id,
         ]);
+
+        $user->assignRole('Player');
 
         $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
         PaymentHistory::create([
@@ -256,6 +305,7 @@ class RegisteredUserController extends Controller
                     'first_name' => $specific['d2_first'] ?? null,
                     'last_name' => $specific['d2_last'] ?? null,
                     'email' => $partnerEmail,
+                    'username' => User::generateUniqueUsername($partnerEmail),
                     'phone' => (string) $specific['d2_phone'],
                     'city' => (string) $specific['d2_city'],
                     'state' => (string) $specific['d2_state'],
@@ -266,6 +316,7 @@ class RegisteredUserController extends Controller
                     'registration_type' => 'doubles',
                     'skill_level' => (string) $specific['d2_skill'],
                 ]);
+                $partner->assignRole('Player');
             } else {
                 UserSkillLevel::syncToUser($partner, (string) $specific['d2_skill']);
             }
@@ -312,29 +363,21 @@ class RegisteredUserController extends Controller
             // If mail fails, registration/payment is still valid; do not block.
         }
 
+        auth()->login($user);
         $request->session()->regenerate();
 
-        $loginUrl = route('login');
-        $statusMessage = 'Your account is registered. Please sign in with your email and password.';
-        $ajaxSuccessMessage = $statusMessage.' You will be redirected to the login page in 3 seconds.';
+        $profileUrl = route('player.my-profile');
+        $ajaxSuccessMessage = 'Registration successful! Redirecting to complete your profile...';
 
-        if ($request->expectsJson()) {
+        if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
-                'redirect_url' => $loginUrl,
+                'redirect_url' => $profileUrl,
                 'message' => $ajaxSuccessMessage,
-                'redirect_delay_seconds' => 3,
+                'redirect_delay_seconds' => 2,
             ]);
         }
 
-        if ($request->ajax()) {
-            return response()->view('auth.partials.register-response', [
-                'type' => 'success',
-                'message' => $ajaxSuccessMessage,
-                'redirectUrl' => $loginUrl,
-            ]);
-        }
-
-        return redirect()->route('login')->with('status', $statusMessage);
+        return redirect()->route('player.my-profile')->with('status', 'Registration successful!');
     }
 
     private function fail(Request $request, string $message): Response

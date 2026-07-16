@@ -62,7 +62,29 @@ Route::get('/league', function () {
     abort(404);
 })->name('league');
 Route::get('/league/{slug}', [LeagueController::class, 'overview'])->name('league.overview');
-Route::get('/league/{leagueSlug}/{groupCardSlug}', [LeagueController::class, 'show'])->name('league.group');
+Route::get('/player-services/mentors', [\App\Http\Controllers\PlayerServicesController::class, 'mentors'])->name('player-services.mentors');
+Route::get('/player-services/coaches', [\App\Http\Controllers\PlayerServicesController::class, 'coaches'])->name('player-services.coaches');
+Route::get('/player-services/mentor/{user:username}', [\App\Http\Controllers\PlayerServicesController::class, 'showProfile'])->name('player-services.mentor.show');
+Route::get('/player-services/coach/{user:username}', [\App\Http\Controllers\PlayerServicesController::class, 'showProfile'])->name('player-services.coach.show');
+
+// ── Student: Booking ──────────────────────────────────────────────────────────
+Route::middleware(['auth'])->group(function () {
+    Route::get('/booking/{user:username}',              [\App\Http\Controllers\BookingController::class, 'create'])->name('booking.create');
+    Route::post('/booking/payment-intent',              [\App\Http\Controllers\BookingController::class, 'createPaymentIntent'])->name('booking.payment-intent');
+    Route::post('/booking',                             [\App\Http\Controllers\BookingController::class, 'store'])->name('booking.store');
+    Route::get('/student/bookings',                     [\App\Http\Controllers\BookingController::class, 'myBookings'])->name('student.bookings');
+    Route::get('/student/bookings/{booking}',           [\App\Http\Controllers\BookingController::class, 'show'])->name('student.booking.show');
+    Route::patch('/student/bookings/{booking}/cancel',  [\App\Http\Controllers\BookingController::class, 'cancel'])->name('student.booking.cancel');
+});
+
+// ── Provider (Mentor / Coach): Booking Management ────────────────────────────
+Route::middleware(['auth'])->group(function () {
+    Route::get('/provider/bookings',                         [\App\Http\Controllers\ProviderBookingController::class, 'index'])->name('provider.bookings');
+    Route::get('/provider/bookings/{booking}',               [\App\Http\Controllers\ProviderBookingController::class, 'show'])->name('provider.booking.show');
+    Route::patch('/provider/bookings/{booking}/accept',      [\App\Http\Controllers\ProviderBookingController::class, 'accept'])->name('provider.booking.accept');
+    Route::patch('/provider/bookings/{booking}/reject',      [\App\Http\Controllers\ProviderBookingController::class, 'reject'])->name('provider.booking.reject');
+});
+
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
@@ -139,12 +161,19 @@ Route::middleware('auth')->group(function () {
         Route::resource('groups', AdminGroupController::class);
         Route::resource('group-cards', AdminGroupCardController::class);
         Route::resource('players', AdminPlayerController::class)->only(['index', 'edit', 'update', 'destroy']);
+        Route::resource('roles', \App\Http\Controllers\AdminRoleController::class);
         Route::get('payment-histories', [AdminPaymentHistoryController::class, 'index'])->name('payment-histories.index');
         Route::get('charity-donations', [AdminCharityDonationController::class, 'index'])->name('charity-donations.index');
         Route::get('charity-donations/email-recipient-count', [AdminCharityDonationController::class, 'recipientCount'])->name('charity-donations.email-recipient-count');
         Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
         Route::resource('charity-causes', AdminCharityCauseController::class);
         Route::resource('skills', AdminSkillController::class);
+
+        // Booking management
+        Route::get('bookings', [\App\Http\Controllers\AdminBookingController::class, 'index'])->name('bookings.index');
+        Route::get('bookings/{booking}', [\App\Http\Controllers\AdminBookingController::class, 'show'])->name('bookings.show');
+        Route::patch('bookings/{booking}/mark-paid', [\App\Http\Controllers\AdminBookingController::class, 'markPaid'])->name('bookings.mark-paid');
+        Route::patch('bookings/{booking}/status', [\App\Http\Controllers\AdminBookingController::class, 'updateStatus'])->name('bookings.update-status');
 
         Route::get('/profile', function () {
             return view('admin.profile');
@@ -257,5 +286,27 @@ Route::middleware('auth')->group(function () {
         })->name('password.update');
     });
 
+    Route::middleware('role:mentor')->prefix('mentor')->name('mentor.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\MentorController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [\App\Http\Controllers\MentorController::class, 'profile'])->name('profile');
+        Route::put('/profile', [\App\Http\Controllers\MentorController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/change-password', [\App\Http\Controllers\MentorController::class, 'updatePassword'])->name('password.update');
+    });
+
+    Route::middleware('role:coach')->prefix('coach')->name('coach.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\CoachController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [\App\Http\Controllers\CoachController::class, 'profile'])->name('profile');
+        Route::put('/profile', [\App\Http\Controllers\CoachController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/change-password', [\App\Http\Controllers\CoachController::class, 'updatePassword'])->name('password.update');
+    });
+
+    Route::middleware('role:student')->prefix('student')->name('student.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\StudentController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [\App\Http\Controllers\StudentController::class, 'profile'])->name('profile');
+        Route::put('/profile', [\App\Http\Controllers\StudentController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/change-password', [\App\Http\Controllers\StudentController::class, 'updatePassword'])->name('password.update');
+    });
+
+    Route::post('/profile/avatar', [\App\Http\Controllers\ProfileAvatarController::class, 'update'])->name('profile.avatar.update');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

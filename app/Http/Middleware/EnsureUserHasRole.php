@@ -19,7 +19,15 @@ class EnsureUserHasRole
             abort(403);
         }
 
-        if (! in_array($user->role->value, $roles, true)) {
+        $hasRole = false;
+        foreach ($roles as $role) {
+            if ($user->hasRole($role) || $user->hasRole(ucwords($role)) || $user->hasRole(ucfirst($role)) || $user->hasRole('Super Admin')) {
+                $hasRole = true;
+                break;
+            }
+        }
+
+        if (! $hasRole) {
             return redirect()->route($user->dashboardRouteName());
         }
 

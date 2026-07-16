@@ -68,6 +68,14 @@
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-handshake"></i></span>
                         <span>Official Partners</span>
                     </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.roles.*') ? 'is-active' : '' }}" href="{{ route('admin.roles.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
+                        <span>Roles & Permissions</span>
+                    </a>
+                    <a class="admin-nav-link {{ request()->routeIs('admin.bookings.*') ? 'is-active' : '' }}" href="{{ route('admin.bookings.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-calendar-check"></i></span>
+                        <span>Bookings</span>
+                    </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.contact-settings.*') ? 'is-active' : '' }}" href="{{ route('admin.contact-settings.edit') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gear"></i></span>
                         <span>Site Settings</span>

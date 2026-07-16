@@ -86,6 +86,15 @@
                     </select>
                 </div>
 
+                <div class="admin-form-group">
+                    <label class="admin-label" for="role_name">Role</label>
+                    <select class="admin-input" id="role_name" name="role_name" required>
+                        @foreach (\Spatie\Permission\Models\Role::all() as $r)
+                            <option value="{{ $r->name }}" @selected($player->hasRole($r->name))>{{ $r->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 @include('admin.players._skill-level-field', [
                     'currentSkillLevel' => old('skill_level', $player->skill_level),
                 ])
