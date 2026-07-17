@@ -48,7 +48,38 @@
                 <div class="flex w-full flex-col lg:w-1/2 lg:max-w-[50%]">
                     {{-- Form grows with content; page scrolls (no inner scrollbar on doubles) --}}
                     <div class="px-6 py-6 sm:px-8 sm:py-7">
-                        <h1 class="text-center text-lg font-bold text-[#222] sm:text-xl">Tournament Registration</h1>
+                        <h1 class="text-center text-lg font-bold text-[#222] sm:text-xl">Registration</h1>
+
+                        {{-- Role Selector --}}
+                        <div class="mt-4">
+                            <label class="mb-2 block text-[12px] font-bold text-[#222] uppercase tracking-wider">Register as <span class="text-red-600">*</span></label>
+                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4" id="role-radio-group">
+                                <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border-2 border-[#5DA44E] bg-[#E4F7E7] p-3 text-center transition-all hover:shadow-sm" data-role="player">
+                                    <input type="radio" name="registration_role" value="player" checked class="sr-only">
+                                    <i class="fa-solid fa-trophy text-[20px] text-[#5DA44E] mb-1"></i>
+                                    <span class="text-[13px] font-bold text-[#222]">Player</span>
+                                    <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Tournament</span>
+                                </label>
+                                <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border border-[#dddddd] bg-white p-3 text-center transition-all hover:border-[#5DA44E]/50 hover:shadow-sm" data-role="mentor">
+                                    <input type="radio" name="registration_role" value="mentor" class="sr-only">
+                                    <i class="fa-solid fa-handshake-angle text-[20px] text-[#666] mb-1 transition-colors"></i>
+                                    <span class="text-[13px] font-bold text-[#222]">Mentor</span>
+                                    <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Support</span>
+                                </label>
+                                <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border border-[#dddddd] bg-white p-3 text-center transition-all hover:border-[#5DA44E]/50 hover:shadow-sm" data-role="coach">
+                                    <input type="radio" name="registration_role" value="coach" class="sr-only">
+                                    <i class="fa-solid fa-chalkboard-user text-[20px] text-[#666] mb-1 transition-colors"></i>
+                                    <span class="text-[13px] font-bold text-[#222]">Coach</span>
+                                    <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Training</span>
+                                </label>
+                                <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border border-[#dddddd] bg-white p-3 text-center transition-all hover:border-[#5DA44E]/50 hover:shadow-sm" data-role="student">
+                                    <input type="radio" name="registration_role" value="student" class="sr-only">
+                                    <i class="fa-solid fa-graduation-cap text-[20px] text-[#666] mb-1 transition-colors"></i>
+                                    <span class="text-[13px] font-bold text-[#222]">Student</span>
+                                    <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Learning</span>
+                                </label>
+                            </div>
+                        </div>
 
                         {{-- Tabs: Singles left (first), Doubles right — mockup style --}}
                         <div class="mt-5 flex gap-3 sm:gap-4">
@@ -89,6 +120,7 @@
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="singles">
                             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
+                            <div class="custom_register_form_res mb-4 text-sm"></div>
 
                             {{-- Singles first tab: compact spacing, no inner scroll --}}
                             <div id="panel-singles" class="tab-panel" data-tab-panel="singles">
@@ -231,7 +263,6 @@
                             <div class="common-loader mt-3 hidden rounded-[10px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#374151]">
                                 Processing...
                             </div>
-                            <div class="custom_register_form_res mt-3 text-sm"></div>
                         </form>
 
                         {{-- Doubles form --}}
@@ -250,6 +281,7 @@
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="doubles">
                             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
+                            <div class="custom_register_form_res mb-4 text-sm"></div>
 
                             <div id="panel-doubles" class="tab-panel" data-tab-panel="doubles">
                                 <fieldset class="m-0 min-w-0 space-y-4 border-0 pb-1 pt-0">
@@ -474,7 +506,88 @@
                             <div class="common-loader mt-3 hidden rounded-[10px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#374151]">
                                 Processing...
                             </div>
-                            <div class="custom_register_form_res mt-3 text-sm"></div>
+                        </form>
+
+                        {{-- Mentor, Coach, Student form --}}
+                        <form id="role-register-form"
+                            class="register-form mt-6 flex flex-col hidden"
+                            method="POST"
+                            action="{{ route('register') }}"
+                            novalidate>
+                            @csrf
+                            <input type="hidden" name="role" value="mentor">
+                            <div class="custom_register_form_res mb-4 text-sm"></div>
+
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">First Name <span class="text-red-600">*</span></label>
+                                        <input type="text" name="first_name" value="{{ old('first_name') }}" placeholder="First name"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            autocomplete="given-name" required>
+                                    </div>
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Last Name <span class="text-red-600">*</span></label>
+                                        <input type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Last name"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            autocomplete="family-name" required>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Email <span class="text-red-600">*</span></label>
+                                        <input type="email" name="email" value="{{ old('email') }}" placeholder="Email"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            autocomplete="email" required>
+                                    </div>
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Phone Number <span class="text-red-600">*</span></label>
+                                        <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="Phone"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            autocomplete="tel" required>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Password <span class="text-red-600">*</span></label>
+                                        <input type="password" name="password" placeholder="Password"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            autocomplete="new-password" required>
+                                    </div>
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Confirm Password <span class="text-red-600">*</span></label>
+                                        <input type="password" name="password_confirmation" placeholder="Confirm password"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            autocomplete="new-password" required>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">City <span class="text-red-600">*</span></label>
+                                        <input type="text" name="city" value="{{ old('city') }}" placeholder="City"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            required>
+                                    </div>
+                                    <div>
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">State <span class="text-red-600">*</span></label>
+                                        <input type="text" name="state" value="{{ old('state') }}" placeholder="State"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit"
+                                class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5FA252] text-[15px] font-bold text-white transition-opacity hover:opacity-95 mt-6">
+                                Submit
+                            </button>
+
+                            <div class="common-loader mt-3 hidden rounded-[10px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#374151]">
+                                Processing...
+                            </div>
                         </form>
                     </div>
 

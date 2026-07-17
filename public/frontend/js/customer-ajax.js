@@ -25,6 +25,67 @@
     );
   }
 
+  function showToast(message, type) {
+    type = type || 'success';
+    var bg = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+    var icon = type === 'success' ? '<i class="fa-solid fa-circle-check mr-2"></i>' : '<i class="fa-solid fa-circle-exclamation mr-2"></i>';
+    var $toast = $(
+      '<div class="fixed top-5 right-5 z-[9999] flex items-center rounded-lg px-4 py-3 text-white shadow-lg transition-all duration-300 transform translate-y-[-20px] opacity-0 ' + bg + '">' +
+        icon +
+        '<span class="font-medium text-sm">' + escapeHtml(message) + '</span>' +
+      '</div>'
+    );
+    $('body').append($toast);
+    
+    $toast.get(0).offsetHeight;
+    $toast.removeClass('translate-y-[-20px] opacity-0').addClass('translate-y-0 opacity-100');
+    
+    setTimeout(function () {
+      $toast.removeClass('translate-y-0 opacity-100').addClass('translate-y-[-20px] opacity-0');
+      setTimeout(function () {
+        $toast.remove();
+      }, 300);
+    }, 4000);
+  }
+
+  function clearFieldErrors($form) {
+    $form.find('input,select,textarea').removeClass('border-red-500');
+    $form.find('.validation-error-msg').remove();
+  }
+
+  function applyFieldErrors($form, errors) {
+    if (!errors) return;
+    var firstErrElement = null;
+    Object.keys(errors).forEach(function (name) {
+      var $el = $form.find('[name="' + name + '"]');
+      if ($el.length) {
+        $el.addClass('border-red-500');
+        if ($el.attr('type') === 'password') {
+          $el.parent().next('.validation-error-msg').remove();
+        } else {
+          $el.parent().find('.validation-error-msg').remove();
+        }
+        var msg = errors[name][0];
+        if (msg.indexOf('^') === 0) {
+          msg = msg.substring(1);
+        } else {
+          msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+        }
+        var $target = $el;
+        if ($el.attr('type') === 'password' && $el.parent().hasClass('relative')) {
+          $target = $el.parent();
+        }
+        $target.after('<span class="validation-error-msg text-red-500 text-xs mt-1 block" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: block;">' + msg + '</span>');
+        if (!firstErrElement) {
+          firstErrElement = $el.get(0);
+        }
+      }
+    });
+    if (firstErrElement) {
+      firstErrElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
   function setTabUI(which) {
     var greenSingles = '#5DA44E';
     var greenDoubles = '#5FA252';
@@ -357,11 +418,13 @@
       });
     }
 
-    // Live UX
     $form.on('focus input change', 'input, select, textarea', function () {
       var $el = $(this);
       $el.removeClass('border-red-500');
       $el.parent().find('.validation-error-msg').remove();
+      if ($el.attr('type') === 'password') {
+        $el.parent().next('.validation-error-msg').remove();
+      }
     });
 
     $form.on('input', 'input[name="phone_singles"], input[name="phone_doubles"], input[name="d2_phone"]', function () {
@@ -370,39 +433,7 @@
       if (cleaned !== v) $(this).val(cleaned);
     });
 
-    function clearFieldErrors() {
-      $form.find('input,select,textarea').removeClass('border-red-500');
-      $form.find('.validation-error-msg').remove();
-    }
 
-    function applyFieldErrors(errors) {
-      if (!errors) return;
-      var firstErrElement = null;
-      Object.keys(errors).forEach(function (name) {
-        var $el = $form.find('[name="' + name + '"]');
-        if ($el.length) {
-          $el.addClass('border-red-500');
-          $el.parent().find('.validation-error-msg').remove();
-          var msg = errors[name][0];
-          if (msg.indexOf('^') === 0) {
-            msg = msg.substring(1);
-          } else {
-            msg = msg.charAt(0).toUpperCase() + msg.slice(1);
-          }
-          $el.after('<span class="validation-error-msg text-red-500 text-xs mt-1 block" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: block;">' + msg + '</span>');
-          if (!firstErrElement) {
-            firstErrElement = $el.get(0);
-          }
-        }
-      });
-
-      if (firstErrElement) {
-        firstErrElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(function() {
-          firstErrElement.focus();
-        }, 300);
-      }
-    }
 
     function constraintsFor(tabKey) {
       var base = {
@@ -455,13 +486,13 @@
         renderResponse($responseBox, 'error', 'Validation library missing. Please refresh.');
         return { _validation: ['missing'] };
       }
-      clearFieldErrors();
+      clearFieldErrors($form);
       var values = {};
       $form.serializeArray().forEach(function (it) {
         values[it.name] = it.value;
       });
       var errors = validate(values, constraintsFor(tab)) || null;
-      if (errors) applyFieldErrors(errors);
+      if (errors) applyFieldErrors($form, errors);
       return errors;
     }
 
@@ -617,23 +648,66 @@
             url: registerUrl,
             data: formDataArray,
             dataType: 'html',
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf },
+            headers: {
+              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf,
+              'Accept': 'application/json'
+            },
           });
         })
-        .then(function (html) {
-          $responseBox.html(html);
-          var redirectUrl = $responseBox.find('[data-redirect-url]').attr('data-redirect-url');
+        .then(function (response) {
+          var redirectUrl = null;
+          var message = '';
+
+          if (typeof response === 'string') {
+            var text = response.trim();
+            if (text.charAt(0) === '{') {
+              try {
+                response = JSON.parse(text);
+              } catch (e) {}
+            }
+          }
+
+          if (typeof response === 'object' && response !== null) {
+            redirectUrl = response.redirect_url;
+            message = response.message;
+          } else {
+            var $html = $(response);
+            redirectUrl = $html.filter('[data-redirect-url]').attr('data-redirect-url') || $html.find('[data-redirect-url]').attr('data-redirect-url');
+            message = $html.text().trim();
+          }
+
           if (redirectUrl) {
             pendingSuccessRedirect = true;
+            showToast(message || 'Registration successful! Redirecting...', 'success');
             window.setTimeout(function () {
               window.location.href = redirectUrl;
             }, successRedirectDelayMs);
             return;
           }
-          renderResponse($responseBox, 'success', 'Successfully registered.');
+          $responseBox.html(response);
         })
         .fail(function (jqXHR) {
           var msg = 'Something went wrong.';
+          if (jqXHR && jqXHR.status === 422) {
+            var errors = null;
+            try {
+              errors = JSON.parse(jqXHR.responseText).errors;
+            } catch (err) {}
+            if (errors) {
+              applyFieldErrors($form, errors);
+              var errList = '<ul class="list-disc list-inside text-sm text-red-700 space-y-1">';
+              Object.keys(errors).forEach(function (name) {
+                errList += '<li>' + escapeHtml(errors[name][0]) + '</li>';
+              });
+              errList += '</ul>';
+              $responseBox.html(
+                '<div class="rounded-[10px] border border-red-200 bg-red-50 p-3 mb-4">' +
+                  errList +
+                '</div>'
+              );
+              return;
+            }
+          }
           if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.message) {
             msg = jqXHR.responseJSON.message;
           } else if (jqXHR && jqXHR.message) {
@@ -643,8 +717,8 @@
           setCardError('');
           var text = jqXHR && jqXHR.responseText ? String(jqXHR.responseText).trim() : '';
           var looksLikeHtml = text.length > 0 && text.charAt(0) === '<';
-          if (looksLikeHtml) {
-            $responseBox.html(jqXHR.responseText);
+          if (looksLikeHtml && text.indexOf('<!DOCTYPE') === -1 && text.indexOf('<html') === -1) {
+            $responseBox.html(text);
           } else {
             renderResponse($responseBox, 'error', msg);
           }
@@ -658,20 +732,216 @@
     });
   }
 
+  function initRoleRegisterForm(formSelector) {
+    var $form = $(formSelector);
+    if (!$form.length) return;
+
+    var $responseBox = $form.find('.custom_register_form_res');
+    var $loader = $form.find('.common-loader');
+    var $btn = $form.find('.disable-button');
+    var registerUrl = $form.attr('action') || '';
+
+    function validateRoleForm() {
+      if (!window.validate) {
+        renderResponse($responseBox, 'error', 'Validation library missing. Please refresh.');
+        return { _validation: ['missing'] };
+      }
+      clearFieldErrors($form);
+      var values = {};
+      $form.serializeArray().forEach(function (it) {
+        values[it.name] = it.value;
+      });
+      var constraints = {
+        first_name: { presence: { allowEmpty: false } },
+        last_name: { presence: { allowEmpty: false } },
+        email: { presence: { allowEmpty: false }, email: true },
+        phone: { presence: { allowEmpty: false } },
+        password: { presence: { allowEmpty: false }, length: { minimum: 8 } },
+        password_confirmation: {
+          presence: { allowEmpty: false },
+          equality: { attribute: 'password', message: '^Passwords do not match.' },
+        },
+        city: { presence: { allowEmpty: false } },
+        state: { presence: { allowEmpty: false } },
+      };
+      var errors = validate(values, constraints) || null;
+      if (errors) applyFieldErrors($form, errors);
+      return errors;
+    }
+
+    // Live UX
+    $form.on('focus input change', 'input, select, textarea', function () {
+      var $el = $(this);
+      $el.removeClass('border-red-500');
+      $el.parent().find('.validation-error-msg').remove();
+      if ($el.attr('type') === 'password') {
+        $el.parent().next('.validation-error-msg').remove();
+      }
+    });
+
+    $form.on('input', 'input[name="phone"]', function () {
+      var v = String($(this).val() || '');
+      var cleaned = v.replace(/\D+/g, '');
+      if (cleaned !== v) $(this).val(cleaned);
+    });
+
+    $form.on('submit', function (e) {
+      e.preventDefault();
+
+      clearFieldErrors($form);
+      $responseBox.html('');
+
+      var errors = validateRoleForm();
+      if (errors) {
+        return;
+      }
+
+      $btn.prop('disabled', true);
+      if ($loader.length) $loader.removeClass('hidden');
+
+      $.ajax({
+        type: 'POST',
+        url: registerUrl,
+        data: $form.serialize(),
+        dataType: 'html',
+        headers: {
+          'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || '',
+          'Accept': 'application/json'
+        },
+      })
+        .then(function (response) {
+          var redirectUrl = null;
+          var message = '';
+
+          if (typeof response === 'string') {
+            var text = response.trim();
+            if (text.charAt(0) === '{') {
+              try {
+                response = JSON.parse(text);
+              } catch (e) {}
+            }
+          }
+
+          if (typeof response === 'object' && response !== null) {
+            redirectUrl = response.redirect_url;
+            message = response.message;
+          } else {
+            var $html = $(response);
+            redirectUrl = $html.filter('[data-redirect-url]').attr('data-redirect-url') || $html.find('[data-redirect-url]').attr('data-redirect-url');
+            message = $html.text().trim();
+          }
+
+          if (redirectUrl) {
+            showToast(message || 'Registration successful! Redirecting...', 'success');
+            window.setTimeout(function () {
+              window.location.href = redirectUrl;
+            }, 2000);
+            return;
+          }
+          $responseBox.html(response);
+        })
+        .fail(function (jqXHR) {
+          var msg = 'Something went wrong.';
+          if (jqXHR && jqXHR.status === 422) {
+            var errors = null;
+            try {
+              errors = JSON.parse(jqXHR.responseText).errors;
+            } catch (err) {}
+            if (errors) {
+              applyFieldErrors($form, errors);
+              var errList = '<ul class="list-disc list-inside text-sm text-red-700 space-y-1">';
+              Object.keys(errors).forEach(function (name) {
+                errList += '<li>' + escapeHtml(errors[name][0]) + '</li>';
+              });
+              errList += '</ul>';
+              $responseBox.html(
+                '<div class="rounded-[10px] border border-red-200 bg-red-50 p-3 mb-4">' +
+                  errList +
+                '</div>'
+              );
+
+              var firstErrElement = null;
+              Object.keys(errors).forEach(function (name) {
+                var $el = $form.find('[name="' + name + '"]');
+                if ($el.length && !firstErrElement) {
+                  firstErrElement = $el;
+                }
+              });
+              if (firstErrElement) {
+                $('html, body').animate({ scrollTop: firstErrElement.offset().top - 120 }, 300);
+              }
+              return;
+            }
+          }
+          if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.message) {
+            msg = jqXHR.responseJSON.message;
+          } else if (jqXHR && jqXHR.message) {
+            msg = jqXHR.message;
+          }
+          renderResponse($responseBox, 'error', msg);
+        })
+        .always(function () {
+          $btn.prop('disabled', false);
+          if ($loader.length) $loader.addClass('hidden');
+        });
+    });
+  }
+
+  var currentTab = 'singles';
+
   $(function () {
     // Tabs
     $('#tab-singles').on('click', function () {
+      currentTab = 'singles';
       setTabUI('singles');
       loadTournamentGroups('singles');
     });
     $('#tab-doubles').on('click', function () {
+      currentTab = 'doubles';
       setTabUI('doubles');
       loadTournamentGroups('doubles');
     });
 
-    // Init both forms (independent validation + ajax)
+    // Init forms (independent validation + ajax)
     initRegisterForm('#singles-register-form');
     initRegisterForm('#doubles-register-form');
+    initRoleRegisterForm('#role-register-form');
+
+    // Role selector changes (modern radio group click handler)
+    $('#role-radio-group').on('click', '.role-radio-card', function (e) {
+      if (e.target.tagName === 'INPUT') return;
+      var $card = $(this);
+      var $radio = $card.find('input[name="registration_role"]');
+      var val = $radio.val();
+
+      $radio.prop('checked', true);
+
+      // Update radio card styles
+      $('#role-radio-group .role-radio-card').each(function () {
+        var $c = $(this);
+        var isSelected = $c.attr('data-role') === val;
+        $c.toggleClass('border-[#5DA44E] bg-[#E4F7E7]', isSelected);
+        $c.toggleClass('border-[#dddddd] bg-white', !isSelected);
+        
+        var $icon = $c.find('i');
+        if (isSelected) {
+          $icon.removeClass('text-[#666]').addClass('text-[#5DA44E]');
+        } else {
+          $icon.removeClass('text-[#5DA44E]').addClass('text-[#666]');
+        }
+      });
+
+      if (val === 'player') {
+        $('#tab-singles, #tab-doubles').removeClass('hidden');
+        setTabUI(currentTab);
+        $('#role-register-form').addClass('hidden');
+      } else {
+        $('#tab-singles, #tab-doubles').addClass('hidden');
+        $('#singles-register-form, #doubles-register-form').addClass('hidden');
+        $('#role-register-form').removeClass('hidden');
+        $('#role-register-form input[name="role"]').val(val);
+      }
+    });
 
     $('#singles-register-form select[name="tournament_singles"]').on('change', function () {
       syncRegisterEntryFee($('#singles-register-form'));

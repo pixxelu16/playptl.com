@@ -14,10 +14,13 @@ class AdminContactSettingController extends Controller
     public function edit(): View
     {
         return view('admin.contact-settings.edit', [
-            'contact' => SiteSetting::contact(),
-            'header' => SiteSetting::header(),
-            'footer' => SiteSetting::footer(),
-            'stripe' => SiteSetting::stripe(),
+            'contact'           => SiteSetting::contact(),
+            'header'            => SiteSetting::header(),
+            'footer'            => SiteSetting::footer(),
+            'stripe'            => SiteSetting::stripe(),
+            'mentorCommission'  => SiteSetting::mentorCommissionPercent(),
+            'coachCommission'   => SiteSetting::coachCommissionPercent(),
+            'smtp'              => SiteSetting::smtp(),
         ]);
     }
 
@@ -30,12 +33,23 @@ class AdminContactSettingController extends Controller
             'contact_phone' => ['required', 'string', 'max:32'],
             'contact_email' => ['required', 'email', 'max:255'],
             'contact_address' => ['required', 'string', 'max:500'],
-            'stripe_mode' => ['required', 'string', 'in:test,live'],
-            'stripe_currency' => ['required', 'string', 'in:USD,EUR,GBP,CAD,AUD,INR'],
-            'stripe_test_publishable_key' => ['nullable', 'string', 'max:255'],
-            'stripe_test_secret_key' => ['nullable', 'string', 'max:255'],
-            'stripe_live_publishable_key' => ['nullable', 'string', 'max:255'],
-            'stripe_live_secret_key' => ['nullable', 'string', 'max:255'],
+            'stripe_mode'                  => ['required', 'string', 'in:test,live'],
+            'stripe_currency'              => ['required', 'string', 'in:USD,EUR,GBP,CAD,AUD,INR'],
+            'stripe_test_publishable_key'  => ['nullable', 'string', 'max:255'],
+            'stripe_test_secret_key'       => ['nullable', 'string', 'max:255'],
+            'stripe_live_publishable_key'  => ['nullable', 'string', 'max:255'],
+            'stripe_live_secret_key'       => ['nullable', 'string', 'max:255'],
+            'mentor_commission_percent'    => ['required', 'numeric', 'min:0', 'max:100'],
+            'coach_commission_percent'     => ['required', 'numeric', 'min:0', 'max:100'],
+            // SMTP
+            'smtp_mailer'                  => ['required', 'string', 'in:smtp,log'],
+            'smtp_host'                    => ['nullable', 'string', 'max:255'],
+            'smtp_port'                    => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'smtp_encryption'              => ['required', 'string', 'in:tls,ssl'],
+            'smtp_username'                => ['nullable', 'string', 'max:255'],
+            'smtp_password'                => ['nullable', 'string', 'max:255'],
+            'smtp_from_address'            => ['required', 'email', 'max:255'],
+            'smtp_from_name'               => ['required', 'string', 'max:255'],
         ]);
 
         $this->updateLogoSetting(
@@ -68,6 +82,18 @@ class AdminContactSettingController extends Controller
         SiteSetting::setValue('stripe_test_secret_key', $validated['stripe_test_secret_key']);
         SiteSetting::setValue('stripe_live_publishable_key', $validated['stripe_live_publishable_key']);
         SiteSetting::setValue('stripe_live_secret_key', $validated['stripe_live_secret_key']);
+        SiteSetting::setValue('mentor_commission_percent', (string) $validated['mentor_commission_percent']);
+        SiteSetting::setValue('coach_commission_percent', (string) $validated['coach_commission_percent']);
+
+        // SMTP
+        SiteSetting::setValue('smtp_mailer',       $validated['smtp_mailer']);
+        SiteSetting::setValue('smtp_host',         $validated['smtp_host'] ?? '');
+        SiteSetting::setValue('smtp_port',         (string) ($validated['smtp_port'] ?? ''));
+        SiteSetting::setValue('smtp_encryption',   $validated['smtp_encryption'] ?? 'null');
+        SiteSetting::setValue('smtp_username',     $validated['smtp_username'] ?? '');
+        SiteSetting::setValue('smtp_password',     $validated['smtp_password'] ?? '');
+        SiteSetting::setValue('smtp_from_address', $validated['smtp_from_address']);
+        SiteSetting::setValue('smtp_from_name',    $validated['smtp_from_name']);
 
         return back()->with('status', 'Site settings updated successfully.');
     }

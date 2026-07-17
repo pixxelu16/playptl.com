@@ -40,10 +40,19 @@ class AdminPlayerController extends Controller
             $statusFilter = 'active';
         }
 
+        $roleFilter = strtolower((string) $request->query('role_filter', 'all'));
+
         $skillFieldList = implode("', '", AdminPlayerLeagueRegistrationService::skillLevelValues());
 
-        $playersQuery = User::query()
-            ->where('users.role', UserRole::Player);
+        $playersQuery = User::query();
+
+        if ($roleFilter !== 'all') {
+            $playersQuery->whereHas('roles', function($q) use ($roleFilter) {
+                $q->where('name', $roleFilter)
+                  ->orWhere('name', ucwords($roleFilter))
+                  ->orWhere('name', ucfirst($roleFilter));
+            });
+        }
 
         if ($statusFilter === 'active') {
             $playersQuery->where(function ($query) {
@@ -105,6 +114,7 @@ class AdminPlayerController extends Controller
             'league_id' => $leagueIdInt,
             'skill_sort' => $skillSort,
             'status' => $statusFilter,
+            'role_filter' => $roleFilter !== 'all' ? $roleFilter : null,
         ], fn ($value) => $value !== null && $value !== ''));
 
         $playerActiveTournaments = [];
@@ -161,6 +171,7 @@ class AdminPlayerController extends Controller
             'skillSort' => $skillSort,
             'search' => $search,
             'statusFilter' => $statusFilter,
+            'roleFilter' => $roleFilter,
             'playerActiveTournaments' => $playerActiveTournaments,
         ]);
     }
@@ -247,8 +258,6 @@ class AdminPlayerController extends Controller
 
     public function edit(Request $request, User $player): View
     {
-        abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
-
         $registration = $this->registrationForPlayerEdit($player, $request);
 
         return view('admin.players.edit', [
@@ -262,8 +271,6 @@ class AdminPlayerController extends Controller
 
     public function update(Request $request, User $player)
     {
-        abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
-
         $tab = in_array($player->registration_type, ['singles', 'doubles'], true)
             ? (string) $player->registration_type
             : 'singles';
@@ -275,12 +282,23 @@ class AdminPlayerController extends Controller
             'state' => ['nullable', 'string', 'max:120'],
             'sex' => ['nullable', Rule::in(['male', 'female'])],
             'status' => ['required', Rule::in(['active', 'pending', 'suspend'])],
+            'role_name' => ['required', 'string', 'exists:roles,name'],
             'skill_level' => ['nullable', 'string', 'max:32', Rule::in(AdminPlayerLeagueRegistrationService::skillLevelValues())],
             'age_group_key' => ['nullable', 'string', 'max:32', Rule::in(AdminPlayerLeagueRegistrationService::ageBrackets()->keys()->all())],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        $validated['role'] = UserRole::Player;
+        $roleName = $validated['role_name'];
+        unset($validated['role_name']);
+
+        $enumVal = strtolower($roleName);
+        if ($enumVal === 'super admin') {
+            $enumVal = 'admin';
+        }
+        if (in_array($enumVal, ['admin', 'organiser', 'player', 'mentor', 'coach', 'student'], true)) {
+            $validated['role'] = UserRole::from($enumVal);
+        }
+
         unset($validated['email']);
 
         if ($request->hasFile('avatar')) {
@@ -332,16 +350,15 @@ class AdminPlayerController extends Controller
                 'group_id' => $groupId,
             ]);
         }
+        $player->syncRoles([$roleName]);
 
         return redirect()
             ->route('admin.players.index', $this->playerIndexQuery($request))
-            ->with('status', 'Player updated successfully.');
+            ->with('status', 'User updated successfully.');
     }
 
     public function destroy(Request $request, User $player)
     {
-        abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
-
         $player->delete();
 
         return redirect()

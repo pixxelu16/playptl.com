@@ -121,11 +121,74 @@ class SiteSetting extends Model
         return $stripe['currency'];
     }
 
+    /**
+     * Return the symbol for the configured Stripe currency.
+     * Falls back to the currency code itself if unmapped.
+     */
+    public static function currencySymbol(): string
+    {
+        $symbols = [
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'CAD' => 'CA$',
+            'AUD' => 'A$',
+            'INR' => '₹',
+        ];
+
+        $code = strtoupper(static::stripeCurrency());
+        return $symbols[$code] ?? $code;
+    }
+
+    public static function mentorCommissionPercent(): float
+    {
+        return (float) Cache::remember('site_settings.mentor_commission', 3600, function (): string {
+            return (string) (static::query()->where('key', 'mentor_commission_percent')->value('value') ?? '20');
+        });
+    }
+
+    public static function coachCommissionPercent(): float
+    {
+        return (float) Cache::remember('site_settings.coach_commission', 3600, function (): string {
+            return (string) (static::query()->where('key', 'coach_commission_percent')->value('value') ?? '20');
+        });
+    }
+
+    /**
+     * Return all SMTP settings as an associative array.
+     */
+    public static function smtp(): array
+    {
+        return Cache::remember('site_settings.smtp', 3600, function (): array {
+            $rows = static::query()
+                ->whereIn('key', [
+                    'smtp_mailer', 'smtp_host', 'smtp_port', 'smtp_encryption',
+                    'smtp_username', 'smtp_password', 'smtp_from_address', 'smtp_from_name',
+                ])
+                ->pluck('value', 'key')
+                ->toArray();
+
+            return [
+                'mailer'       => $rows['smtp_mailer']       ?? env('MAIL_MAILER', 'smtp'),
+                'host'         => $rows['smtp_host']         ?? env('MAIL_HOST', '127.0.0.1'),
+                'port'         => $rows['smtp_port']         ?? env('MAIL_PORT', '587'),
+                'encryption'   => $rows['smtp_encryption']   ?? env('MAIL_SCHEME', 'tls'),
+                'username'     => $rows['smtp_username']     ?? env('MAIL_USERNAME', ''),
+                'password'     => $rows['smtp_password']     ?? env('MAIL_PASSWORD', ''),
+                'from_address' => $rows['smtp_from_address'] ?? env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+                'from_name'    => $rows['smtp_from_name']    ?? env('MAIL_FROM_NAME', config('app.name')),
+            ];
+        });
+    }
+
     protected static function forgetCaches(): void
     {
         Cache::forget('site_settings.contact');
         Cache::forget('site_settings.header');
         Cache::forget('site_settings.footer');
         Cache::forget('site_settings.stripe');
+        Cache::forget('site_settings.mentor_commission');
+        Cache::forget('site_settings.coach_commission');
+        Cache::forget('site_settings.smtp');
     }
 }

@@ -8,11 +8,12 @@
     <meta name="description" content="@yield('meta_description', 'Premier Tennis League official website.')">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @if (request()->routeIs('register'))
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://js.stripe.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://api.stripe.com https://js.stripe.com https://r.stripe.com https://m.stripe.com https://merchant-ui-api.stripe.com https://q.stripe.com https://hooks.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://*.stripe.com;">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://js.stripe.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; connect-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://api.stripe.com https://js.stripe.com https://r.stripe.com https://m.stripe.com https://merchant-ui-api.stripe.com https://q.stripe.com https://hooks.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://*.stripe.com;">
     @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('frontend/css/style.css') }}">
     @php
         $pageBgRaw = trim((string) $__env->yieldContent('page_bg'));
@@ -131,6 +132,25 @@
                     </div>
                 </div>
 
+                <div class="relative" data-dropdown>
+                    <button type="button" @class([
+                        'inline-flex items-center gap-1 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/80 focus-visible:ring-offset-2',
+                        'text-[#c1e82c]' => ! $headerLight && ($navActive ?? '') === 'player-services',
+                        'text-white/95 hover:text-white focus-visible:ring-offset-[#0a0f18]' => ! $headerLight && ($navActive ?? '') !== 'player-services',
+                        'font-semibold text-[#c1e82c]' => $headerLight && ($navActive ?? '') === 'player-services',
+                        'text-[#1a1a1a]/90 hover:text-[#1a1a1a] focus-visible:ring-offset-[#E4F7E7]' => $headerLight && ($navActive ?? '') !== 'player-services',
+                    ]) data-dropdown-trigger aria-expanded="false" aria-haspopup="true" aria-controls="nav-services-menu" id="nav-services-btn">
+                        Player Services
+                        <svg data-dropdown-chevron class="h-3.5 w-3.5 opacity-80 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="nav-services-menu" role="menu" aria-labelledby="nav-services-btn" data-dropdown-panel class="invisible pointer-events-none absolute left-1/2 z-50 mt-3 min-w-[220px] -translate-x-1/2 translate-y-2 rounded-ui border border-white/10 bg-[rgba(10,15,24,0.96)] py-2 opacity-0 shadow-xl backdrop-blur-md transition-all duration-200 ease-out lg:left-0 lg:translate-x-0">
+                        <a href="{{ route('player-services.mentors') }}" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Mentors</a>
+                        <a href="{{ route('player-services.coaches') }}" role="menuitem" class="block px-4 py-2.5 text-[14px] text-white/90 hover:bg-white/10 hover:text-white">Coach Marketplace</a>
+                    </div>
+                </div>
+
                 <a href="{{ url('/gallery') }}" @class([
                     'transition-colors',
                     'text-[#B4F000]' => ! $headerLight && $navActive === 'gallery',
@@ -200,6 +220,12 @@
                     @empty
                         <span class="site-mobile-nav__sublink is-muted">No active leagues</span>
                     @endforelse
+                </div>
+
+                <div class="site-mobile-nav__group">
+                    <span class="site-mobile-nav__group-label">Player Services</span>
+                    <a href="{{ route('player-services.mentors') }}" class="site-mobile-nav__sublink">Mentors</a>
+                    <a href="{{ route('player-services.coaches') }}" class="site-mobile-nav__sublink">Coach Marketplace</a>
                 </div>
 
                 <a href="{{ url('/gallery') }}" @class([
