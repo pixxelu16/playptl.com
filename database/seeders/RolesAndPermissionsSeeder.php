@@ -29,6 +29,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage players',
             'manage settings',
             'manage donations',
+            'manage skills',
+            'manage bookings',
+            'manage gallery',
+            'manage roles',
+            'manage users',
         ];
 
         foreach ($permissions as $permission) {
@@ -38,6 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create default roles
         $superAdmin = Role::findOrCreate('Super Admin');
         $admin = Role::findOrCreate('Admin');
+        $organiser = Role::findOrCreate('Organiser');
         $player = Role::findOrCreate('Player');
         $coach = Role::findOrCreate('Coach');
         $mentor = Role::findOrCreate('Mentor');
@@ -59,6 +65,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 } else {
                     $user->assignRole('Admin');
                 }
+            } elseif ($user->role === UserRole::Organiser) {
+                $user->assignRole('Organiser');
             } elseif ($user->role === UserRole::Player) {
                 $user->assignRole('Player');
             } elseif ($user->role === UserRole::Coach) {

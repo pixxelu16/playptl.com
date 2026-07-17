@@ -21,7 +21,7 @@ class EnsureUserHasRole
 
         $hasRole = false;
         foreach ($roles as $role) {
-            if ($user->hasRole($role) || $user->hasRole(ucwords($role)) || $user->hasRole(ucfirst($role)) || $user->hasRole('Super Admin') || $user->can('view admin panel')) {
+            if ($user->hasRole($role) || $user->hasRole(ucwords($role)) || $user->hasRole(ucfirst($role)) || $user->hasRole('Super Admin') || $user->can('view admin panel') || strtolower($user->role->value) === strtolower($role)) {
                 $hasRole = true;
                 break;
             }
