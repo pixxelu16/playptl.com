@@ -203,11 +203,11 @@ class BookingController extends Controller
 
         // Send email notifications
         try {
-            Mail::to($provider->email)->send(new BookingRequestedMail($booking));
-            // Notify admin
+            Mail::to($provider->email)->send(new BookingRequestedMail($booking, 'provider'));
+            Mail::to(Auth::user()->email)->send(new BookingRequestedMail($booking, 'student'));
             $adminEmail = SiteSetting::getValue('contact_email');
             if ($adminEmail) {
-                Mail::to($adminEmail)->send(new BookingRequestedMail($booking));
+                Mail::to($adminEmail)->send(new BookingRequestedMail($booking, 'admin'));
             }
         } catch (\Throwable) {
             // Don't block booking if mail fails
@@ -260,15 +260,41 @@ class BookingController extends Controller
     {
         abort_unless($booking->student_id === Auth::id(), 403);
 
-        if (! $booking->canBeCancelledByStudent()) {
-            return back()->with('error', 'This booking can no longer be cancelled.');
+        $refundId = null;
+
+        // Issue Stripe refund if charge exists
+        if ($booking->stripe_charge_id) {
+            $secret = SiteSetting::stripeSecretKey();
+            if ($secret !== '') {
+                $stripe = new \Stripe\StripeClient($secret);
+                try {
+                    $params = [];
+                    if (str_starts_with($booking->stripe_charge_id, 'pi_')) {
+                        $params['payment_intent'] = $booking->stripe_charge_id;
+                    } else {
+                        $params['charge'] = $booking->stripe_charge_id;
+                    }
+                    $refund   = $stripe->refunds->create($params);
+                    $refundId = $refund->id;
+                } catch (\Stripe\Exception\ApiErrorException $e) {
+                    return back()->with('error', 'Refund failed: ' . $e->getMessage());
+                }
+            }
         }
 
-        $booking->update(['status' => Booking::STATUS_CANCELLED]);
+        $booking->update([
+            'status' => Booking::STATUS_CANCELLED,
+            'stripe_refund_id' => $refundId,
+        ]);
 
-        // Notify provider
+        // Notify provider, student and admin
         try {
-            Mail::to($booking->provider->email)->send(new BookingCancelledMail($booking));
+            Mail::to($booking->provider->email)->send(new BookingCancelledMail($booking, 'provider'));
+            Mail::to($booking->student->email)->send(new BookingCancelledMail($booking, 'student'));
+            $adminEmail = SiteSetting::getValue('contact_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new BookingCancelledMail($booking, 'admin'));
+            }
         } catch (\Throwable) {}
 
         return redirect()->route('student.bookings')

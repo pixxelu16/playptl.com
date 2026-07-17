@@ -13,12 +13,21 @@ class BookingAcceptedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Booking $booking) {}
+    public function __construct(
+        public Booking $booking,
+        public string $recipientRole = 'student'
+    ) {}
 
     public function envelope(): Envelope
     {
+        $subject = match ($this->recipientRole) {
+            'provider' => 'Booking Confirmed (You Accepted) — ' . $this->booking->student->name,
+            'admin' => 'Booking Confirmed (Accepted) — ' . $this->booking->student->name . ' with ' . $this->booking->provider->name,
+            default => 'Booking Accepted — ' . $this->booking->provider->name,
+        };
+
         return new Envelope(
-            subject: 'Booking Accepted — ' . $this->booking->provider->name,
+            subject: $subject,
         );
     }
 

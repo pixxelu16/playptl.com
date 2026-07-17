@@ -115,15 +115,16 @@
                 {{-- Accept / Reject Buttons --}}
                 @if($booking->isPending())
                 <div class="mt-6 space-y-3 pt-4 border-t border-gray-100">
-                    <form action="{{ route('provider.booking.accept', $booking) }}" method="POST">
+                    <form action="{{ route('provider.booking.accept', $booking) }}" method="POST" class="confirm-form"
+                          data-title="Accept Booking" data-text="Are you sure you want to accept this booking request? The student will be notified." data-confirm-text="Yes, accept booking" data-confirm-color="#5DA44E">
                         @csrf @method('PATCH')
                         <button type="submit"
                                 class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#5DA44E] hover:bg-[#4d8f40] px-4 py-3 text-sm font-bold text-white shadow-sm transition">
                             <i class="fa-solid fa-check"></i> Accept Booking
                         </button>
                     </form>
-                    <form action="{{ route('provider.booking.reject', $booking) }}" method="POST"
-                          onsubmit="return confirm('Reject this booking?{{ $booking->total_amount > 0 ? ' A full refund will be issued to the student.' : '' }}')">
+                    <form action="{{ route('provider.booking.reject', $booking) }}" method="POST" class="confirm-form"
+                          data-title="Reject Booking" data-text="Are you sure you want to reject this booking?{{ $booking->total_amount > 0 ? ' A full refund will be automatically issued to the student.' : '' }}" data-confirm-text="Yes, reject booking" data-confirm-color="#dc2626">
                         @csrf @method('PATCH')
                         <button type="submit"
                                 class="w-full flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-3 text-sm font-bold text-red-600 transition">
@@ -138,3 +139,35 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.confirm-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const title = form.getAttribute('data-title') || 'Are you sure?';
+            const text = form.getAttribute('data-text') || 'Do you want to proceed?';
+            const confirmBtnText = form.getAttribute('data-confirm-text') || 'Yes, proceed';
+            const confirmColor = form.getAttribute('data-confirm-color') || '#5DA44E';
+            
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: confirmBtnText,
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush

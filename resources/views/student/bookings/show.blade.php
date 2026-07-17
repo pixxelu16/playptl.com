@@ -132,8 +132,8 @@
                 {{-- Cancel Action --}}
                 @if($booking->canBeCancelledByStudent())
                 <div class="mt-6 pt-4 border-t border-gray-100">
-                    <form action="{{ route('student.booking.cancel', $booking) }}" method="POST"
-                          onsubmit="return confirm('Are you sure you want to cancel this booking?')">
+                    <form action="{{ route('student.booking.cancel', $booking) }}" method="POST" class="confirm-form"
+                          data-title="Cancel Booking" data-text="Are you sure you want to cancel this booking? The charged amount will be fully refunded." data-confirm-text="Yes, cancel booking" data-confirm-color="#dc2626">
                         @csrf @method('PATCH')
                         <button type="submit"
                                 class="w-full flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-2.5 text-sm font-bold text-red-600 transition">
@@ -147,3 +147,35 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.confirm-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const title = form.getAttribute('data-title') || 'Are you sure?';
+            const text = form.getAttribute('data-text') || 'Do you want to proceed?';
+            const confirmBtnText = form.getAttribute('data-confirm-text') || 'Yes, proceed';
+            const confirmColor = form.getAttribute('data-confirm-color') || '#5DA44E';
+            
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: confirmBtnText,
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush

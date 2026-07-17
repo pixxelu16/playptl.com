@@ -13,12 +13,21 @@ class BookingRejectedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Booking $booking) {}
+    public function __construct(
+        public Booking $booking,
+        public string $recipientRole = 'student'
+    ) {}
 
     public function envelope(): Envelope
     {
+        $subject = match ($this->recipientRole) {
+            'provider' => 'Booking Declined (You Declined) — ' . $this->booking->student->name,
+            'admin' => 'Booking Declined — ' . $this->booking->student->name . ' with ' . $this->booking->provider->name,
+            default => 'Booking Declined — ' . $this->booking->provider->name,
+        };
+
         return new Envelope(
-            subject: 'Booking Declined — ' . $this->booking->provider->name,
+            subject: $subject,
         );
     }
 

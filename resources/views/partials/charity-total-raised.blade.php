@@ -40,6 +40,12 @@
                         ></div>
                     </div>
                 </div>
+
+                <div class="shrink-0 flex items-center justify-start lg:justify-end">
+                    <button type="button" data-open-charity-donate class="inline-flex min-h-[46px] items-center justify-center rounded-lg bg-[#60a04b] px-6 py-2.5 text-[14px] font-bold text-white hover:opacity-95 shadow-sm transition-opacity">
+                        Donate Now
+                    </button>
+                </div>
             </div>
         </div>
     </div>

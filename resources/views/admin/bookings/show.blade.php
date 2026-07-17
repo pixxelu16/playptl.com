@@ -227,7 +227,8 @@
                 <span class="detail-label">Current Status</span>
                 <span class="badge-status {{ $booking->status }}">{{ $booking->statusLabel() }}</span>
             </div>
-            <form action="{{ route('admin.bookings.update-status', $booking) }}" method="POST" class="admin-form" style="margin-top:0;">
+            <form action="{{ route('admin.bookings.update-status', $booking) }}" method="POST" class="admin-form confirm-form" style="margin-top:0;"
+                  data-title="Change Booking Status" data-text="Are you sure you want to force-change this booking's status? If rejected/cancelled and paid, a refund is issued." data-confirm-text="Yes, update status" data-confirm-color="#3b82f6">
                 @csrf
                 @method('PATCH')
                 <div style="display:flex; gap:8px;">
@@ -255,7 +256,8 @@
                 </p>
             @else
                 @if($booking->isAccepted())
-                    <form action="{{ route('admin.bookings.mark-paid', $booking) }}" method="POST" class="admin-form" style="margin-top:0;">
+                    <form action="{{ route('admin.bookings.mark-paid', $booking) }}" method="POST" class="admin-form confirm-form" style="margin-top:0;"
+                          data-title="Mark Payout as Paid" data-text="Are you sure you want to mark this payout as Paid to the Mentor/Coach?" data-confirm-text="Yes, mark paid" data-confirm-color="#059669">
                         @csrf
                         @method('PATCH')
                         <button type="submit" class="admin-button" style="width:100%; height:42px; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
@@ -274,3 +276,35 @@
 
 </section>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.confirm-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const title = form.getAttribute('data-title') || 'Are you sure?';
+            const text = form.getAttribute('data-text') || 'Do you want to proceed?';
+            const confirmBtnText = form.getAttribute('data-confirm-text') || 'Yes, proceed';
+            const confirmColor = form.getAttribute('data-confirm-color') || '#5DA44E';
+            
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: confirmBtnText,
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush

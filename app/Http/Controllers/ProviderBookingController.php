@@ -71,7 +71,12 @@ class ProviderBookingController extends Controller
         $booking->update(['status' => Booking::STATUS_ACCEPTED]);
 
         try {
-            Mail::to($booking->student->email)->send(new BookingAcceptedMail($booking));
+            Mail::to($booking->student->email)->send(new BookingAcceptedMail($booking, 'student'));
+            Mail::to($booking->provider->email)->send(new BookingAcceptedMail($booking, 'provider'));
+            $adminEmail = SiteSetting::getValue('contact_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new BookingAcceptedMail($booking, 'admin'));
+            }
         } catch (\Throwable) {}
 
         return back()->with('success', 'Booking accepted! The student has been notified.');
@@ -96,7 +101,13 @@ class ProviderBookingController extends Controller
             if ($secret !== '') {
                 $stripe = new StripeClient($secret);
                 try {
-                    $refund   = $stripe->refunds->create(['charge' => $booking->stripe_charge_id]);
+                    $params = [];
+                    if (str_starts_with($booking->stripe_charge_id, 'pi_')) {
+                        $params['payment_intent'] = $booking->stripe_charge_id;
+                    } else {
+                        $params['charge'] = $booking->stripe_charge_id;
+                    }
+                    $refund   = $stripe->refunds->create($params);
                     $refundId = $refund->id;
                 } catch (ApiErrorException $e) {
                     return back()->with('error', 'Refund failed: ' . $e->getMessage());
@@ -110,7 +121,12 @@ class ProviderBookingController extends Controller
         ]);
 
         try {
-            Mail::to($booking->student->email)->send(new BookingRejectedMail($booking));
+            Mail::to($booking->student->email)->send(new BookingRejectedMail($booking, 'student'));
+            Mail::to($booking->provider->email)->send(new BookingRejectedMail($booking, 'provider'));
+            $adminEmail = SiteSetting::getValue('contact_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new BookingRejectedMail($booking, 'admin'));
+            }
         } catch (\Throwable) {}
 
         return back()->with('success', 'Booking rejected and student has been notified.' . ($refundId ? ' A full refund has been issued.' : ''));

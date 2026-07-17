@@ -90,8 +90,8 @@
                     <a href="{{ route('student.booking.show', $booking) }}"
                        class="text-xs font-bold text-[#5DA44E] hover:underline">View</a>
                     @if($booking->canBeCancelledByStudent())
-                        <form action="{{ route('student.booking.cancel', $booking) }}" method="POST"
-                              onsubmit="return confirm('Cancel this booking?')">
+                        <form action="{{ route('student.booking.cancel', $booking) }}" method="POST" class="confirm-form"
+                              data-title="Cancel Booking" data-text="Are you sure you want to cancel this booking request? The amount will be refunded." data-confirm-text="Yes, cancel it!" data-confirm-color="#dc2626">
                             @csrf @method('PATCH')
                             <button type="submit" class="text-xs font-bold text-red-500 hover:underline">Cancel</button>
                         </form>
@@ -106,3 +106,35 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.confirm-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const title = form.getAttribute('data-title') || 'Are you sure?';
+            const text = form.getAttribute('data-text') || 'Do you want to proceed?';
+            const confirmBtnText = form.getAttribute('data-confirm-text') || 'Yes, proceed';
+            const confirmColor = form.getAttribute('data-confirm-color') || '#5DA44E';
+            
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: confirmBtnText,
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+@endpush

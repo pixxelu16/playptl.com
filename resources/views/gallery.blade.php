@@ -1,4 +1,4 @@
-﻿@extends('layouts.website')
+@extends('layouts.website')
 
 @section('nav_active', 'gallery')
 
@@ -7,16 +7,10 @@
 
 @section('header_class', 'absolute inset-x-0 top-0 z-[100] bg-transparent px-5 pb-4 pt-6 sm:px-8 lg:px-14')
 
-@push('styles')
-    @include('partials.gallery-photo-styles')
-@endpush
-
 @section('content')
     <main>
         <section class="site-hero relative flex flex-col overflow-hidden">
-            <video class="absolute inset-0 z-0 h-full min-h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
-            </video>
+            <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset('frontend/images/hero_tennis_banner.png') }}" alt="Tennis Banner Background" aria-hidden="true">
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 
@@ -34,7 +28,7 @@
                         <span class="text-[#B4F000]">Gallery</span>
                     </nav>
 
-                    <h1 class="league-1 text-[clamp(4.5rem,11vw,5rem)] font-normal uppercase leading-[0.95] tracking-[0.02em]">
+                    <h1 class="league-1 text-[clamp(2.2rem,7vw,4rem)] font-normal uppercase leading-[0.95] tracking-[0.02em]">
                         <span class="text-white">MATCH</span><span class="text-[#B4F000]"> GALLERY</span>
                     </h1>
 
@@ -89,7 +83,8 @@
                 <div id="gallery-grid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-[18px] lg:grid-cols-4 lg:gap-5">
                     @forelse ($galleryItems ?? [] as $item)
                         <figure
-                            class="gallery-item overflow-hidden rounded-[10px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]"
+                            class="gallery-item cursor-pointer overflow-hidden rounded-[10px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]"
+                            onclick="openLightbox({{ $loop->index }})"
                         >
                             <div class="relative aspect-[4/3] w-full overflow-hidden bg-[#111827]">
                                 <img
@@ -134,33 +129,24 @@
 
                 @if (isset($galleryItems) && $galleryItems->hasPages())
                     @php
-                        $gLast = $galleryItems->lastPage();
                         $gCur = $galleryItems->currentPage();
+                        $gLast = $galleryItems->lastPage();
                         $galleryPageNumbers = [];
-                        if ($gLast <= 12) {
-                            for ($gi = 1; $gi <= $gLast; $gi++) {
-                                $galleryPageNumbers[] = $gi;
-                            }
+                        if ($gLast <= 7) {
+                            $galleryPageNumbers = range(1, $gLast);
                         } else {
-                            $galleryPageNumbers[] = 1;
-                            $winLo = max(2, $gCur - 1);
-                            $winHi = min($gLast - 1, $gCur + 1);
-                            if ($winLo > 2) {
-                                $galleryPageNumbers[] = null;
-                            }
-                            for ($gi = $winLo; $gi <= $winHi; $gi++) {
-                                $galleryPageNumbers[] = $gi;
-                            }
-                            if ($winHi < $gLast - 1) {
-                                $galleryPageNumbers[] = null;
-                            }
-                            if ($gLast > 1) {
-                                $galleryPageNumbers[] = $gLast;
+                            if ($gCur <= 4) {
+                                $galleryPageNumbers = [1, 2, 3, 4, 5, null, $gLast];
+                            } elseif ($gCur >= $gLast - 3) {
+                                $galleryPageNumbers = [1, null, $gLast - 4, $gLast - 3, $gLast - 2, $gLast - 1, $gLast];
+                            } else {
+                                $galleryPageNumbers = [1, null, $gCur - 1, $gCur, $gCur + 1, null, $gLast];
                             }
                         }
                     @endphp
-                    <nav class="mt-8 flex justify-center sm:mt-10" aria-label="Gallery pagination">
-                        <div class="inline-flex flex-wrap items-center justify-center gap-2">
+
+                    <nav class="mt-10 flex justify-end sm:mt-12 lg:mt-14" aria-label="Pagination">
+                        <div class="flex items-center gap-1.5 sm:gap-2">
                             @if ($galleryItems->onFirstPage())
                                 <span
                                     class="inline-flex h-10 w-10 select-none items-center justify-center rounded-md border border-[#E0E0E0] bg-white text-[18px] font-semibold leading-none text-[#C4C4C4]"
@@ -209,5 +195,112 @@
                 @endif
             </div>
         </section>
+
+        {{-- Lightbox Modal --}}
+        <div id="gallery-lightbox" class="fixed inset-0 z-[1000] hidden items-center justify-center bg-black/45 backdrop-blur-md p-4 opacity-0 transition-opacity duration-300" role="dialog" aria-modal="true">
+            {{-- Close Button --}}
+            <button type="button" class="absolute right-6 top-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-gray-800 shadow-lg hover:bg-white hover:scale-105 transition-all duration-200" onclick="closeLightbox()" aria-label="Close">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            {{-- Navigation Arrows --}}
+            <button type="button" class="absolute left-6 top-1/2 -translate-y-1/2 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-white/85 text-gray-800 shadow-xl hover:bg-white hover:scale-105 transition-all duration-200" onclick="prevLightboxImage(event)" aria-label="Previous">
+                <i class="fa-solid fa-chevron-left text-xl"></i>
+            </button>
+            <button type="button" class="absolute right-6 top-1/2 -translate-y-1/2 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-white/85 text-gray-800 shadow-xl hover:bg-white hover:scale-105 transition-all duration-200" onclick="nextLightboxImage(event)" aria-label="Next">
+                <i class="fa-solid fa-chevron-right text-xl"></i>
+            </button>
+            
+            {{-- Image & Caption Wrapper --}}
+            <div class="max-w-4xl max-h-[85vh] w-full flex flex-col items-center justify-center gap-4 transition-all duration-300 transform scale-95" id="lightbox-content">
+                <div class="relative overflow-hidden rounded-2xl bg-white p-2 shadow-2xl">
+                    <img id="lightbox-img" src="" alt="Lightbox image" class="max-w-full max-h-[70vh] object-contain rounded-xl transition-opacity duration-150">
+                </div>
+                <div id="lightbox-caption-container" class="hidden">
+                    <p id="lightbox-caption" class="bg-white/95 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-gray-100 font-semibold text-[#1e293b] text-sm text-center"></p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const galleryImages = [
+                @foreach($galleryItems ?? [] as $item)
+                {
+                    url: "{{ $item['url'] }}",
+                    caption: "{{ addslashes($item['notes'] ?? ($item['alt'] ?? '')) }}"
+                },
+                @endforeach
+            ];
+            let currentLightboxIndex = 0;
+
+            function openLightbox(index) {
+                currentLightboxIndex = index;
+                updateLightboxContent();
+                const lightbox = document.getElementById('gallery-lightbox');
+                const content = document.getElementById('lightbox-content');
+                lightbox.classList.remove('hidden');
+                lightbox.classList.add('flex');
+                setTimeout(() => {
+                    lightbox.classList.remove('opacity-0');
+                    content.classList.remove('scale-95');
+                    content.classList.add('scale-100');
+                }, 50);
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeLightbox() {
+                const lightbox = document.getElementById('gallery-lightbox');
+                const content = document.getElementById('lightbox-content');
+                lightbox.classList.add('opacity-0');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                setTimeout(() => {
+                    lightbox.classList.remove('flex');
+                    lightbox.classList.add('hidden');
+                }, 300);
+                document.body.style.overflow = '';
+            }
+
+            function updateLightboxContent() {
+                const img = document.getElementById('lightbox-img');
+                const caption = document.getElementById('lightbox-caption');
+                const captionContainer = document.getElementById('lightbox-caption-container');
+                const item = galleryImages[currentLightboxIndex];
+                
+                img.style.opacity = '0.3';
+                setTimeout(() => {
+                    img.src = item.url;
+                    img.style.opacity = '1';
+                }, 100);
+                
+                if (item.caption && item.caption.trim() !== '') {
+                    caption.textContent = item.caption;
+                    captionContainer.classList.remove('hidden');
+                } else {
+                    captionContainer.classList.add('hidden');
+                }
+            }
+
+            function prevLightboxImage(e) {
+                if (e) e.stopPropagation();
+                currentLightboxIndex = (currentLightboxIndex - 1 + galleryImages.length) % galleryImages.length;
+                updateLightboxContent();
+            }
+
+            function nextLightboxImage(e) {
+                if (e) e.stopPropagation();
+                currentLightboxIndex = (currentLightboxIndex + 1) % galleryImages.length;
+                updateLightboxContent();
+            }
+
+            document.addEventListener('keydown', (e) => {
+                const lightbox = document.getElementById('gallery-lightbox');
+                if (lightbox && !lightbox.classList.contains('hidden')) {
+                    if (e.key === 'Escape') closeLightbox();
+                    if (e.key === 'ArrowLeft') prevLightboxImage();
+                    if (e.key === 'ArrowRight') nextLightboxImage();
+                }
+            });
+        </script>
     </main>
 @endsection

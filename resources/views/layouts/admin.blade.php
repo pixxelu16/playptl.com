@@ -28,58 +28,96 @@
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gauge-high"></i></span>
                         <span>Dashboard</span>
                     </a>
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage skills'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.skills.*') ? 'is-active' : '' }}" href="{{ route('admin.skills.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-sliders"></i></span>
                         <span>Skills</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage leagues'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*', 'admin.league-management.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span>
                         <span>Tournaments</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage group cards'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.group-cards.*') ? 'is-active' : '' }}" href="{{ route('admin.group-cards.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
                         <span>Groups</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage groups'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.groups.*') ? 'is-active' : '' }}" href="{{ route('admin.groups.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
                         <span>Subgroups</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage players'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.players.*') ? 'is-active' : '' }}" href="{{ route('admin.players.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
                         <span>Players</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage users'))
+                    <a class="admin-nav-link {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}" href="{{ route('admin.users.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
+                        <span>Users</span>
+                    </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage payment history'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.payment-histories.*') ? 'is-active' : '' }}" href="{{ route('admin.payment-histories.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
                         <span>Payment History</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage charity causes'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.charity-causes.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-causes.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-heart"></i></span>
                         <span>Charity Causes</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage charity donations'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.charity-donations.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-donations.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-heart"></i></span>
                         <span>Charity Donations</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage announcements'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.announcements.*') ? 'is-active' : '' }}" href="{{ route('admin.announcements.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></span>
                         <span>Announcements</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage official partners'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.official-partners.*') ? 'is-active' : '' }}" href="{{ route('admin.official-partners.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-handshake"></i></span>
                         <span>Official Partners</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage roles'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.roles.*') ? 'is-active' : '' }}" href="{{ route('admin.roles.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
                         <span>Roles & Permissions</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage bookings'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.bookings.*') ? 'is-active' : '' }}" href="{{ route('admin.bookings.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-calendar-check"></i></span>
                         <span>Bookings</span>
                     </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage gallery'))
+                    <a class="admin-nav-link {{ request()->routeIs('admin.gallery.*') ? 'is-active' : '' }}" href="{{ route('admin.gallery.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-image"></i></span>
+                        <span>Gallery</span>
+                    </a>
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage settings'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.contact-settings.*') ? 'is-active' : '' }}" href="{{ route('admin.contact-settings.edit') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gear"></i></span>
                         <span>Site Settings</span>
                     </a>
+                    @endif
                 </div>
 
                 <div class="admin-nav-section">

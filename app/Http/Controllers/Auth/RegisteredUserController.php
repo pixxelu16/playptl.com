@@ -76,6 +76,16 @@ class RegisteredUserController extends Controller
 
             $user->assignRole(ucfirst($validated['role']));
 
+            try {
+                Mail::to($user->email)->send(new \App\Mail\UserRegisteredMail($user, false));
+                $adminEmail = SiteSetting::getValue('contact_email');
+                if ($adminEmail) {
+                    Mail::to($adminEmail)->send(new \App\Mail\UserRegisteredMail($user, true));
+                }
+            } catch (\Throwable $e) {
+                // Ignore mail fail
+            }
+
             auth()->login($user);
             $request->session()->regenerate();
 
@@ -359,6 +369,19 @@ class RegisteredUserController extends Controller
                 currency: strtoupper(SiteSetting::stripeCurrency()),
                 paymentIntentId: (string) $intent->id,
             ));
+
+            $adminEmail = SiteSetting::getValue('contact_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new RegistrationConfirmedMail(
+                    userName: (string) $user->name,
+                    leagueName: (string) $league->name,
+                    registrationType: $tab,
+                    skillLevel: $skillLevel,
+                    amount: $amountDecimal,
+                    currency: strtoupper(SiteSetting::stripeCurrency()),
+                    paymentIntentId: (string) $intent->id,
+                ));
+            }
         } catch (\Throwable $e) {
             // If mail fails, registration/payment is still valid; do not block.
         }

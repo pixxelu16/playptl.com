@@ -1,4 +1,4 @@
-﻿@extends('layouts.website')
+@extends('layouts.website')
 
 @section('nav_active', 'charity')
 
@@ -60,5 +60,7 @@
                 </div>
             </section>
         @endif
+        
+        @include('partials.charity-donate-modal')
     </main>
 @endsection

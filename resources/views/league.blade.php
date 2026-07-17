@@ -30,7 +30,7 @@
                         <span class="text-[#c1e82c]">{{ $breadcrumbCurrent }}</span>
                     </nav>
 
-                    <h1 class="league-1 text-[clamp(3rem,10vw,7.5rem)] font-normal uppercase leading-[0.95] tracking-[0.02em]">
+                    <h1 class="league-1 text-[clamp(2.2rem,7vw,4rem)] font-normal uppercase leading-[0.95] tracking-[0.02em]">
                         <span class="text-white">{{ $heroTitleLight }}</span><span class="text-[#c1e82c]"> {{ $heroTitleAccent }}</span>
                     </h1>
 

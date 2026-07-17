@@ -421,6 +421,19 @@ class PlayerProfileController extends Controller
                 currency: strtoupper(SiteSetting::stripeCurrency()),
                 paymentIntentId: (string) $intent->id,
             ));
+
+            $adminEmail = SiteSetting::getValue('contact_email');
+            if ($adminEmail) {
+                Mail::to($adminEmail)->send(new RegistrationConfirmedMail(
+                    userName: (string) $user->name,
+                    leagueName: (string) $league->name,
+                    registrationType: $tab,
+                    skillLevel: $skillLevel,
+                    amount: $amountDecimal,
+                    currency: strtoupper(SiteSetting::stripeCurrency()),
+                    paymentIntentId: (string) $intent->id,
+                ));
+            }
         } catch (\Throwable) {
             // Registration remains valid if mail fails.
         }

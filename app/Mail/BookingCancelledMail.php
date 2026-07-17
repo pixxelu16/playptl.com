@@ -13,12 +13,21 @@ class BookingCancelledMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Booking $booking) {}
+    public function __construct(
+        public Booking $booking,
+        public string $recipientRole = 'provider'
+    ) {}
 
     public function envelope(): Envelope
     {
+        $subject = match ($this->recipientRole) {
+            'student' => 'Booking Cancelled (Confirmed) — ' . $this->booking->provider->name,
+            'admin' => 'Booking Cancelled — ' . $this->booking->student->name . ' with ' . $this->booking->provider->name,
+            default => 'Booking Cancelled by Student — ' . $this->booking->student->name,
+        };
+
         return new Envelope(
-            subject: 'Booking Cancelled by Student — ' . $this->booking->student->name,
+            subject: $subject,
         );
     }
 

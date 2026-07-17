@@ -47,6 +47,34 @@ class AdminPlayerLeagueRegistrationController extends Controller
             $registrationType,
         );
 
+        $league = \App\Models\League::findOrFail($validated['league_id']);
+        try {
+            \Illuminate\Support\Facades\Mail::to($player->email)->send(new \App\Mail\RegistrationConfirmedMail(
+                userName: (string) $player->name,
+                leagueName: (string) $league->name,
+                registrationType: $registrationType,
+                skillLevel: (string) $validated['skill_level'],
+                amount: '0.00',
+                currency: strtoupper(\App\Models\SiteSetting::stripeCurrency()),
+                paymentIntentId: 'Admin Registration',
+            ));
+
+            $adminEmail = \App\Models\SiteSetting::getValue('contact_email');
+            if ($adminEmail) {
+                \Illuminate\Support\Facades\Mail::to($adminEmail)->send(new \App\Mail\RegistrationConfirmedMail(
+                    userName: (string) $player->name,
+                    leagueName: (string) $league->name,
+                    registrationType: $registrationType,
+                    skillLevel: (string) $validated['skill_level'],
+                    amount: '0.00',
+                    currency: strtoupper(\App\Models\SiteSetting::stripeCurrency()),
+                    paymentIntentId: 'Admin Registration',
+                ));
+            }
+        } catch (\Throwable $e) {
+            // Ignore mail failure
+        }
+
         return redirect()
             ->route('admin.players.index', ['tab' => $registrationType])
             ->with('status', 'Player added to league successfully.');

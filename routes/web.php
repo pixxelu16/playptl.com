@@ -62,6 +62,7 @@ Route::get('/league', function () {
     abort(404);
 })->name('league');
 Route::get('/league/{slug}', [LeagueController::class, 'overview'])->name('league.overview');
+Route::get('/league/{leagueSlug}/{groupCardSlug}', [LeagueController::class, 'show'])->name('league.group');
 Route::get('/player-services/mentors', [\App\Http\Controllers\PlayerServicesController::class, 'mentors'])->name('player-services.mentors');
 Route::get('/player-services/coaches', [\App\Http\Controllers\PlayerServicesController::class, 'coaches'])->name('player-services.coaches');
 Route::get('/player-services/mentor/{user:username}', [\App\Http\Controllers\PlayerServicesController::class, 'showProfile'])->name('player-services.mentor.show');
@@ -168,6 +169,13 @@ Route::middleware('auth')->group(function () {
         Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
         Route::resource('charity-causes', AdminCharityCauseController::class);
         Route::resource('skills', AdminSkillController::class);
+        Route::resource('users', \App\Http\Controllers\AdminUserController::class);
+
+        // Gallery management
+        Route::get('gallery', [\App\Http\Controllers\AdminGalleryController::class, 'index'])->name('gallery.index');
+        Route::post('gallery', [\App\Http\Controllers\AdminGalleryController::class, 'store'])->name('gallery.store');
+        Route::put('gallery/{upload}', [\App\Http\Controllers\AdminGalleryController::class, 'update'])->name('gallery.update');
+        Route::delete('gallery/{upload}', [\App\Http\Controllers\AdminGalleryController::class, 'destroy'])->name('gallery.destroy');
 
         // Booking management
         Route::get('bookings', [\App\Http\Controllers\AdminBookingController::class, 'index'])->name('bookings.index');

@@ -83,7 +83,31 @@ class AdminBookingController extends Controller
             'status' => ['required', 'in:pending,accepted,rejected,cancelled'],
         ]);
 
+        $oldStatus = $booking->status;
         $booking->update(['status' => $validated['status']]);
+
+        if ($oldStatus !== $booking->status) {
+            try {
+                $mailable = match ($booking->status) {
+                    'accepted' => \App\Mail\BookingAcceptedMail::class,
+                    'rejected' => \App\Mail\BookingRejectedMail::class,
+                    'cancelled' => \App\Mail\BookingCancelledMail::class,
+                    'pending' => \App\Mail\BookingRequestedMail::class,
+                    default => null,
+                };
+
+                if ($mailable) {
+                    \Illuminate\Support\Facades\Mail::to($booking->student->email)->send(new $mailable($booking, 'student'));
+                    \Illuminate\Support\Facades\Mail::to($booking->provider->email)->send(new $mailable($booking, 'provider'));
+                    $adminEmail = \App\Models\SiteSetting::getValue('contact_email');
+                    if ($adminEmail) {
+                        \Illuminate\Support\Facades\Mail::to($adminEmail)->send(new $mailable($booking, 'admin'));
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Ignore mail failures
+            }
+        }
 
         return back()->with('success', 'Booking status updated to ' . ucfirst($validated['status']) . '.');
     }

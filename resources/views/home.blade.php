@@ -9,9 +9,7 @@
 @section('content')
     <main>
         <section class="relative flex min-h-screen flex-col overflow-hidden">
-            <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
-            </video>
+            <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset('frontend/images/hero_tennis_banner.png') }}" alt="Tennis Game Hero Banner" aria-hidden="true">
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 
@@ -21,7 +19,7 @@
                         <p class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 sm:mb-5 sm:text-sm">
                             Season 2026 - Now Open
                         </p>
-                        <h1 class="text-[clamp(2.75rem,12vw,7.5rem)] font-bold uppercase leading-[1.05] tracking-[2px] sm:tracking-[3px] lg:text-[120px]">
+                        <h1 class="text-[clamp(2.2rem,8vw,4.5rem)] font-bold uppercase leading-[1.05] tracking-[1.5px] sm:tracking-[2.5px]">
                             <span class="champions-1 block text-white">Where Champions</span>
                             <span class="league-1 block text-lime">Are Forged.</span>
                         </h1>

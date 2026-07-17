@@ -57,8 +57,8 @@
                     @endif
                     @if($user->profile_rate > 0)
                         <div class="mt-3 p-3 bg-[#E8F7E9] rounded-xl">
-                            <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Hourly Rate</p>
-                            <p class="text-2xl font-extrabold text-[#5DA44E]">{{ $currencySymbol }}{{ number_format($user->profile_rate, 2) }}<span class="text-xs font-normal text-gray-400">/hr</span></p>
+                             <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Hourly Rate</p>
+                             <p class="text-2xl font-extrabold text-[#5DA44E]">{{ $currencySymbol }}{{ number_format($user->profile_rate, 2) }}<span class="text-xs font-normal text-gray-400">/hr</span></p>
                         </div>
                     @else
                         <div class="mt-3 p-3 bg-[#E8F7E9] rounded-xl">
@@ -193,10 +193,13 @@
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">Card Details</label>
                                 <div id="card-element"
                                      class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 min-h-[46px]"></div>
-                                <div id="card-errors" class="mt-2 text-xs text-red-500"></div>
+                                <div id="card-errors" class="mt-4 hidden items-start gap-3 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+                                    <i class="fa-solid fa-circle-exclamation mt-0.5 flex-shrink-0 text-red-500"></i>
+                                    <span id="card-errors-text"></span>
+                                </div>
                             </div>
                         @else
-                            <div class="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
+                            <div class="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-[#065f46]">
                                 <i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0 text-[#5DA44E]"></i>
                                 <span>This is a <strong>free session</strong>. No payment required — just submit your request!</span>
                             </div>
@@ -259,6 +262,48 @@ fromInput.addEventListener('change', () => { if (toInput.value && toInput.value 
 toInput.addEventListener('change', updateSummary);
 hrsInput.addEventListener('input', updateSummary);
 
+function highlightDateFields(highlight) {
+    const inputs = [fromInput, toInput, document.getElementById('booking_time')];
+    inputs.forEach(input => {
+        if (highlight) {
+            input.style.border = '2px solid #ef4444';
+            input.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.2)';
+        } else {
+            input.style.border = '';
+            input.style.boxShadow = '';
+        }
+    });
+}
+
+function showError(message) {
+    const errContainer = document.getElementById('card-errors');
+    const errText = document.getElementById('card-errors-text');
+    if (!errContainer) return;
+
+    if (message) {
+        errText.textContent = message;
+        errContainer.classList.remove('hidden');
+        errContainer.classList.add('flex');
+        if (message.includes('available') || message.includes('dates') || message.includes('time') || message.includes('overlap')) {
+            highlightDateFields(true);
+        } else {
+            highlightDateFields(false);
+        }
+    } else {
+        errContainer.classList.add('hidden');
+        errContainer.classList.remove('flex');
+        highlightDateFields(false);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateSummary();
+    const sessionError = @json(session('error'));
+    if (sessionError && (sessionError.includes('available') || sessionError.includes('dates') || sessionError.includes('time') || sessionError.includes('overlap'))) {
+        highlightDateFields(true);
+    }
+});
+
 // ── Stripe Integration ────────────────────────────────────────
 @if($user->profile_rate > 0)
 const stripe      = Stripe('{{ $stripePublishableKey }}');
@@ -268,7 +313,7 @@ const cardElement = elements.create('card', {
 });
 cardElement.mount('#card-element');
 cardElement.on('change', (e) => {
-    document.getElementById('card-errors').textContent = e.error ? e.error.message : '';
+    showError(e.error ? e.error.message : '');
 });
 
 const form      = document.getElementById('bookingForm');
@@ -279,6 +324,7 @@ form.addEventListener('submit', async function(e) {
     e.preventDefault();
     submitBtn.disabled = true;
     submitTxt.textContent = 'Processing...';
+    showError(''); // Clear previous errors
 
     // Fetch PaymentIntent
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -296,7 +342,7 @@ form.addEventListener('submit', async function(e) {
 
     const piData = await piRes.json();
     if (!piRes.ok) {
-        document.getElementById('card-errors').textContent = piData.message || 'Payment setup failed.';
+        showError(piData.message || 'Payment setup failed.');
         submitBtn.disabled = false;
         submitTxt.textContent = 'Submit Booking Request';
         return;
@@ -308,7 +354,7 @@ form.addEventListener('submit', async function(e) {
     });
 
     if (error) {
-        document.getElementById('card-errors').textContent = error.message;
+        showError(error.message);
         submitBtn.disabled = false;
         submitTxt.textContent = 'Submit Booking Request';
         return;
@@ -318,8 +364,6 @@ form.addEventListener('submit', async function(e) {
     document.getElementById('stripeChargeId').value = paymentIntent.id;
     form.submit();
 });
-@else
-// Free booking — just submit directly
 @endif
 </script>
 @endpush
