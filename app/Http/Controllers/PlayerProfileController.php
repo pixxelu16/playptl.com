@@ -783,10 +783,26 @@ class PlayerProfileController extends Controller
 
         $dir = public_path('upload/group-match-uploads');
         if (! File::exists($dir)) {
-            File::makeDirectory($dir, 0775, true);
+            try {
+                File::makeDirectory($dir, 0775, true);
+            } catch (\Exception $e) {
+                // Squelch and let the is_writable check below handle reporting
+            }
         }
         if (File::exists($dir) && ! is_writable($dir)) {
             @chmod($dir, 0775);
+        }
+
+        if (! is_writable($dir)) {
+            $currentUser = function_exists('posix_getpwuid') && function_exists('posix_geteuid')
+                ? posix_getpwuid(posix_geteuid())['name']
+                : get_current_user();
+            $perms = file_exists($dir) ? substr(sprintf('%o', fileperms($dir)), -4) : 'N/A';
+            $parent = dirname($dir);
+            $parentPerms = file_exists($parent) ? substr(sprintf('%o', fileperms($parent)), -4) : 'N/A';
+            $parentWritable = is_writable($parent) ? 'Yes' : 'No';
+            
+            throw new \Exception("Upload directory is not writable. Details: PHP User = {$currentUser}, Dir = {$dir} (Perms: {$perms}), Parent Dir = {$parent} (Perms: {$parentPerms}, Writable: {$parentWritable})");
         }
 
         if ($request->file('images') === null || $request->file('images') === []) {
@@ -841,10 +857,26 @@ class PlayerProfileController extends Controller
 
         $dir = public_path('upload/playoff-match-uploads');
         if (! File::exists($dir)) {
-            File::makeDirectory($dir, 0775, true);
+            try {
+                File::makeDirectory($dir, 0775, true);
+            } catch (\Exception $e) {
+                // Squelch and let the is_writable check below handle reporting
+            }
         }
         if (File::exists($dir) && ! is_writable($dir)) {
             @chmod($dir, 0775);
+        }
+
+        if (! is_writable($dir)) {
+            $currentUser = function_exists('posix_getpwuid') && function_exists('posix_geteuid')
+                ? posix_getpwuid(posix_geteuid())['name']
+                : get_current_user();
+            $perms = file_exists($dir) ? substr(sprintf('%o', fileperms($dir)), -4) : 'N/A';
+            $parent = dirname($dir);
+            $parentPerms = file_exists($parent) ? substr(sprintf('%o', fileperms($parent)), -4) : 'N/A';
+            $parentWritable = is_writable($parent) ? 'Yes' : 'No';
+            
+            throw new \Exception("Upload directory is not writable. Details: PHP User = {$currentUser}, Dir = {$dir} (Perms: {$perms}), Parent Dir = {$parent} (Perms: {$parentPerms}, Writable: {$parentWritable})");
         }
 
         if ($request->file('images') === null || $request->file('images') === []) {
