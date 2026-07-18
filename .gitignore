@@ -15,6 +15,7 @@
 /auth.json
 /node_modules
 /public/build
+/public/upload
 /public/hot
 /public/storage
 /public/admin/uploads

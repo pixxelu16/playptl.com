@@ -783,7 +783,10 @@ class PlayerProfileController extends Controller
 
         $dir = public_path('upload/group-match-uploads');
         if (! File::exists($dir)) {
-            File::makeDirectory($dir, 0755, true);
+            File::makeDirectory($dir, 0775, true);
+        }
+        if (File::exists($dir) && ! is_writable($dir)) {
+            @chmod($dir, 0775);
         }
 
         if ($request->file('images') === null || $request->file('images') === []) {
@@ -838,7 +841,10 @@ class PlayerProfileController extends Controller
 
         $dir = public_path('upload/playoff-match-uploads');
         if (! File::exists($dir)) {
-            File::makeDirectory($dir, 0755, true);
+            File::makeDirectory($dir, 0775, true);
+        }
+        if (File::exists($dir) && ! is_writable($dir)) {
+            @chmod($dir, 0775);
         }
 
         if ($request->file('images') === null || $request->file('images') === []) {
