@@ -79,9 +79,13 @@ class AdminContactSettingController extends Controller
         SiteSetting::setValue('stripe_mode', $validated['stripe_mode']);
         SiteSetting::setValue('stripe_currency', $validated['stripe_currency']);
         SiteSetting::setValue('stripe_test_publishable_key', $validated['stripe_test_publishable_key']);
-        SiteSetting::setValue('stripe_test_secret_key', $validated['stripe_test_secret_key']);
+        if ($request->filled('stripe_test_secret_key')) {
+            SiteSetting::setValue('stripe_test_secret_key', $validated['stripe_test_secret_key']);
+        }
         SiteSetting::setValue('stripe_live_publishable_key', $validated['stripe_live_publishable_key']);
-        SiteSetting::setValue('stripe_live_secret_key', $validated['stripe_live_secret_key']);
+        if ($request->filled('stripe_live_secret_key')) {
+            SiteSetting::setValue('stripe_live_secret_key', $validated['stripe_live_secret_key']);
+        }
         SiteSetting::setValue('mentor_commission_percent', (string) $validated['mentor_commission_percent']);
         SiteSetting::setValue('coach_commission_percent', (string) $validated['coach_commission_percent']);
 
@@ -91,7 +95,9 @@ class AdminContactSettingController extends Controller
         SiteSetting::setValue('smtp_port',         (string) ($validated['smtp_port'] ?? ''));
         SiteSetting::setValue('smtp_encryption',   $validated['smtp_encryption'] ?? 'null');
         SiteSetting::setValue('smtp_username',     $validated['smtp_username'] ?? '');
-        SiteSetting::setValue('smtp_password',     $validated['smtp_password'] ?? '');
+        if ($request->filled('smtp_password')) {
+            SiteSetting::setValue('smtp_password', $validated['smtp_password']);
+        }
         SiteSetting::setValue('smtp_from_address', $validated['smtp_from_address']);
         SiteSetting::setValue('smtp_from_name',    $validated['smtp_from_name']);
 

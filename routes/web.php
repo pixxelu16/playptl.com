@@ -170,6 +170,11 @@ Route::middleware('auth')->group(function () {
         Route::resource('charity-causes', AdminCharityCauseController::class);
         Route::resource('skills', AdminSkillController::class);
         Route::resource('users', \App\Http\Controllers\AdminUserController::class);
+        Route::post('users/{user}/unblock', [\App\Http\Controllers\AdminUserController::class, 'unblock'])->name('admin.users.unblock');
+        // Secure signed route to unlock account directly from email
+        Route::get('users/{user}/unlock-signed', [\App\Http\Controllers\AdminUserController::class, 'unlockSigned'])
+            ->name('admin.users.unlock-signed')
+            ->middleware('signed');
 
         // Gallery management
         Route::get('gallery', [\App\Http\Controllers\AdminGalleryController::class, 'index'])->name('gallery.index');
@@ -239,9 +244,19 @@ Route::middleware('auth')->group(function () {
         })->name('password.edit');
 
         Route::put('/change-password', function (Request $request) {
+            if ($request->has('password')) {
+                $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
+            }
+            if ($request->has('password_confirmation')) {
+                $request->merge(['password_confirmation' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'))]);
+            }
+            if ($request->has('current_password')) {
+                $request->merge(['current_password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('current_password'))]);
+            }
+
             $validated = $request->validate([
                 'current_password' => ['required', 'current_password'],
-                'password' => ['required', 'string', 'min:8', 'confirmed'],
+                'password' => ['required', 'confirmed', Password::defaults()],
             ]);
 
             $request->user()->update([
@@ -281,9 +296,19 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('player.profile.password');
         })->name('password.edit');
         Route::put('/change-password', function (Request $request) {
+            if ($request->has('password')) {
+                $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
+            }
+            if ($request->has('password_confirmation')) {
+                $request->merge(['password_confirmation' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'))]);
+            }
+            if ($request->has('current_password')) {
+                $request->merge(['current_password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('current_password'))]);
+            }
+
             $validated = $request->validate([
                 'current_password' => ['required', 'current_password'],
-                'password' => ['required', 'string', 'min:8', 'confirmed'],
+                'password' => ['required', 'confirmed', Password::defaults()],
             ]);
 
             $request->user()->update([
