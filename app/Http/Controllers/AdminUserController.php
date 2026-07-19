@@ -46,11 +46,15 @@ class AdminUserController extends Controller
     {
         $roles = Role::all();
         $permissions = Permission::all();
-        return view('admin.users.create', compact('roles', 'permissions'));
+        $publicKey = \App\Support\PasswordEncryptionHelper::getPublicKey();
+        return view('admin.users.create', compact('roles', 'permissions', 'publicKey'));
     }
 
     public function store(Request $request)
     {
+        if ($request->has('password')) {
+            $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
+        }
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
@@ -98,12 +102,16 @@ class AdminUserController extends Controller
         $permissions = Permission::all();
         $userRoles = $user->roles->pluck('name')->toArray();
         $userPermissions = $user->permissions->pluck('name')->toArray();
+        $publicKey = \App\Support\PasswordEncryptionHelper::getPublicKey();
 
-        return view('admin.users.edit', compact('user', 'roles', 'permissions', 'userRoles', 'userPermissions'));
+        return view('admin.users.edit', compact('user', 'roles', 'permissions', 'userRoles', 'userPermissions', 'publicKey'));
     }
 
     public function update(Request $request, User $user)
     {
+        if ($request->has('password') && $request->filled('password')) {
+            $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
+        }
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
@@ -147,8 +155,47 @@ class AdminUserController extends Controller
             return back()->with('error', 'You cannot delete your own account.');
         }
 
+        // Prevent deletion of Super Admin accounts to avoid locking out the platform.
+        if ($user->hasRole('Super Admin')) {
+            return back()->with('error', 'Super Admin accounts cannot be deleted.');
+        }
+
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('status', 'User deleted successfully.');
+    }
+
+    /**
+     * Unblock a user account from within the admin panel.
+     */
+    public function unblock(User $user)
+    {
+        $user->forceFill([
+            'is_locked' => false,
+            'locked_at' => null,
+            'failed_login_attempts' => 0,
+        ])->save();
+
+        return redirect()->route('admin.users.index')
+            ->with('status', "Account for {$user->name} ({$user->email}) has been unlocked.");
+    }
+
+    /**
+     * Secure signed route to unlock a user directly from the email notification.
+     */
+    public function unlockSigned(Request $request, User $user)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(401, 'Invalid or expired signature.');
+        }
+
+        $user->forceFill([
+            'is_locked' => false,
+            'locked_at' => null,
+            'failed_login_attempts' => 0,
+        ])->save();
+
+        return redirect()->route('login')
+            ->with('status', "Your account ({$user->email}) has been successfully unlocked. You can now log in.");
     }
 }

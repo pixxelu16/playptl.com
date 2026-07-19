@@ -83,7 +83,11 @@
                                 @endif
                             </td>
                             <td>
-                                <div style="font-weight: 600; color: #1e293b;">{{ $user->name }}</div>
+                                <div style="font-weight: 600; color: #1e293b;">{{ $user->name }}
+                                    @if($user->is_locked)
+                                        <span title="Locked at {{ $user->locked_at?->format('M d Y H:i') }}" style="display:inline-block;margin-left:6px;font-size:10px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:2px 7px;border-radius:20px;font-weight:700;vertical-align:middle;">🔒 LOCKED</span>
+                                    @endif
+                                </div>
                                 <div style="font-size: 13px; color: #64748b; margin-top: 2px; white-space: nowrap;">&#64;{{ $user->username }}</div>
                             </td>
                             <td>
@@ -128,6 +132,14 @@
                             </td>
                             <td style="text-align: right;">
                                 <div class="admin-table-actions" style="justify-content: flex-end;">
+                                    @if($user->is_locked)
+                                        <form method="POST" action="{{ route('admin.users.unblock', $user) }}" style="margin:0;display:inline;" title="Unblock Account">
+                                            @csrf
+                                            <button type="submit" style="background:#16a34a;color:#fff;border:none;padding:5px 10px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;" title="Unblock this account">
+                                                🔓 Unblock
+                                            </button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('admin.users.edit', $user) }}" title="Edit User">
                                         <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                     </a>

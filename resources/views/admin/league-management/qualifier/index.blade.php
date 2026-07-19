@@ -66,7 +66,9 @@
             <div class="admin-alert" style="margin:1.25rem 0 0;background:#f4faf4;border-color:#c5dfc6;color:#2f4a2d;">
                 <strong>{{ $playoffConfig->format->label() }}</strong>
                 <p style="margin:0.5rem 0 0;line-height:1.5;">
-                    {!! $playoffConfig->descriptionHtml() !!}
+                    @foreach($playoffConfig->summaryLines() as $summaryLine)
+                        {{ $summaryLine }}@if(!$loop->last)<br>@endif
+                    @endforeach
                 </p>
                 <p style="margin:0.5rem 0 0;line-height:1.5;font-size:0.9rem;">
                     Paths are set automatically from standings and the playoff format on

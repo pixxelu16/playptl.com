@@ -21,7 +21,21 @@ class EnsureUserHasRole
 
         $hasRole = false;
         foreach ($roles as $role) {
-            if ($user->hasRole($role) || $user->hasRole(ucwords($role)) || $user->hasRole(ucfirst($role)) || $user->hasRole('Super Admin') || $user->can('view admin panel') || strtolower($user->role->value) === strtolower($role)) {
+            // Normalise the expected role name for matching (e.g. "admin" → "Admin")
+            $normalised = ucwords($role);
+
+            // Super Admin bypasses only the 'admin' role gate — NOT all role gates.
+            // This prevents privilege escalation for users that only hold certain permissions.
+            $isSuperAdminBypass = ($role === 'admin' || $normalised === 'Admin')
+                && $user->hasRole('Super Admin');
+
+            if (
+                $user->hasRole($role)
+                || $user->hasRole($normalised)
+                || $user->hasRole(ucfirst($role))
+                || $isSuperAdminBypass
+                || strtolower($user->role->value) === strtolower($role)
+            ) {
                 $hasRole = true;
                 break;
             }
