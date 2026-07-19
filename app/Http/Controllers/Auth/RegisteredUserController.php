@@ -40,6 +40,7 @@ class RegisteredUserController extends Controller
             'registrationClosedDivisions' => LeagueRegistrationGate::closedSelectionKeys(),
             'registrationClosedGroupCards' => LeagueRegistrationGate::closedGroupCardKeys(),
             'leagueEntryFees' => LeagueEntryFee::mapForLeagues($registrationLeagues),
+            'publicKey' => \App\Support\PasswordEncryptionHelper::getPublicKey(),
             'stripePublishableKey' => SiteSetting::stripePublishableKey(),
             'tournamentGroupsUrl' => route('register.tournament-groups'),
         ]);
@@ -47,6 +48,16 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): Response
     {
+        // Decrypt password in request parameters before validation
+        if ($request->has('password')) {
+            $decrypted = \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'));
+            $request->merge(['password' => $decrypted]);
+        }
+        if ($request->has('password_confirmation')) {
+            $decryptedConf = \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'));
+            $request->merge(['password_confirmation' => $decryptedConf]);
+        }
+
         $roleInput = $request->input('role');
         if (in_array($roleInput, ['mentor', 'coach', 'student'], true)) {
             $validated = $request->validate([

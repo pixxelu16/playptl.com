@@ -44,6 +44,9 @@ use Spatie\Permission\Traits\HasRoles;
     'profile_locations',
     'profile_rate',
     'profile_rate_details',
+    'failed_login_attempts',
+    'is_locked',
+    'locked_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -125,11 +128,6 @@ class User extends Authenticatable
         $this->notify(new ResetPasswordNotification($token));
     }
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -139,6 +137,44 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'profile_locations' => 'array',
+            'is_locked' => 'boolean',
+            'locked_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Record a failed login attempt. Locks the account at 3 failures.
+     * Returns true if the account was just locked on this call.
+     */
+    public function recordFailedLogin(): bool
+    {
+        $attempts = (int) $this->failed_login_attempts + 1;
+        $justLocked = false;
+
+        $updates = ['failed_login_attempts' => $attempts];
+
+        if ($attempts >= 3 && !$this->is_locked) {
+            $updates['is_locked'] = true;
+            $updates['locked_at'] = now();
+            $justLocked = true;
+        }
+
+        $this->forceFill($updates)->save();
+
+        return $justLocked;
+    }
+
+    /**
+     * Reset failed login attempts counter (called on successful login).
+     */
+    public function resetFailedLogins(): void
+    {
+        if ($this->failed_login_attempts > 0 || $this->is_locked) {
+            $this->forceFill([
+                'failed_login_attempts' => 0,
+                'is_locked'             => false,
+                'locked_at'             => null,
+            ])->save();
+        }
     }
 }

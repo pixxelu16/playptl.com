@@ -165,7 +165,7 @@
 
                     <div class="admin-form-group">
                         <label class="admin-label" for="stripe_test_secret_key">Test Secret Key</label>
-                        <input class="admin-input" id="stripe_test_secret_key" type="password" name="stripe_test_secret_key" value="{{ old('stripe_test_secret_key', $stripe['test_secret_key']) }}">
+                        <input class="admin-input" id="stripe_test_secret_key" type="password" name="stripe_test_secret_key" value="" placeholder="{{ $stripe['test_secret_key'] ? '••••••••••••••••••••••••••••••••' : 'Enter Test Secret Key' }}">
                     </div>
 
                     <div class="admin-form-group">
@@ -175,7 +175,7 @@
 
                     <div class="admin-form-group">
                         <label class="admin-label" for="stripe_live_secret_key">Live Secret Key</label>
-                        <input class="admin-input" id="stripe_live_secret_key" type="password" name="stripe_live_secret_key" value="{{ old('stripe_live_secret_key', $stripe['live_secret_key']) }}">
+                        <input class="admin-input" id="stripe_live_secret_key" type="password" name="stripe_live_secret_key" value="" placeholder="{{ $stripe['live_secret_key'] ? '••••••••••••••••••••••••••••••••' : 'Enter Live Secret Key' }}">
                     </div>
                 </div>
             </div>
@@ -225,7 +225,7 @@
                     <div class="admin-form-group">
                         <label class="admin-label" for="smtp_password">Password</label>
                         <input class="admin-input" id="smtp_password" type="password" name="smtp_password"
-                               value="{{ old('smtp_password', $smtp['password']) }}" placeholder="Leave blank to keep existing">
+                               value="" placeholder="{{ $smtp['password'] ? '••••••••••••••••••••••••••••••••' : 'Leave blank to keep existing' }}">
                     </div>
 
                     <div class="admin-form-group">

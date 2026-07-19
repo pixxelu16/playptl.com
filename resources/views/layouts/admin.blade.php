@@ -276,6 +276,7 @@
             userMenuToggle?.setAttribute('aria-expanded', 'false');
         });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const passwordInputs = document.querySelectorAll('input[type="password"]');
@@ -328,6 +329,38 @@
                     }
                 });
             });
+
+            // Handle RSA Encryption on Form Submissions
+            const forms = document.querySelectorAll('form');
+            const publicKey = @json(\App\Support\PasswordEncryptionHelper::getPublicKey());
+
+            if (publicKey && window.JSEncrypt) {
+                forms.forEach(form => {
+                    const passFields = form.querySelectorAll('input[type="password"], input[name="password"], input[name="password_confirmation"], input[name="current_password"]');
+                    if (passFields.length === 0) return;
+
+                    form.addEventListener('submit', function (e) {
+                        // Prevent multiple encryptions if form is re-submitted
+                        if (form.dataset.encrypted === 'true') return;
+
+                        const crypt = new JSEncrypt();
+                        crypt.setPublicKey(publicKey);
+
+                        passFields.forEach(field => {
+                            const val = field.value;
+                            if (val) {
+                                // Encrypt the value with the public key
+                                const encrypted = crypt.encrypt(val);
+                                if (encrypted) {
+                                    field.value = encrypted;
+                                }
+                            }
+                        });
+
+                        form.dataset.encrypted = 'true';
+                    });
+                });
+            }
         });
     </script>
     @stack('scripts')
