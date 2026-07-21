@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'driver' => function_exists('password_hash') && defined('PASSWORD_BCRYPT') ? env('HASH_DRIVER', 'bcrypt') : 'argon',
+    'driver' => env('HASH_DRIVER', 'bcrypt'),
 
     /*
     |--------------------------------------------------------------------------

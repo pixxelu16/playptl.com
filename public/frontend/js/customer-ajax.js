@@ -653,7 +653,7 @@
         })
         .then(function (result) {
           if (result.error) throw new Error(result.error.message || 'Payment failed.');
-          if (!result.paymentIntent || result.paymentIntent.status !== 'succeeded') throw new Error('Payment not completed.');
+          if (!result.paymentIntent || !['succeeded', 'requires_capture'].includes(result.paymentIntent.status)) throw new Error('Payment not completed.');
 
           $form.find('.payment_intent_id').val(result.paymentIntent.id);
           formDataArray = $form.serializeArray();

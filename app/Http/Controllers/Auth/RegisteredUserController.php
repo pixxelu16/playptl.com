@@ -271,14 +271,14 @@ class RegisteredUserController extends Controller
         $intentTab = (string) ($intent->metadata['registration_tab'] ?? '');
 
         if (
-            $intent->status !== 'succeeded'
+            ! in_array($intent->status, ['succeeded', 'requires_capture'], true)
             || (int) $intent->amount !== $expectedAmountCents
             || (string) $intent->currency !== $expectedCurrency
             || $intentEmail !== strtolower((string) $base['email'])
             || $intentLeagueId !== (string) $leagueId
             || $intentTab !== $tab
         ) {
-            return $this->fail($request, 'Payment not completed or does not match registration.');
+            return $this->fail($request, 'Payment not authorized or does not match registration.');
         }
 
         $groupCardId = (int) ($tab === 'singles' ? $specific['group_card_singles'] : $specific['group_card_doubles']);
@@ -413,6 +413,15 @@ class RegisteredUserController extends Controller
                         'payment_status' => 'completed',
                     ]
                 );
+            }
+
+            // Capture the Stripe Authorized payment only after everything succeeds
+            try {
+                $stripeClient = new \Stripe\StripeClient(SiteSetting::stripeSecretKey());
+                $stripeClient->paymentIntents->capture($intent->id);
+            } catch (\Throwable $e) {
+                // Throwing here triggers full DB rollback
+                throw new \RuntimeException('Stripe payment capture failed: ' . $e->getMessage());
             }
 
             return $createdUser;
