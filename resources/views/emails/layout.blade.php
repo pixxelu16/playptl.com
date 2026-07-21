@@ -73,11 +73,9 @@
                             <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#888888;text-align:center;">
                                 &copy; {{ date('Y') }} {{ $appName }}. All rights reserved.
                             </p>
-                            @if ($siteUrl !== '')
-                                <p style="margin:0;font-size:12px;line-height:1.5;text-align:center;">
-                                    <a href="{{ $siteUrl }}" style="color:{{ MailBranding::colorPrimary() }};text-decoration:none;font-weight:600;">{{ str_replace(['https://', 'http://'], '', $siteUrl) }}</a>
-                                </p>
-                            @endif
+                            <p style="margin:0;font-size:12px;line-height:1.5;text-align:center;">
+                                <a href="{{ $siteUrl }}" style="color:{{ MailBranding::colorPrimary() }};text-decoration:none;font-weight:600;">{{ $appName }}</a>
+                            </p>
                         </td>
                     </tr>
                 </table>

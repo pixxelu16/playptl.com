@@ -40,19 +40,15 @@ class AdminPlayerController extends Controller
             $statusFilter = 'active';
         }
 
-        $roleFilter = strtolower((string) $request->query('role_filter', 'all'));
-
         $skillFieldList = implode("', '", AdminPlayerLeagueRegistrationService::skillLevelValues());
 
-        $playersQuery = User::query();
-
-        if ($roleFilter !== 'all') {
-            $playersQuery->whereHas('roles', function($q) use ($roleFilter) {
-                $q->where('name', $roleFilter)
-                  ->orWhere('name', ucwords($roleFilter))
-                  ->orWhere('name', ucfirst($roleFilter));
+        $playersQuery = User::query()
+            ->where(function ($q) {
+                $q->where('role', UserRole::Player)
+                  ->orWhereHas('roles', function ($rq) {
+                      $rq->whereIn('name', ['player', 'Player']);
+                  });
             });
-        }
 
         if ($statusFilter === 'active') {
             $playersQuery->where(function ($query) {
@@ -76,6 +72,8 @@ class AdminPlayerController extends Controller
             });
         }
 
+        $hasSkillSort = $request->has('skill_sort');
+
         if ($leagueIdInt !== null) {
             $playersQuery
                 ->whereHas('leagueRegistrations', fn ($query) => $query->where('league_id', $leagueIdInt))
@@ -90,17 +88,23 @@ class AdminPlayerController extends Controller
                     'player_league_regs.user_id'
                 )
                 ->join('league_registrations as tournament_reg', 'tournament_reg.id', '=', 'player_league_regs.latest_reg_id')
-                ->select('users.*')
-                ->orderByRaw(
-                    "FIELD(COALESCE(NULLIF(users.skill_level, ''), NULLIF(tournament_reg.skill_level, ''), 'not-sure'), '{$skillFieldList}') ".($skillSort === 'desc' ? 'DESC' : 'ASC')
-                )
-                ->orderBy('users.id');
+                ->select('users.*');
+
+            if ($hasSkillSort) {
+                $playersQuery
+                    ->orderByRaw("FIELD(COALESCE(NULLIF(users.skill_level, ''), NULLIF(tournament_reg.skill_level, ''), 'not-sure'), '{$skillFieldList}') ".($skillSort === 'desc' ? 'DESC' : 'ASC'))
+                    ->orderByDesc('users.id');
+            } else {
+                $playersQuery->orderByDesc('users.id');
+            }
         } else {
-            $playersQuery
-                ->orderByRaw(
-                    "FIELD(COALESCE(NULLIF(users.skill_level, ''), 'not-sure'), '{$skillFieldList}') ".($skillSort === 'desc' ? 'DESC' : 'ASC')
-                )
-                ->orderByDesc('users.id');
+            if ($hasSkillSort) {
+                $playersQuery
+                    ->orderByRaw("FIELD(COALESCE(NULLIF(users.skill_level, ''), 'not-sure'), '{$skillFieldList}') ".($skillSort === 'desc' ? 'DESC' : 'ASC'))
+                    ->orderByDesc('users.id');
+            } else {
+                $playersQuery->orderByDesc('users.id');
+            }
         }
 
         $players = $playersQuery
@@ -114,7 +118,6 @@ class AdminPlayerController extends Controller
             'league_id' => $leagueIdInt,
             'skill_sort' => $skillSort,
             'status' => $statusFilter,
-            'role_filter' => $roleFilter !== 'all' ? $roleFilter : null,
         ], fn ($value) => $value !== null && $value !== ''));
 
         $playerActiveTournaments = [];
@@ -171,7 +174,6 @@ class AdminPlayerController extends Controller
             'skillSort' => $skillSort,
             'search' => $search,
             'statusFilter' => $statusFilter,
-            'roleFilter' => $roleFilter,
             'playerActiveTournaments' => $playerActiveTournaments,
         ]);
     }

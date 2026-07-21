@@ -102,8 +102,8 @@ class PlayerServicesController extends Controller
      */
     public function showProfile(User $user)
     {
-        // Restrict to Mentor or Coach roles
-        if (!$user->hasAnyRole(['Mentor', 'Coach'])) {
+        // Restrict to active Mentor or Coach roles
+        if (!$user->hasAnyRole(['Mentor', 'Coach']) || $user->status !== 'active') {
             abort(404);
         }
 

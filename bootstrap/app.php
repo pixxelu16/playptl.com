@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             TrimLeadingHtmlWhitespace::class,
             SecurityHeaders::class,
+            \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
         $middleware->alias([
             'role' => EnsureUserHasRole::class,

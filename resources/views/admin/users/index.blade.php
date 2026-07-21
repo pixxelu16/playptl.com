@@ -36,7 +36,9 @@
                     <select name="role" id="role" class="admin-input" style="height: 40px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; padding: 8px 12px; font-size: 14px;">
                         <option value="">-- All Roles --</option>
                         @foreach(\App\Enums\UserRole::cases() as $case)
-                            <option value="{{ $case->value }}" {{ request('role') === $case->value ? 'selected' : '' }}>{{ ucfirst($case->value) }}</option>
+                            @if($case !== \App\Enums\UserRole::Player)
+                                <option value="{{ $case->value }}" {{ request('role') === $case->value ? 'selected' : '' }}>{{ ucfirst($case->value) }}</option>
+                            @endif
                         @endforeach
                     </select>
                 </div>
@@ -164,9 +166,51 @@
             </table>
         </div>
 
+        @if ($users->total() > 0)
+            <p class="admin-muted" style="margin-top:14px;">
+                Showing {{ $users->firstItem() }}–{{ $users->lastItem() }} of {{ $users->total() }} users
+            </p>
+        @endif
+
         @if ($users->hasPages())
-            <div class="admin-pagination-container" style="margin-top: 20px;">
-                {{ $users->links() }}
+            @php
+                $pageStart = max(1, $users->currentPage() - 2);
+                $pageEnd = min($users->lastPage(), $users->currentPage() + 2);
+            @endphp
+            <div class="admin-pagination">
+                @if ($users->onFirstPage())
+                    <span>Previous</span>
+                @else
+                    <a href="{{ $users->previousPageUrl() }}">Previous</a>
+                @endif
+
+                @if ($pageStart > 1)
+                    <a href="{{ $users->url(1) }}">1</a>
+                    @if ($pageStart > 2)
+                        <span>…</span>
+                    @endif
+                @endif
+
+                @for ($page = $pageStart; $page <= $pageEnd; $page++)
+                    @if ($page === $users->currentPage())
+                        <strong>{{ $page }}</strong>
+                    @else
+                        <a href="{{ $users->url($page) }}">{{ $page }}</a>
+                    @endif
+                @endfor
+
+                @if ($pageEnd < $users->lastPage())
+                    @if ($pageEnd < $users->lastPage() - 1)
+                        <span>…</span>
+                    @endif
+                    <a href="{{ $users->url($users->lastPage()) }}">{{ $users->lastPage() }}</a>
+                @endif
+
+                @if ($users->hasMorePages())
+                    <a href="{{ $users->nextPageUrl() }}">Next</a>
+                @else
+                    <span>Next</span>
+                @endif
             </div>
         @endif
     </section>

@@ -10,7 +10,12 @@
 @section('content')
     <main>
         <section class="site-hero relative flex flex-col overflow-hidden">
-            <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset('frontend/images/hero_tennis_banner.png') }}" alt="Tennis Banner Background" aria-hidden="true">
+            @php
+                $bannerPath = isset($groupCard) && $groupCard
+                    ? \App\Models\SiteSetting::banners()['league_details_banner_path']
+                    : \App\Models\SiteSetting::banners()['league_banner_path'];
+            @endphp
+            <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset($bannerPath) }}" alt="Tennis Banner Background" aria-hidden="true">
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 

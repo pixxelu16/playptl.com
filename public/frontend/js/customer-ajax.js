@@ -11,41 +11,44 @@
 
   function renderResponse($box, type, message) {
     if (!$box || !$box.length) return;
-    if (!message) {
-      $box.empty();
-      return;
-    }
-    var bg = type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-red-900';
-    $box.html(
-      '<div class="rounded-[10px] border px-3 py-2 ' +
-        bg +
-        '">' +
-        escapeHtml(message) +
-        '</div>'
-    );
+    $box.empty();
   }
 
-  function showToast(message, type) {
+  function showToast(message, type, durationMs) {
     type = type || 'success';
-    var bg = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
-    var icon = type === 'success' ? '<i class="fa-solid fa-circle-check mr-2"></i>' : '<i class="fa-solid fa-circle-exclamation mr-2"></i>';
+    durationMs = durationMs || 4000;
+    var bg = type === 'success' ? 'bg-[#10B981]' : 'bg-[#EF4444]';
+    var icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-lg mr-2.5"></i>' : '<i class="fa-solid fa-circle-exclamation text-lg mr-2.5"></i>';
+    var progressBg = type === 'success' ? 'bg-white/40' : 'bg-white/40';
+
     var $toast = $(
-      '<div class="fixed top-5 right-5 z-[9999] flex items-center rounded-lg px-4 py-3 text-white shadow-lg transition-all duration-300 transform translate-y-[-20px] opacity-0 ' + bg + '">' +
-        icon +
-        '<span class="font-medium text-sm">' + escapeHtml(message) + '</span>' +
+      '<div class="fixed top-6 right-6 z-[9999] flex flex-col overflow-hidden rounded-xl shadow-2xl transition-all duration-300 transform translate-y-[-20px] opacity-0 text-white ' + bg + '" style="min-width: 280px; max-width: 420px;">' +
+        '<div class="flex items-center px-4 py-3.5">' +
+          icon +
+          '<span class="font-semibold text-[14px] leading-snug flex-1">' + escapeHtml(message) + '</span>' +
+        '</div>' +
+        '<div class="h-1 w-full bg-black/10 relative">' +
+          '<div class="toast-progress-bar h-full ' + progressBg + '" style="width: 100%; transition: width ' + durationMs + 'ms linear;"></div>' +
+        '</div>' +
       '</div>'
     );
+
     $('body').append($toast);
-    
+
     $toast.get(0).offsetHeight;
     $toast.removeClass('translate-y-[-20px] opacity-0').addClass('translate-y-0 opacity-100');
-    
+
+    // Animate progress bar width from 100% to 0%
+    setTimeout(function () {
+      $toast.find('.toast-progress-bar').css('width', '0%');
+    }, 20);
+
     setTimeout(function () {
       $toast.removeClass('translate-y-0 opacity-100').addClass('translate-y-[-20px] opacity-0');
       setTimeout(function () {
         $toast.remove();
-      }, 300);
-    }, 4000);
+      }, 350);
+    }, durationMs);
   }
 
   function clearFieldErrors($form) {
@@ -60,21 +63,20 @@
       var $el = $form.find('[name="' + name + '"]');
       if ($el.length) {
         $el.addClass('border-red-500');
-        if ($el.attr('type') === 'password') {
-          $el.parent().next('.validation-error-msg').remove();
-        } else {
-          $el.parent().find('.validation-error-msg').remove();
+        var $target = $el;
+        if ($el.attr('type') === 'password' && $el.parent().hasClass('relative')) {
+          $target = $el.parent();
         }
+        $target.parent().find('.validation-error-msg').remove();
+        $target.siblings('.validation-error-msg').remove();
+
         var msg = errors[name][0];
         if (msg.indexOf('^') === 0) {
           msg = msg.substring(1);
         } else {
           msg = msg.charAt(0).toUpperCase() + msg.slice(1);
         }
-        var $target = $el;
-        if ($el.attr('type') === 'password' && $el.parent().hasClass('relative')) {
-          $target = $el.parent();
-        }
+
         $target.after('<span class="validation-error-msg text-red-500 text-xs mt-1 block" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: block;">' + msg + '</span>');
         if (!firstErrElement) {
           firstErrElement = $el.get(0);
@@ -436,48 +438,52 @@
 
 
     function constraintsFor(tabKey) {
+      var reqMsg = function (label) {
+        return { allowEmpty: false, message: '^' + label + ' is required.' };
+      };
+
       var base = {
-        email: { presence: { allowEmpty: false }, email: true },
-        password: { presence: { allowEmpty: false }, length: { minimum: 8 } },
+        email: { presence: reqMsg('Email'), email: { message: '^Please enter a valid email address.' } },
+        password: { presence: reqMsg('Password'), length: { minimum: 8, message: '^Password must be at least 8 characters.' } },
         password_confirmation: {
-          presence: { allowEmpty: false },
+          presence: reqMsg('Confirm password'),
           equality: { attribute: 'password', message: '^Passwords do not match.' },
         },
       };
 
       if (tabKey === 'singles') {
         return $.extend({}, base, {
-          singles_first: { presence: { allowEmpty: false } },
-          singles_last: { presence: { allowEmpty: false } },
-          phone_singles: { presence: { allowEmpty: false } },
-          city_singles: { presence: { allowEmpty: false } },
-          state_singles: { presence: { allowEmpty: false } },
-          age_group_singles: { presence: { allowEmpty: false } },
-          skill_singles: { presence: { allowEmpty: false } },
-          sex_singles: { presence: { allowEmpty: false } },
-          tournament_singles: { presence: { allowEmpty: false } },
+          singles_first: { presence: reqMsg('First name') },
+          singles_last: { presence: reqMsg('Last name') },
+          phone_singles: { presence: reqMsg('Phone number') },
+          city_singles: { presence: reqMsg('City') },
+          state_singles: { presence: reqMsg('State') },
+          age_group_singles: { presence: reqMsg('Age group') },
+          skill_singles: { presence: reqMsg('Skill level') },
+          sex_singles: { presence: reqMsg('Gender') },
+          tournament_singles: { presence: reqMsg('Tournament') },
         });
       }
 
       return $.extend({}, base, {
-        d1_first: { presence: { allowEmpty: false } },
-        d1_last: { presence: { allowEmpty: false } },
-        phone_doubles: { presence: { allowEmpty: false } },
-        city_doubles: { presence: { allowEmpty: false } },
-        state_doubles: { presence: { allowEmpty: false } },
-        age_group_doubles: { presence: { allowEmpty: false } },
-        skill_doubles: { presence: { allowEmpty: false } },
-        sex_doubles: { presence: { allowEmpty: false } },
-        tournament_doubles: { presence: { allowEmpty: false } },
-        d2_first: { presence: { allowEmpty: false } },
-        d2_last: { presence: { allowEmpty: false } },
-        d2_email: { presence: { allowEmpty: false }, email: true },
-        d2_phone: { presence: { allowEmpty: false } },
-        d2_city: { presence: { allowEmpty: false } },
-        d2_state: { presence: { allowEmpty: false } },
-        d2_age_group: { presence: { allowEmpty: false } },
-        d2_skill: { presence: { allowEmpty: false } },
-        d2_sex: { presence: { allowEmpty: false } },
+        d1_first: { presence: reqMsg('First name') },
+        d1_last: { presence: reqMsg('Last name') },
+        phone_doubles: { presence: reqMsg('Phone number') },
+        city_doubles: { presence: reqMsg('City') },
+        state_doubles: { presence: reqMsg('State') },
+        age_group_doubles: { presence: reqMsg('Age group') },
+        skill_doubles: { presence: reqMsg('Skill level') },
+        sex_doubles: { presence: reqMsg('Gender') },
+        tournament_doubles: { presence: reqMsg('Tournament') },
+        d2_first: { presence: reqMsg('Player 2 first name') },
+        d2_last: { presence: reqMsg('Player 2 last name') },
+        d2_email: { presence: reqMsg('Player 2 email'), email: { message: '^Please enter a valid email address for Player 2.' } },
+        d2_phone: { presence: reqMsg('Player 2 phone') },
+        d2_city: { presence: reqMsg('Player 2 city') },
+        d2_state: { presence: reqMsg('Player 2 state') },
+        d2_age_group: { presence: reqMsg('Player 2 age group') },
+        d2_skill: { presence: reqMsg('Player 2 skill level') },
+        d2_sex: { presence: reqMsg('Player 2 gender') },
       });
     }
 
@@ -501,13 +507,7 @@
       var conf = $form.find('input[name="password_confirmation"]').val() || '';
       var $msg = $form.find('.password-match-error');
       if (!$msg.length) return;
-      if (!conf) {
-        $msg.text('').addClass('hidden');
-        return;
-      }
-      if (pass !== conf) {
-        $msg.text('Passwords do not match.').removeClass('hidden');
-      } else {
+      if (!conf || pass === conf) {
         $msg.text('').addClass('hidden');
       }
     }
@@ -568,8 +568,10 @@
         return;
       }
 
-      // Disable submit + show loader
-      $btn.prop('disabled', true);
+      // Disable submit + show loader spinner on button
+      $btn.prop('disabled', true).addClass('opacity-75 cursor-not-allowed');
+      var originalBtnText = $btn.html();
+      $btn.html('<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing...');
       if ($loader.length) $loader.removeClass('hidden');
 
       // Compute name
@@ -587,36 +589,46 @@
       var skill = tab === 'singles' ? $form.find('select[name="skill_singles"]').val() : $form.find('select[name="skill_doubles"]').val();
       var $groupSelect = $form.find('.tournament-group-select');
       var groupCardId = $form.find('.tournament-group-id').val() || ($groupSelect.length ? $groupSelect.val() : '');
-      var email = tab === 'singles' ? $form.find('#singles_email').val() : $form.find('#doubles_email').val();
+      var email = $form.find('input[name="email"]').val() || $form.find('#singles_email').val() || $form.find('#doubles_email').val();
 
       if (!leagueId) {
-        setCardError('Please select a tournament before payment.');
+        var msgLeague = 'Please select a tournament before payment.';
+        setCardError(msgLeague);
+        showToast(msgLeague, 'error');
         $form.find('select[name="' + (tab === 'singles' ? 'tournament_singles' : 'tournament_doubles') + '"]').addClass('border-red-500');
-        $btn.prop('disabled', false);
+        $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
         if ($loader.length) $loader.addClass('hidden');
         return;
       }
       if (!groupCardId) {
-        renderResponse($responseBox, 'error', tab === 'singles' || tab === 'doubles'
+        var msgGroup = tab === 'singles' || tab === 'doubles'
           ? 'Your group could not be assigned. Check tournament and skill level(s).'
-          : 'Please select a group for this tournament.');
+          : 'Please select a group for this tournament.';
+        renderResponse($responseBox, 'error', msgGroup);
+        showToast(msgGroup, 'error');
         if (tab === 'singles' || tab === 'doubles') {
           $form.find('.tournament-group-preview').addClass('border-red-500');
         } else if ($groupSelect.length) {
           $groupSelect.addClass('border-red-500');
         }
-        $btn.prop('disabled', false);
+        $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
         if ($loader.length) $loader.addClass('hidden');
         return;
       }
       if (isGroupCardClosed(leagueId, groupCardId)) {
-        renderResponse($responseBox, 'error', 'This group has started. Registration is closed for the selected group.');
-        $btn.prop('disabled', false);
+        var msgClosed = 'This group has started. Registration is closed for the selected group.';
+        renderResponse($responseBox, 'error', msgClosed);
+        showToast(msgClosed, 'error');
+        $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
         if ($loader.length) $loader.addClass('hidden');
         return;
       }
 
       var formDataArray = $form.serializeArray();
+
+      var phone = $form.find('input[name="phone_singles"]').val() || $form.find('input[name="phone_doubles"]').val() || $form.find('input[name="phone"]').val() || '';
+      var d2Email = $form.find('input[name="d2_email"]').val() || '';
+      var d2Phone = $form.find('input[name="d2_phone"]').val() || '';
 
       $.ajax({
         type: 'POST',
@@ -629,6 +641,9 @@
           registration_tab: tab,
           skill_level: skill,
           email: email,
+          phone: phone,
+          d2_email: d2Email,
+          d2_phone: d2Phone,
         }),
       })
         .then(function (pi) {
@@ -679,14 +694,19 @@
           if (redirectUrl) {
             pendingSuccessRedirect = true;
             showToast(message || 'Registration successful! Redirecting...', 'success');
+            $form[0].reset();
+            if (card) card.clear();
             window.setTimeout(function () {
               window.location.href = redirectUrl;
             }, successRedirectDelayMs);
             return;
           }
           $responseBox.html(response);
+          showToast(message || 'Registration successful!', 'success');
+          $form[0].reset();
+          if (card) card.clear();
         })
-        .fail(function (jqXHR) {
+        .fail(function (jqXHR, textStatus, errorThrown) {
           var msg = 'Something went wrong.';
           if (jqXHR && jqXHR.status === 422) {
             var errors = null;
@@ -695,16 +715,12 @@
             } catch (err) {}
             if (errors) {
               applyFieldErrors($form, errors);
-              var errList = '<ul class="list-disc list-inside text-sm text-red-700 space-y-1">';
+              var firstErrMsg = '';
               Object.keys(errors).forEach(function (name) {
-                errList += '<li>' + escapeHtml(errors[name][0]) + '</li>';
+                var firstErr = errors[name][0];
+                if (!firstErrMsg) firstErrMsg = firstErr;
               });
-              errList += '</ul>';
-              $responseBox.html(
-                '<div class="rounded-[10px] border border-red-200 bg-red-50 p-3 mb-4">' +
-                  errList +
-                '</div>'
-              );
+              showToast(firstErrMsg || 'Please fix the errors in the form.', 'error');
               return;
             }
           }
@@ -712,20 +728,17 @@
             msg = jqXHR.responseJSON.message;
           } else if (jqXHR && jqXHR.message) {
             msg = jqXHR.message;
+          } else if (errorThrown && errorThrown.message) {
+            msg = errorThrown.message;
+          } else if (typeof jqXHR === 'object' && jqXHR !== null && jqXHR.toString && jqXHR.toString().indexOf('Error') !== -1) {
+            msg = jqXHR.message || String(jqXHR);
           }
-          // Server / payment errors: show only below Submit (response box), not under the card field
           setCardError('');
-          var text = jqXHR && jqXHR.responseText ? String(jqXHR.responseText).trim() : '';
-          var looksLikeHtml = text.length > 0 && text.charAt(0) === '<';
-          if (looksLikeHtml && text.indexOf('<!DOCTYPE') === -1 && text.indexOf('<html') === -1) {
-            $responseBox.html(text);
-          } else {
-            renderResponse($responseBox, 'error', msg);
-          }
+          showToast(msg, 'error');
         })
         .always(function () {
           if (!pendingSuccessRedirect) {
-            $btn.prop('disabled', false);
+            $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
           }
           if ($loader.length) $loader.addClass('hidden');
         });
@@ -744,6 +757,7 @@
     function validateRoleForm() {
       if (!window.validate) {
         renderResponse($responseBox, 'error', 'Validation library missing. Please refresh.');
+        showToast('Validation library missing. Please refresh.', 'error');
         return { _validation: ['missing'] };
       }
       clearFieldErrors($form);
@@ -751,18 +765,21 @@
       $form.serializeArray().forEach(function (it) {
         values[it.name] = it.value;
       });
+      var reqMsg = function (label) {
+        return { allowEmpty: false, message: '^' + label + ' is required.' };
+      };
       var constraints = {
-        first_name: { presence: { allowEmpty: false } },
-        last_name: { presence: { allowEmpty: false } },
-        email: { presence: { allowEmpty: false }, email: true },
-        phone: { presence: { allowEmpty: false } },
-        password: { presence: { allowEmpty: false }, length: { minimum: 8 } },
+        first_name: { presence: reqMsg('First name') },
+        last_name: { presence: reqMsg('Last name') },
+        email: { presence: reqMsg('Email'), email: { message: '^Please enter a valid email address.' } },
+        phone: { presence: reqMsg('Phone number') },
+        password: { presence: reqMsg('Password'), length: { minimum: 8, message: '^Password must be at least 8 characters.' } },
         password_confirmation: {
-          presence: { allowEmpty: false },
+          presence: reqMsg('Confirm password'),
           equality: { attribute: 'password', message: '^Passwords do not match.' },
         },
-        city: { presence: { allowEmpty: false } },
-        state: { presence: { allowEmpty: false } },
+        city: { presence: reqMsg('City') },
+        state: { presence: reqMsg('State') },
       };
       var errors = validate(values, constraints) || null;
       if (errors) applyFieldErrors($form, errors);
@@ -793,10 +810,13 @@
 
       var errors = validateRoleForm();
       if (errors) {
+        showToast('Please fix the highlighted fields in the form.', 'error');
         return;
       }
 
-      $btn.prop('disabled', true);
+      $btn.prop('disabled', true).addClass('opacity-75 cursor-not-allowed');
+      var originalBtnText = $btn.html();
+      $btn.html('<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing...');
       if ($loader.length) $loader.removeClass('hidden');
 
       $.ajax({
@@ -833,12 +853,15 @@
 
           if (redirectUrl) {
             showToast(message || 'Registration successful! Redirecting...', 'success');
+            $form[0].reset();
             window.setTimeout(function () {
               window.location.href = redirectUrl;
-            }, 2000);
+            }, 2500);
             return;
           }
           $responseBox.html(response);
+          showToast(message || 'Registration successful!', 'success');
+          $form[0].reset();
         })
         .fail(function (jqXHR) {
           var msg = 'Something went wrong.';
@@ -849,16 +872,11 @@
             } catch (err) {}
             if (errors) {
               applyFieldErrors($form, errors);
-              var errList = '<ul class="list-disc list-inside text-sm text-red-700 space-y-1">';
+              var firstErrMsg = '';
               Object.keys(errors).forEach(function (name) {
-                errList += '<li>' + escapeHtml(errors[name][0]) + '</li>';
+                var firstErr = errors[name][0];
+                if (!firstErrMsg) firstErrMsg = firstErr;
               });
-              errList += '</ul>';
-              $responseBox.html(
-                '<div class="rounded-[10px] border border-red-200 bg-red-50 p-3 mb-4">' +
-                  errList +
-                '</div>'
-              );
 
               var firstErrElement = null;
               Object.keys(errors).forEach(function (name) {
@@ -870,6 +888,7 @@
               if (firstErrElement) {
                 $('html, body').animate({ scrollTop: firstErrElement.offset().top - 120 }, 300);
               }
+              showToast(firstErrMsg || 'Please fix the errors in the form.', 'error');
               return;
             }
           }
@@ -878,10 +897,10 @@
           } else if (jqXHR && jqXHR.message) {
             msg = jqXHR.message;
           }
-          renderResponse($responseBox, 'error', msg);
+          showToast(msg, 'error');
         })
         .always(function () {
-          $btn.prop('disabled', false);
+          $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
           if ($loader.length) $loader.addClass('hidden');
         });
     });

@@ -8,6 +8,7 @@
 @section('content')
     <main>
         @include('partials.site-page-hero', [
+            'heroBannerPath' => \App\Models\SiteSetting::banners()['terms_banner_path'],
             'heroBreadcrumb' => 'Terms and Conditions',
             'heroTitleLight' => 'TERMS AND',
             'heroTitleAccent' => 'CONDITIONS',

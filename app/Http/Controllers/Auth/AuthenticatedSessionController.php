@@ -51,6 +51,31 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        // Check account status
+        if ($user) {
+            $status = strtolower((string) ($user->status ?? 'active'));
+            if ($status === 'pending') {
+                throw ValidationException::withMessages([
+                    'email' => 'Your account registration is currently pending admin approval. You will receive an email once an administrator approves your account.',
+                ]);
+            }
+            if ($status === 'rejected') {
+                throw ValidationException::withMessages([
+                    'email' => 'Your account application has been reviewed and rejected by the administrator. Access is restricted.',
+                ]);
+            }
+            if ($status === 'suspend') {
+                throw ValidationException::withMessages([
+                    'email' => 'Your account has been suspended. Please contact the administrator for assistance.',
+                ]);
+            }
+            if ($status !== 'active') {
+                throw ValidationException::withMessages([
+                    'email' => 'Your account status is currently inactive. Please contact support.',
+                ]);
+            }
+        }
+
         // Standard Laravel Authenticate (with plain-text decrypted password)
         if (! $user || ! Hash::check($decryptedPassword, $user->getAuthPassword())) {
             if ($user) {

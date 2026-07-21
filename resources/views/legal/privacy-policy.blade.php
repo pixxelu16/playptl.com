@@ -8,6 +8,7 @@
 @section('content')
     <main>
         @include('partials.site-page-hero', [
+            'heroBannerPath' => \App\Models\SiteSetting::banners()['privacy_banner_path'],
             'heroBreadcrumb' => 'Privacy Policy',
             'heroTitleLight' => 'PRIVACY',
             'heroTitleAccent' => 'POLICY',
