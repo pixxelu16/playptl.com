@@ -74,21 +74,32 @@ class RegisteredUserController extends Controller
             $isPendingApproval = in_array($validated['role'], ['mentor', 'coach'], true);
             $status = $isPendingApproval ? 'pending' : 'active';
 
-            $user = User::create([
-                'name' => trim($validated['first_name'] . ' ' . $validated['last_name']),
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'email' => $validated['email'],
-                'username' => User::generateUniqueUsername($validated['email']),
-                'phone' => $validated['phone'],
-                'password' => Hash::make($validated['password']),
-                'role' => UserRole::from($validated['role']),
-                'status' => $status,
-                'city' => $validated['city'],
-                'state' => $validated['state'],
-            ]);
+            $user = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $isPendingApproval) {
+                $createdUser = User::create([
+                    'name' => trim($validated['first_name'] . ' ' . $validated['last_name']),
+                    'first_name' => $validated['first_name'],
+                    'last_name' => $validated['last_name'],
+                    'email' => $validated['email'],
+                    'username' => User::generateUniqueUsername($validated['email']),
+                    'phone' => $validated['phone'],
+                    'password' => Hash::make($validated['password']),
+                    'role' => UserRole::from($validated['role']),
+                    'status' => $status,
+                    'city' => $validated['city'],
+                    'state' => $validated['state'],
+                ]);
 
-            $user->assignRole(ucfirst($validated['role']));
+                // Ensure role exists or assign role gracefully
+                $roleName = ucfirst($validated['role']);
+                try {
+                    $createdUser->assignRole($roleName);
+                } catch (\Throwable $e) {
+                    // Fallback if Spatie role name is stored lowercase
+                    $createdUser->assignRole($validated['role']);
+                }
+
+                return $createdUser;
+            });
 
             try {
                 if ($isPendingApproval) {
@@ -303,102 +314,118 @@ class RegisteredUserController extends Controller
 
         $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $tab, $ageGroup);
 
-        $user = User::create([
-            'name' => $base['name'],
-            'first_name' => $tab === 'singles' ? ($specific['singles_first'] ?? null) : ($specific['d1_first'] ?? null),
-            'last_name' => $tab === 'singles' ? ($specific['singles_last'] ?? null) : ($specific['d1_last'] ?? null),
-            'email' => $base['email'],
-            'username' => User::generateUniqueUsername($base['email']),
-            'phone' => $phone,
-            'role' => UserRole::Player,
-            'status' => 'active',
-            'password' => Hash::make($base['password']),
-            'city' => $city,
-            'state' => $state,
-            'sex' => $sex,
-            'skill_level' => $skillLevel,
-            'registration_type' => $tab,
-            'transaction_id' => (string) $intent->id,
-        ]);
-
-        $user->assignRole('Player');
-
-        $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
-        PaymentHistory::create([
-            'user_id' => $user->id,
-            'league_id' => $leagueId,
-            'amount' => $amountDecimal,
-            'currency' => strtoupper(SiteSetting::stripeCurrency()),
-            'status' => 'completed',
-            'transaction_id' => (string) $intent->id,
-            'description' => 'Tournament registration fee',
-            'meta' => [
-                'registration_tab' => $tab,
-                'payment_intent_status' => (string) $intent->status,
-            ],
-        ]);
-
-        $primaryTeamKey = null;
-
-        if ($tab === 'doubles') {
-            $primaryTeamKey = (string) Str::uuid();
-        }
-
-        LeagueRegistration::updateOrCreate(
-            ['user_id' => $user->id, 'league_id' => $leagueId],
-            [
-                'group_card_id' => $groupCard instanceof GroupCard ? $groupCard->id : null,
-                'group_id' => $groupId,
+        $user = \Illuminate\Support\Facades\DB::transaction(function () use (
+            $base, $tab, $specific, $phone, $city, $state, $sex, $skillLevel, $intent, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup
+        ) {
+            $createdUser = User::create([
+                'name' => $base['name'],
+                'first_name' => $tab === 'singles' ? ($specific['singles_first'] ?? null) : ($specific['d1_first'] ?? null),
+                'last_name' => $tab === 'singles' ? ($specific['singles_last'] ?? null) : ($specific['d1_last'] ?? null),
+                'email' => $base['email'],
+                'username' => User::generateUniqueUsername($base['email']),
+                'phone' => $phone,
+                'role' => UserRole::Player,
+                'status' => 'active',
+                'password' => Hash::make($base['password']),
+                'city' => $city,
+                'state' => $state,
+                'sex' => $sex,
                 'skill_level' => $skillLevel,
-                'age_group_key' => $ageGroup,
                 'registration_type' => $tab,
-                'team_key' => $primaryTeamKey,
-                'payment_status' => 'completed',
-            ]
-        );
+                'transaction_id' => (string) $intent->id,
+            ]);
 
-        UserSkillLevel::syncToUser($user, $skillLevel);
+            try {
+                $createdUser->assignRole('Player');
+            } catch (\Throwable $e) {
+                $createdUser->assignRole('player');
+            }
 
-        // Doubles: create/attach second player as separate user + registration, send invite/setup email
-        if ($tab === 'doubles') {
-            $partnerEmail = strtolower((string) $specific['d2_email']);
-            $partnerName = trim(((string) ($specific['d2_first'] ?? '')).' '.((string) ($specific['d2_last'] ?? '')));
+            $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
+            PaymentHistory::create([
+                'user_id' => $createdUser->id,
+                'league_id' => $leagueId,
+                'amount' => $amountDecimal,
+                'currency' => strtoupper(SiteSetting::stripeCurrency()),
+                'status' => 'completed',
+                'transaction_id' => (string) $intent->id,
+                'description' => 'Tournament registration fee',
+                'meta' => [
+                    'registration_tab' => $tab,
+                    'payment_intent_status' => (string) $intent->status,
+                ],
+            ]);
 
-            $partner = User::query()->where('email', $partnerEmail)->first();
-            if (! $partner) {
-                $partner = User::create([
-                    'name' => $partnerName !== '' ? $partnerName : $partnerEmail,
-                    'first_name' => $specific['d2_first'] ?? null,
-                    'last_name' => $specific['d2_last'] ?? null,
-                    'email' => $partnerEmail,
-                    'username' => User::generateUniqueUsername($partnerEmail),
-                    'phone' => (string) $specific['d2_phone'],
-                    'city' => (string) $specific['d2_city'],
-                    'state' => (string) $specific['d2_state'],
-                    'sex' => (string) $specific['d2_sex'],
-                    'role' => UserRole::Player,
-                    'status' => 'active',
-                    'password' => Hash::make(Str::random(32)),
-                    'registration_type' => 'doubles',
-                    'skill_level' => (string) $specific['d2_skill'],
-                ]);
-                $partner->assignRole('Player');
-            } else {
-                UserSkillLevel::syncToUser($partner, (string) $specific['d2_skill']);
+            $primaryTeamKey = null;
+            if ($tab === 'doubles') {
+                $primaryTeamKey = (string) Str::uuid();
             }
 
             LeagueRegistration::updateOrCreate(
-                ['user_id' => $partner->id, 'league_id' => $leagueId],
+                ['user_id' => $createdUser->id, 'league_id' => $leagueId],
                 [
                     'group_card_id' => $groupCard instanceof GroupCard ? $groupCard->id : null,
                     'group_id' => $groupId,
-                    'skill_level' => (string) $specific['d2_skill'],
-                    'age_group_key' => (string) $specific['d2_age_group'],
-                    'registration_type' => 'doubles',
+                    'skill_level' => $skillLevel,
+                    'age_group_key' => $ageGroup,
+                    'registration_type' => $tab,
                     'team_key' => $primaryTeamKey,
                     'payment_status' => 'completed',
                 ]
             );
+
+            UserSkillLevel::syncToUser($createdUser, $skillLevel);
+
+            // Doubles: create/attach second player as separate user + registration
+            if ($tab === 'doubles') {
+                $partnerEmail = strtolower((string) $specific['d2_email']);
+                $partnerName = trim(((string) ($specific['d2_first'] ?? '')).' '.((string) ($specific['d2_last'] ?? '')));
+
+                $partner = User::query()->where('email', $partnerEmail)->first();
+                if (! $partner) {
+                    $partner = User::create([
+                        'name' => $partnerName !== '' ? $partnerName : $partnerEmail,
+                        'first_name' => $specific['d2_first'] ?? null,
+                        'last_name' => $specific['d2_last'] ?? null,
+                        'email' => $partnerEmail,
+                        'username' => User::generateUniqueUsername($partnerEmail),
+                        'phone' => (string) $specific['d2_phone'],
+                        'city' => (string) $specific['d2_city'],
+                        'state' => (string) $specific['d2_state'],
+                        'sex' => (string) $specific['d2_sex'],
+                        'role' => UserRole::Player,
+                        'status' => 'active',
+                        'password' => Hash::make(Str::random(32)),
+                        'registration_type' => 'doubles',
+                        'skill_level' => (string) $specific['d2_skill'],
+                    ]);
+                    try {
+                        $partner->assignRole('Player');
+                    } catch (\Throwable $e) {
+                        $partner->assignRole('player');
+                    }
+                } else {
+                    UserSkillLevel::syncToUser($partner, (string) $specific['d2_skill']);
+                }
+
+                LeagueRegistration::updateOrCreate(
+                    ['user_id' => $partner->id, 'league_id' => $leagueId],
+                    [
+                        'group_card_id' => $groupCard instanceof GroupCard ? $groupCard->id : null,
+                        'group_id' => $groupId,
+                        'skill_level' => (string) $specific['d2_skill'],
+                        'age_group_key' => (string) $specific['d2_age_group'],
+                        'registration_type' => 'doubles',
+                        'team_key' => $primaryTeamKey,
+                        'payment_status' => 'completed',
+                    ]
+                );
+            }
+
+            return $createdUser;
+        });
+
+        $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
 
             try {
                 // Use Laravel password reset flow so partner can setup account with same email.
