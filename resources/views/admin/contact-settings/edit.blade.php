@@ -270,7 +270,7 @@
                     <div class="admin-form-group">
                         <label class="admin-label" for="smtp_password">Password</label>
                         <input class="admin-input" id="smtp_password" type="password" name="smtp_password"
-                               value="" placeholder="{{ $smtp['password'] ? '••••••••••••••••••••••••••••••••' : 'Leave blank to keep existing' }}">
+                               value="{{ old('smtp_password', $smtp['password']) }}" placeholder="Enter SMTP password">
                     </div>
 
                     <div class="admin-form-group">
