@@ -29,6 +29,9 @@ class RegisterStripePaymentIntentController extends Controller
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
             'skill_level' => ['required', 'string', 'max:32'],
             'email' => ['required', 'string', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'd2_email' => ['nullable', 'string', 'email', 'max:255'],
+            'd2_phone' => ['nullable', 'string', 'max:32'],
         ]);
 
         $league = League::query()->findOrFail((int) $validated['league_id']);
@@ -48,8 +51,42 @@ class RegisterStripePaymentIntentController extends Controller
         $email = strtolower((string) $validated['email']);
         if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
             return response()->json([
-                'message' => 'This email is already registered. Please sign in or use a different email address.',
+                'message' => 'The email has already been taken.',
             ], 422);
+        }
+
+        if (!empty($validated['phone'])) {
+            $rawPhone = trim((string) $validated['phone']);
+            $digitsPhone = preg_replace('/\D+/', '', $rawPhone);
+            if (User::query()->where('phone', $rawPhone)->orWhere('phone', $digitsPhone)->exists()) {
+                return response()->json([
+                    'message' => 'The phone has already been taken.',
+                ], 422);
+            }
+        }
+
+        if ((string) $validated['registration_tab'] === 'doubles') {
+            if (!empty($validated['d2_email'])) {
+                $d2Email = strtolower((string) $validated['d2_email']);
+                if ($d2Email === $email) {
+                    return response()->json([
+                        'message' => 'Second player email must be different from your email.',
+                    ], 422);
+                }
+                if (User::query()->whereRaw('LOWER(email) = ?', [$d2Email])->exists()) {
+                    return response()->json([
+                        'message' => 'The Player 2 email has already been taken.',
+                    ], 422);
+                }
+            }
+            if (!empty($validated['d2_phone'])) {
+                $d2Phone = trim((string) $validated['d2_phone']);
+                if (User::query()->where('phone', $d2Phone)->exists()) {
+                    return response()->json([
+                        'message' => 'The Player 2 phone has already been taken.',
+                    ], 422);
+                }
+            }
         }
 
         $amountCents = LeagueEntryFee::centsForTab($league, (string) $validated['registration_tab']);

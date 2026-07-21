@@ -29,6 +29,14 @@ class AdminUserController extends Controller
         // Role filter
         if ($role = $request->get('role')) {
             $query->where('role', $role);
+        } else {
+            // Exclude players from the Users listing page so non-player roles display
+            $query->where(function ($q) {
+                $q->where('role', '!=', UserRole::Player)
+                  ->whereDoesntHave('roles', function ($rq) {
+                      $rq->whereIn('name', ['player', 'Player']);
+                  });
+            });
         }
 
         // Per page filter

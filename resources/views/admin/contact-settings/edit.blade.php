@@ -70,6 +70,7 @@
         {{-- Tabs Navigation --}}
         <div class="settings-tabs" role="tablist">
             <button type="button" class="settings-tab-btn is-active" data-tab="general" role="tab" aria-selected="true">General Settings</button>
+            <button type="button" class="settings-tab-btn" data-tab="banners" role="tab" aria-selected="false">Page Banners</button>
             <button type="button" class="settings-tab-btn" data-tab="stripe" role="tab" aria-selected="false">Stripe Gateway</button>
             <button type="button" class="settings-tab-btn" data-tab="smtp" role="tab" aria-selected="false">Email (SMTP)</button>
             <button type="button" class="settings-tab-btn" data-tab="commission" role="tab" aria-selected="false">Commissions</button>
@@ -114,10 +115,16 @@
                     </div>
                 </div>
 
-                <h2 class="admin-card-title" style="font-size: 1.1rem; margin: 28px 0 12px;">Contact Details</h2>
-                <p class="admin-card-text" style="margin-bottom: 20px;">Phone, email, and address shown in the footer contact column.</p>
+                <h2 class="admin-card-title" style="font-size: 1.1rem; margin: 28px 0 12px;">Site & Contact Details</h2>
+                <p class="admin-card-text" style="margin-bottom: 20px;">Site title, phone, email, and address used across branding and email templates.</p>
 
                 <div class="admin-form-grid">
+                    <div class="admin-form-group" style="grid-column: 1 / -1;">
+                        <label class="admin-label" for="site_title">Site Title</label>
+                        <input class="admin-input" id="site_title" type="text" name="site_title" value="{{ old('site_title', $contact['site_title'] ?? 'Premier Tennis League') }}" placeholder="e.g. Premier Tennis League" required>
+                        <p class="admin-card-text" style="margin-top: 6px; font-size: 13px; opacity: .8;">Used as the primary brand name in emails, sign-offs, and footers.</p>
+                    </div>
+
                     <div class="admin-form-group">
                         <label class="admin-label" for="contact_phone">Phone</label>
                         <input class="admin-input" id="contact_phone" type="text" name="contact_phone" value="{{ old('contact_phone', $contact['phone']) }}" required>
@@ -132,6 +139,44 @@
                         <label class="admin-label" for="contact_address">Address</label>
                         <textarea class="admin-input" id="contact_address" name="contact_address" rows="3" required>{{ old('contact_address', $contact['address']) }}</textarea>
                     </div>
+                </div>
+            </div>
+
+            {{-- 2. Page Banners Panel --}}
+            <div id="panel-banners" class="settings-tab-panel" role="tabpanel">
+                <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Frontend Page Hero Banners</h2>
+                <p class="admin-card-text" style="margin-bottom: 20px;">Upload custom hero background images for every specific page on the website. If unassigned, defaults to the default tennis hero banner.</p>
+
+                <div class="admin-form-grid">
+                    @php
+                        $bannerItems = [
+                            ['id' => 'home_banner',           'key' => 'home_banner_path',           'label' => 'Home Page Banner',                        'desc' => 'Displayed on main landing page (/)'],
+                            ['id' => 'league_banner',         'key' => 'league_banner_path',         'label' => 'Tournaments Overview Page Banner',       'desc' => 'Displayed on tournament overview page (/league/{slug})'],
+                            ['id' => 'league_details_banner', 'key' => 'league_details_banner_path', 'label' => 'Tournament Details / Group Page Banner', 'desc' => 'Displayed on group/division details page (/league/{leagueSlug}/{groupCardSlug})'],
+                            ['id' => 'gallery_banner',        'key' => 'gallery_banner_path',        'label' => 'Match Gallery Page Banner',               'desc' => 'Displayed on gallery page (/gallery)'],
+                            ['id' => 'charity_banner',        'key' => 'charity_banner_path',        'label' => 'Charity & Causes Page Banner',              'desc' => 'Displayed on charity listing & cause detail pages (/charity)'],
+                            ['id' => 'mentors_banner',        'key' => 'mentors_banner_path',        'label' => 'Mentors Page Banner',                       'desc' => 'Displayed on mentors discovery page (/player-services/mentors)'],
+                            ['id' => 'coaches_banner',        'key' => 'coaches_banner_path',        'label' => 'Coaches Page Banner',                       'desc' => 'Displayed on coaches discovery page (/player-services/coaches)'],
+                            ['id' => 'mentor_profile_banner', 'key' => 'mentor_profile_banner_path', 'label' => 'Mentor Detail Profile Page Banner',        'desc' => 'Displayed on individual mentor profile pages (/player-services/mentor/{username})'],
+                            ['id' => 'coach_profile_banner',  'key' => 'coach_profile_banner_path',  'label' => 'Coach Detail Profile Page Banner',         'desc' => 'Displayed on individual coach profile pages (/player-services/coach/{username})'],
+                            ['id' => 'privacy_banner',        'key' => 'privacy_banner_path',        'label' => 'Privacy Policy Page Banner',               'desc' => 'Displayed on Privacy Policy page (/privacy-policy)'],
+                            ['id' => 'terms_banner',          'key' => 'terms_banner_path',          'label' => 'Terms & Conditions Page Banner',         'desc' => 'Displayed on Terms & Conditions page (/terms-and-conditions)'],
+                        ];
+                    @endphp
+
+                    @foreach ($bannerItems as $item)
+                        @php
+                            $path = $banners[$item['key']] ?? 'frontend/images/hero_tennis_banner.png';
+                        @endphp
+                        <div class="admin-form-group" style="grid-column: 1 / -1; display:flex; gap: 14px; align-items:center;">
+                            <img src="{{ asset($path) }}" alt="{{ $item['label'] }} preview" width="152" height="90" style="width:152px;height:90px;object-fit:cover;border:1px solid #d7ead9;border-radius:8px;background:#fff;">
+                            <div style="flex:1;">
+                                <label class="admin-label" for="{{ $item['id'] }}">{{ $item['label'] }}</label>
+                                <input class="admin-input" id="{{ $item['id'] }}" type="file" name="{{ $item['id'] }}" accept="image/jpeg,image/jpg,image/png,image/webp">
+                                <p class="admin-card-text" style="margin-top: 6px; font-size: 13px; opacity: .8;">{{ $item['desc'] }}. JPG, JPEG, PNG, or WebP. Max 4MB.</p>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 
@@ -160,22 +205,22 @@
 
                     <div class="admin-form-group">
                         <label class="admin-label" for="stripe_test_publishable_key">Test Publishable Key</label>
-                        <input class="admin-input" id="stripe_test_publishable_key" type="text" name="stripe_test_publishable_key" value="{{ old('stripe_test_publishable_key', $stripe['test_publishable_key']) }}">
+                        <input class="admin-input" id="stripe_test_publishable_key" type="text" name="stripe_test_publishable_key" value="{{ old('stripe_test_publishable_key', $stripe['test_publishable_key']) }}" placeholder="Enter Test Publishable Key">
                     </div>
 
                     <div class="admin-form-group">
                         <label class="admin-label" for="stripe_test_secret_key">Test Secret Key</label>
-                        <input class="admin-input" id="stripe_test_secret_key" type="password" name="stripe_test_secret_key" value="" placeholder="{{ $stripe['test_secret_key'] ? '••••••••••••••••••••••••••••••••' : 'Enter Test Secret Key' }}">
+                        <input class="admin-input" id="stripe_test_secret_key" type="password" name="stripe_test_secret_key" value="{{ old('stripe_test_secret_key', $stripe['test_secret_key']) }}" placeholder="Enter Test Secret Key">
                     </div>
 
                     <div class="admin-form-group">
                         <label class="admin-label" for="stripe_live_publishable_key">Live Publishable Key</label>
-                        <input class="admin-input" id="stripe_live_publishable_key" type="text" name="stripe_live_publishable_key" value="{{ old('stripe_live_publishable_key', $stripe['live_publishable_key']) }}">
+                        <input class="admin-input" id="stripe_live_publishable_key" type="text" name="stripe_live_publishable_key" value="{{ old('stripe_live_publishable_key', $stripe['live_publishable_key']) }}" placeholder="Enter Live Publishable Key">
                     </div>
 
                     <div class="admin-form-group">
                         <label class="admin-label" for="stripe_live_secret_key">Live Secret Key</label>
-                        <input class="admin-input" id="stripe_live_secret_key" type="password" name="stripe_live_secret_key" value="" placeholder="{{ $stripe['live_secret_key'] ? '••••••••••••••••••••••••••••••••' : 'Enter Live Secret Key' }}">
+                        <input class="admin-input" id="stripe_live_secret_key" type="password" name="stripe_live_secret_key" value="{{ old('stripe_live_secret_key', $stripe['live_secret_key']) }}" placeholder="Enter Live Secret Key">
                     </div>
                 </div>
             </div>

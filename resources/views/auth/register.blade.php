@@ -260,9 +260,7 @@
                                 Submit
                             </button>
 
-                            <div class="common-loader mt-3 hidden rounded-[10px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#374151]">
-                                Processing...
-                            </div>
+                           
                         </form>
 
                         {{-- Doubles form --}}
@@ -502,10 +500,6 @@
                                 class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5FA252] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
                                 Submit
                             </button>
-
-                            <div class="common-loader mt-3 hidden rounded-[10px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#374151]">
-                                Processing...
-                            </div>
                         </form>
 
                         {{-- Mentor, Coach, Student form --}}
@@ -523,13 +517,13 @@
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">First Name <span class="text-red-600">*</span></label>
                                         <input type="text" name="first_name" value="{{ old('first_name') }}" placeholder="First name"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             autocomplete="given-name" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Last Name <span class="text-red-600">*</span></label>
                                         <input type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Last name"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             autocomplete="family-name" required>
                                     </div>
                                 </div>
@@ -538,13 +532,13 @@
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Email <span class="text-red-600">*</span></label>
                                         <input type="email" name="email" value="{{ old('email') }}" placeholder="Email"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             autocomplete="email" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Phone Number <span class="text-red-600">*</span></label>
                                         <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="Phone"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             autocomplete="tel" required>
                                     </div>
                                 </div>
@@ -553,13 +547,13 @@
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Password <span class="text-red-600">*</span></label>
                                         <input type="password" name="password" placeholder="Password"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             autocomplete="new-password" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Confirm Password <span class="text-red-600">*</span></label>
                                         <input type="password" name="password_confirmation" placeholder="Confirm password"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             autocomplete="new-password" required>
                                     </div>
                                 </div>
@@ -568,13 +562,13 @@
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">City <span class="text-red-600">*</span></label>
                                         <input type="text" name="city" value="{{ old('city') }}" placeholder="City"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">State <span class="text-red-600">*</span></label>
                                         <input type="text" name="state" value="{{ old('state') }}" placeholder="State"
-                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             required>
                                     </div>
                                 </div>
@@ -584,10 +578,6 @@
                                 class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5FA252] text-[15px] font-bold text-white transition-opacity hover:opacity-95 mt-6">
                                 Submit
                             </button>
-
-                            <div class="common-loader mt-3 hidden rounded-[10px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#374151]">
-                                Processing...
-                            </div>
                         </form>
                     </div>
 

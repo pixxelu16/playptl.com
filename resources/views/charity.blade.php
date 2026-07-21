@@ -10,6 +10,7 @@
 @section('content')
     <main>
         @include('partials.site-page-hero', [
+            'heroBannerPath' => \App\Models\SiteSetting::banners()['charity_banner_path'],
             'heroBreadcrumb' => 'Charity',
             'heroTitleLight' => 'BEYOND THE',
             'heroTitleAccent' => 'BASELINE',
