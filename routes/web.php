@@ -159,6 +159,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('official-partners', AdminOfficialPartnerController::class)->except(['show']);
         Route::get('contact-settings', [AdminContactSettingController::class, 'edit'])->name('contact-settings.edit');
         Route::put('contact-settings', [AdminContactSettingController::class, 'update'])->name('contact-settings.update');
+        Route::post('contact-settings/test-smtp', [AdminContactSettingController::class, 'testSmtp'])->name('contact-settings.test-smtp');
         Route::resource('groups', AdminGroupController::class);
         Route::resource('group-cards', AdminGroupCardController::class);
         Route::resource('players', AdminPlayerController::class)->only(['index', 'edit', 'update', 'destroy']);
