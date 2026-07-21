@@ -105,6 +105,7 @@ class RegisterStripePaymentIntentController extends Controller
             $intent = $stripe->paymentIntents->create([
                 'amount' => $amountCents,
                 'currency' => strtolower($currency),
+                'capture_method' => 'manual',
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
