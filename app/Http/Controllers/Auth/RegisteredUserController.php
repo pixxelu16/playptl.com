@@ -89,14 +89,10 @@ class RegisteredUserController extends Controller
                     'state' => $validated['state'],
                 ]);
 
-                // Ensure role exists or assign role gracefully
+                // Ensure Spatie role exists in database before assigning
                 $roleName = ucfirst($validated['role']);
-                try {
-                    $createdUser->assignRole($roleName);
-                } catch (\Throwable $e) {
-                    // Fallback if Spatie role name is stored lowercase
-                    $createdUser->assignRole($validated['role']);
-                }
+                \Spatie\Permission\Models\Role::findOrCreate($roleName, 'web');
+                $createdUser->assignRole($roleName);
 
                 return $createdUser;
             });
@@ -335,11 +331,8 @@ class RegisteredUserController extends Controller
                 'transaction_id' => (string) $intent->id,
             ]);
 
-            try {
-                $createdUser->assignRole('Player');
-            } catch (\Throwable $e) {
-                $createdUser->assignRole('player');
-            }
+            \Spatie\Permission\Models\Role::findOrCreate('Player', 'web');
+            $createdUser->assignRole('Player');
 
             $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
             PaymentHistory::create([
