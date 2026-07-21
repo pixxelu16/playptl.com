@@ -466,11 +466,14 @@
                             @endif
                         </div>
                         @if ($matchesAlreadyScheduled)
+                            @php
+                                $todayYmd = date('Y-m-d');
+                                $minEndDate = $scheduleStart !== '' ? $scheduleStart : $todayYmd;
+                            @endphp
                             <div>
                                 <label for="group_end_date" style="display:block;font-weight:600;margin-bottom:0.35rem;">Group end date</label>
                                 <input class="admin-input @error('end_date') border-red-500 @enderror" id="group_end_date" type="date" name="end_date" value="{{ $scheduleEnd }}"
-                                    @if ($groupEndDateMin) min="{{ $groupEndDateMin }}" @endif
-                                    @if ($tournamentDateMax) max="{{ $tournamentDateMax }}" @endif
+                                    min="{{ $minEndDate }}"
                                     @if (! ($tournamentDatesConfigured ?? false)) disabled @endif>
                                 @error('end_date')
                                     <p class="mt-1 text-[12px] font-semibold text-red-600">{{ $message }}</p>
@@ -1409,4 +1412,24 @@
             @endforelse
         @endif
     </section>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var startDateInput = document.getElementById('group_start_date');
+            var endDateInput = document.getElementById('group_end_date');
+
+            if (startDateInput && endDateInput) {
+                startDateInput.addEventListener('change', function () {
+                    if (this.value) {
+                        endDateInput.min = this.value;
+                        if (endDateInput.value && endDateInput.value < this.value) {
+                            endDateInput.value = this.value;
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+    @endpush
 @endsection

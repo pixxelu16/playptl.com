@@ -46,15 +46,6 @@
                     </select>
                 </div>
                 <div>
-                    <label class="admin-label" for="role_filter">Role</label>
-                    <select class="admin-input" name="role_filter" id="role_filter">
-                        <option value="all" @selected(($roleFilter ?? 'all') === 'all')>All</option>
-                        @foreach (\Spatie\Permission\Models\Role::all() as $r)
-                            <option value="{{ strtolower($r->name) }}" @selected(($roleFilter ?? 'all') === strtolower($r->name))>{{ $r->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
                     <label class="admin-label" for="league_id">Tournament</label>
                     <select class="admin-input" name="league_id" id="league_id">
                         <option value="" @selected($leagueId === null)>All</option>
@@ -182,7 +173,7 @@
                                     <a href="{{ route('admin.players.edit', ['player' => $player] + $indexQuery) }}" title="Edit player">
                                         <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('admin.players.destroy', ['player' => $player] + $indexQuery) }}" onsubmit="return confirm('Delete this player? This will also remove their registrations and payments history.');" style="display:inline;">
+                                    <form class="delete-player-form" method="POST" action="{{ route('admin.players.destroy', ['player' => $player] + $indexQuery) }}" style="display:inline;">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" title="Delete player" style="background:none;border:0;padding:0;cursor:pointer;color:inherit;">
@@ -255,3 +246,31 @@
         @endif
     </section>
 @endsection
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.delete-player-form').forEach(function (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "Delete this player? This will also remove their registrations and payments history.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, delete player',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+@endpush

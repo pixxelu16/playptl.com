@@ -43,5 +43,5 @@
         ])
     @endif
 
-    <p style="margin:14px 0 0;">Thanks,<br><strong>{{ config('app.name', 'Premier Tennis League') }}</strong></p>
+    <p style="margin:14px 0 0;">Thanks,<br><strong>{{ \App\Support\MailBranding::teamName() }}</strong></p>
 @endsection

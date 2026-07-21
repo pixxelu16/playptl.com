@@ -59,6 +59,16 @@
                     </a>
                     @endif
                     @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage users'))
+                    @php
+                        $pendingProvidersCount = \App\Models\User::whereIn('role', [\App\Enums\UserRole::Mentor, \App\Enums\UserRole::Coach])->where('status', 'pending')->count();
+                    @endphp
+                    <a class="admin-nav-link {{ request()->routeIs('admin.provider-requests.*') ? 'is-active' : '' }}" href="{{ route('admin.provider-requests.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
+                        <span style="flex:1;">Coach & Mentor Requests</span>
+                        @if($pendingProvidersCount > 0)
+                            <span style="background:#E11D48; color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:10px; margin-left:auto;">{{ $pendingProvidersCount }}</span>
+                        @endif
+                    </a>
                     <a class="admin-nav-link {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}" href="{{ route('admin.users.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
                         <span>Users</span>
@@ -361,6 +371,45 @@
                     });
                 });
             }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Intercept forms with method DELETE or containing onsubmit confirm
+            document.querySelectorAll('form').forEach(function (form) {
+                var methodInput = form.querySelector('input[name="_method"]');
+                var isDeleteForm = methodInput && methodInput.value.toUpperCase() === 'DELETE';
+                var onsubmitAttr = form.getAttribute('onsubmit') || '';
+
+                if (isDeleteForm || onsubmitAttr.indexOf('confirm(') !== -1) {
+                    form.removeAttribute('onsubmit');
+                    form.addEventListener('submit', function (e) {
+                        if (form.dataset.confirmed === 'true') {
+                            return true;
+                        }
+                        e.preventDefault();
+                        
+                        var customMsg = form.getAttribute('data-confirm-message') || "Are you sure you want to delete this record? This action cannot be undone.";
+
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: customMsg,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#dc2626',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, delete it!',
+                            cancelButtonText: 'Cancel'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.dataset.confirmed = 'true';
+                                form.submit();
+                            }
+                        });
+                    });
+                }
+            });
         });
     </script>
     @stack('scripts')

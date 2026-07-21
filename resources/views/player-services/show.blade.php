@@ -11,9 +11,14 @@
     <main class="font-sans antialiased text-[#333333]">
         {{-- Hero Header --}}
         <section class="site-hero relative flex flex-col overflow-hidden">
-            <video class="absolute inset-0 z-0 h-full min-h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="video/mp4">
-            </video>
+            @php
+                $banners = \App\Models\SiteSetting::banners();
+                $defaultBanner = 'frontend/images/hero_tennis_banner.png';
+                $profileBannerSrc = $roleName === 'Mentor'
+                    ? ($banners['mentor_profile_banner_path'] ?? $defaultBanner)
+                    : ($banners['coach_profile_banner_path'] ?? $defaultBanner);
+            @endphp
+            <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset($profileBannerSrc) }}" alt="{{ $roleName }} Profile Banner Background" aria-hidden="true">
 
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 

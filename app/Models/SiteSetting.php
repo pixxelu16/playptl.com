@@ -10,21 +10,28 @@ use Illuminate\Support\Facades\Cache;
 class SiteSetting extends Model
 {
     /**
-     * @return array{phone: string, email: string, address: string}
+     * @return array{phone: string, email: string, address: string, site_title: string}
      */
     public static function contact(): array
     {
         return Cache::remember('site_settings.contact', 3600, function (): array {
             $settings = static::query()
-                ->whereIn('key', ['contact_phone', 'contact_email', 'contact_address'])
+                ->whereIn('key', ['contact_phone', 'contact_email', 'contact_address', 'site_title'])
                 ->pluck('value', 'key');
 
             return [
                 'phone' => (string) ($settings['contact_phone'] ?? '+91 98765 43210'),
                 'email' => (string) ($settings['contact_email'] ?? 'player.one@example.com'),
                 'address' => (string) ($settings['contact_address'] ?? '18 Sector 22, Chandigarh, India'),
+                'site_title' => (string) ($settings['site_title'] ?? 'Premier Tennis League'),
             ];
         });
+    }
+
+    public static function siteTitle(): string
+    {
+        $contact = static::contact();
+        return !empty($contact['site_title']) ? $contact['site_title'] : 'Premier Tennis League';
     }
 
     /**
@@ -37,6 +44,48 @@ class SiteSetting extends Model
 
             return [
                 'logo_path' => (string) ($logoPath ?? 'frontend/images/home-logo.png'),
+            ];
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function banners(): array
+    {
+        return Cache::remember('site_settings.banners', 3600, function (): array {
+            $keys = [
+                'home_banner_path',
+                'gallery_banner_path',
+                'charity_banner_path',
+                'league_banner_path',
+                'league_details_banner_path',
+                'mentors_banner_path',
+                'coaches_banner_path',
+                'mentor_profile_banner_path',
+                'coach_profile_banner_path',
+                'privacy_banner_path',
+                'terms_banner_path',
+            ];
+
+            $settings = static::query()
+                ->whereIn('key', $keys)
+                ->pluck('value', 'key');
+
+            $default = 'frontend/images/hero_tennis_banner.png';
+
+            return [
+                'home_banner_path'            => (string) ($settings['home_banner_path']            ?? $default),
+                'gallery_banner_path'         => (string) ($settings['gallery_banner_path']         ?? $default),
+                'charity_banner_path'         => (string) ($settings['charity_banner_path']         ?? $default),
+                'league_banner_path'          => (string) ($settings['league_banner_path']          ?? $default),
+                'league_details_banner_path'  => (string) ($settings['league_details_banner_path']  ?? $default),
+                'mentors_banner_path'         => (string) ($settings['mentors_banner_path']         ?? $default),
+                'coaches_banner_path'         => (string) ($settings['coaches_banner_path']         ?? $default),
+                'mentor_profile_banner_path' => (string) ($settings['mentor_profile_banner_path']  ?? $default),
+                'coach_profile_banner_path'  => (string) ($settings['coach_profile_banner_path']   ?? $default),
+                'privacy_banner_path'         => (string) ($settings['privacy_banner_path']         ?? $default),
+                'terms_banner_path'           => (string) ($settings['terms_banner_path']           ?? $default),
             ];
         });
     }
@@ -190,5 +239,6 @@ class SiteSetting extends Model
         Cache::forget('site_settings.mentor_commission');
         Cache::forget('site_settings.coach_commission');
         Cache::forget('site_settings.smtp');
+        Cache::forget('site_settings.banners');
     }
 }

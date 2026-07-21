@@ -1,5 +1,17 @@
 <section class="site-hero relative flex flex-col overflow-hidden">
-    <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset('frontend/images/hero_tennis_banner.png') }}" alt="Tennis Banner Background" aria-hidden="true">
+    @php
+        $bannerSrc = $heroBannerPath ?? \App\Models\SiteSetting::banners()['legal_banner_path'];
+        $ext = strtolower(pathinfo($bannerSrc, PATHINFO_EXTENSION));
+        $isVideo = in_array($ext, ['mp4', 'webm', 'ogg'], true);
+    @endphp
+
+    @if ($isVideo)
+        <video class="absolute inset-0 z-0 h-full w-full object-cover" autoplay loop muted playsinline aria-hidden="true">
+            <source src="{{ asset($bannerSrc) }}" type="video/{{ $ext === 'ogv' ? 'ogg' : $ext }}">
+        </video>
+    @else
+        <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset($bannerSrc) }}" alt="Hero Banner Background" aria-hidden="true">
+    @endif
 
     <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 

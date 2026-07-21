@@ -41,9 +41,7 @@
 @section('content')
     <main class="bg-[#E8F7E9] font-['Montserrat',ui-sans-serif,system-ui,sans-serif] text-[#333333] antialiased">
         <section class="site-hero relative flex flex-col overflow-hidden">
-            <video class="absolute inset-0 z-0 h-full min-h-full w-full object-cover" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-                <source src="{{ asset('frontend/videos/hero-section-video.mp4') }}" type="type/mp4">
-            </video>
+            <img class="absolute inset-0 z-0 h-full w-full object-cover" src="{{ asset(\App\Models\SiteSetting::banners()['home_banner_path'] ?? 'frontend/images/hero_tennis_banner.png') }}" alt="Banner Background" aria-hidden="true">
             <div class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[rgba(8,15,28,0.88)] via-[rgba(8,15,28,0.35)] via-40% to-[rgba(8,15,28,0.55)]" aria-hidden="true"></div>
 
             <div class="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-5 pb-16 pt-28 sm:px-8 sm:pb-24 sm:pt-36 lg:px-14 lg:pb-32 lg:pt-44">

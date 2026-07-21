@@ -71,6 +71,9 @@ class RegisteredUserController extends Controller
                 'state' => ['required', 'string', 'max:64'],
             ]);
 
+            $isPendingApproval = in_array($validated['role'], ['mentor', 'coach'], true);
+            $status = $isPendingApproval ? 'pending' : 'active';
+
             $user = User::create([
                 'name' => trim($validated['first_name'] . ' ' . $validated['last_name']),
                 'first_name' => $validated['first_name'],
@@ -80,7 +83,7 @@ class RegisteredUserController extends Controller
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
                 'role' => UserRole::from($validated['role']),
-                'status' => 'active',
+                'status' => $status,
                 'city' => $validated['city'],
                 'state' => $validated['state'],
             ]);
@@ -88,13 +91,35 @@ class RegisteredUserController extends Controller
             $user->assignRole(ucfirst($validated['role']));
 
             try {
-                Mail::to($user->email)->send(new \App\Mail\UserRegisteredMail($user, false));
-                $adminEmail = SiteSetting::getValue('contact_email');
-                if ($adminEmail) {
-                    Mail::to($adminEmail)->send(new \App\Mail\UserRegisteredMail($user, true));
+                if ($isPendingApproval) {
+                    Mail::to($user->email)->send(new \App\Mail\ProviderApplicationReceivedMail($user));
+                    $adminEmail = SiteSetting::getValue('contact_email');
+                    if ($adminEmail) {
+                        Mail::to($adminEmail)->send(new \App\Mail\AdminProviderApplicationNotificationMail($user));
+                    }
+                } else {
+                    Mail::to($user->email)->send(new \App\Mail\UserRegisteredMail($user, false));
+                    $adminEmail = SiteSetting::getValue('contact_email');
+                    if ($adminEmail) {
+                        Mail::to($adminEmail)->send(new \App\Mail\UserRegisteredMail($user, true));
+                    }
                 }
             } catch (\Throwable $e) {
                 // Ignore mail fail
+            }
+
+            if ($isPendingApproval) {
+                $pendingMsg = 'Your ' . ucfirst($validated['role']) . ' registration application has been submitted successfully! An administrator will review your application soon. You will receive an email once approved.';
+
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'redirect_url' => route('login'),
+                        'message' => $pendingMsg,
+                        'redirect_delay_seconds' => 4,
+                    ]);
+                }
+
+                return redirect()->route('login')->with('status', $pendingMsg);
             }
 
             auth()->login($user);
@@ -140,6 +165,15 @@ class RegisteredUserController extends Controller
                 'group_card_singles' => ['required', 'integer', 'exists:group_cards,id'],
                 'singles_first' => ['nullable'],
                 'singles_last' => ['nullable'],
+            ], [], [
+                'phone_singles' => 'phone',
+                'city_singles' => 'city',
+                'state_singles' => 'state',
+                'age_group_singles' => 'age group',
+                'skill_singles' => 'skill level',
+                'sex_singles' => 'gender',
+                'tournament_singles' => 'tournament',
+                'group_card_singles' => 'group',
             ]);
         } else {
             $specific = $request->validate([
@@ -162,6 +196,17 @@ class RegisteredUserController extends Controller
                 'd1_last' => ['nullable'],
                 'd2_first' => ['nullable'],
                 'd2_last' => ['nullable'],
+            ], [], [
+                'phone_doubles' => 'phone',
+                'city_doubles' => 'city',
+                'state_doubles' => 'state',
+                'age_group_doubles' => 'age group',
+                'skill_doubles' => 'skill level',
+                'sex_doubles' => 'gender',
+                'tournament_doubles' => 'tournament',
+                'group_card_doubles' => 'group',
+                'd2_email' => 'Player 2 email',
+                'd2_phone' => 'Player 2 phone',
             ]);
 
             $email1 = strtolower((string) $base['email']);
@@ -383,14 +428,34 @@ class RegisteredUserController extends Controller
 
             $adminEmail = SiteSetting::getValue('contact_email');
             if ($adminEmail) {
-                Mail::to($adminEmail)->send(new RegistrationConfirmedMail(
-                    userName: (string) $user->name,
+                $pName = null;
+                $pEmail = null;
+                $pPhone = null;
+                $pSkill = null;
+                if ($tab === 'doubles') {
+                    $pName = trim(((string) ($specific['d2_first'] ?? '')).' '.((string) ($specific['d2_last'] ?? '')));
+                    if ($pName === '') {
+                        $pName = (string) ($specific['d2_email'] ?? '');
+                    }
+                    $pEmail = (string) ($specific['d2_email'] ?? '');
+                    $pPhone = (string) ($specific['d2_phone'] ?? '');
+                    $pSkill = (string) ($specific['d2_skill'] ?? '');
+                }
+
+                Mail::to($adminEmail)->send(new \App\Mail\AdminPlayerRegistrationNotificationMail(
+                    playerName: (string) $user->name,
+                    playerEmail: (string) $user->email,
+                    playerPhone: (string) $user->phone,
                     leagueName: (string) $league->name,
                     registrationType: $tab,
                     skillLevel: $skillLevel,
                     amount: $amountDecimal,
                     currency: strtoupper(SiteSetting::stripeCurrency()),
                     paymentIntentId: (string) $intent->id,
+                    partnerName: $pName,
+                    partnerEmail: $pEmail,
+                    partnerPhone: $pPhone,
+                    partnerSkill: $pSkill,
                 ));
             }
         } catch (\Throwable $e) {

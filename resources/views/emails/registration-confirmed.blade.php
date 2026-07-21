@@ -17,7 +17,7 @@
         <p style="margin:0;"><strong>Transaction:</strong> '.e($paymentIntentId).'</p>
     '])
 
-    <p style="margin:0;">Thanks,<br><strong>{{ config('app.name', 'Premier Tennis League') }}</strong></p>
+    <p style="margin:0;">Thanks,<br><strong>{{ \App\Support\MailBranding::teamName() }}</strong></p>
 @endsection
 
 @section('footer')

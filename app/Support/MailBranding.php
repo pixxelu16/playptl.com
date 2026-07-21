@@ -6,7 +6,12 @@ class MailBranding
 {
     public static function appName(): string
     {
-        return (string) config('app.name', 'Premier Tennis League');
+        return \App\Models\SiteSetting::siteTitle();
+    }
+
+    public static function teamName(): string
+    {
+        return static::appName() . ' Team';
     }
 
     public static function siteUrl(): string
