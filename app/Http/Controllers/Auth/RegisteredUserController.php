@@ -74,7 +74,7 @@ class RegisteredUserController extends Controller
             $isPendingApproval = in_array($validated['role'], ['mentor', 'coach'], true);
             $status = $isPendingApproval ? 'pending' : 'active';
 
-            $user = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $isPendingApproval) {
+            $user = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $isPendingApproval, $status) {
                 $createdUser = User::create([
                     'name' => trim($validated['first_name'] . ' ' . $validated['last_name']),
                     'first_name' => $validated['first_name'],
@@ -425,8 +425,7 @@ class RegisteredUserController extends Controller
             return $createdUser;
         });
 
-        $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
-
+        if ($tab === 'doubles' && isset($partner) && isset($partnerEmail)) {
             try {
                 // Use Laravel password reset flow so partner can setup account with same email.
                 $token = PasswordBroker::broker()->createToken($partner);
