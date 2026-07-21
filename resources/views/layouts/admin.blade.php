@@ -340,13 +340,13 @@
                 });
             });
 
-            // Handle RSA Encryption on Form Submissions
+            // Handle RSA Encryption on Form Submissions (User authentication passwords only)
             const forms = document.querySelectorAll('form');
             const publicKey = @json(\App\Support\PasswordEncryptionHelper::getPublicKey());
 
             if (publicKey && window.JSEncrypt) {
                 forms.forEach(form => {
-                    const passFields = form.querySelectorAll('input[type="password"], input[name="password"], input[name="password_confirmation"], input[name="current_password"]');
+                    const passFields = form.querySelectorAll('input[name="password"], input[name="password_confirmation"], input[name="current_password"]');
                     if (passFields.length === 0) return;
 
                     form.addEventListener('submit', function (e) {
