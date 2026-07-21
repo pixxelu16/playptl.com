@@ -73,15 +73,17 @@
             <button type="button" class="settings-tab-btn" data-tab="banners" role="tab" aria-selected="false">Page Banners</button>
             <button type="button" class="settings-tab-btn" data-tab="stripe" role="tab" aria-selected="false">Stripe Gateway</button>
             <button type="button" class="settings-tab-btn" data-tab="smtp" role="tab" aria-selected="false">Email (SMTP)</button>
+            <button type="button" class="settings-tab-btn" data-tab="test-smtp" role="tab" aria-selected="false">Test Email</button>
             <button type="button" class="settings-tab-btn" data-tab="commission" role="tab" aria-selected="false">Commissions</button>
         </div>
 
-        <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.contact-settings.update') }}" enctype="multipart/form-data">
-            @csrf
-            @method('PUT')
+        {{-- 1. General Settings Panel --}}
+        <div id="panel-general" class="settings-tab-panel is-active" role="tabpanel">
+            <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.contact-settings.update') }}" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="setting_section" value="general">
 
-            {{-- 1. General Settings Panel --}}
-            <div id="panel-general" class="settings-tab-panel is-active" role="tabpanel">
                 <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Header Logo</h2>
                 <p class="admin-card-text" style="margin-bottom: 20px;">Logo shown in the website header navigation.</p>
 
@@ -140,48 +142,61 @@
                         <textarea class="admin-input" id="contact_address" name="contact_address" rows="3" required>{{ old('contact_address', $contact['address']) }}</textarea>
                     </div>
                 </div>
-            </div>
 
-            {{-- 2. Page Banners Panel --}}
-            <div id="panel-banners" class="settings-tab-panel" role="tabpanel">
-                <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Frontend Page Hero Banners</h2>
-                <p class="admin-card-text" style="margin-bottom: 20px;">Upload custom hero background images for every specific page on the website. If unassigned, defaults to the default tennis hero banner.</p>
+                <button class="admin-button" type="submit" style="margin-top: 28px;">Save General Settings</button>
+            </form>
+        </div>
+
+        {{-- 2. Page Banners Panel --}}
+        <div id="panel-banners" class="settings-tab-panel" role="tabpanel">
+            <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.contact-settings.update') }}" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="setting_section" value="banners">
+
+                <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Page Banners</h2>
+                <p class="admin-card-text" style="margin-bottom: 20px;">Upload custom hero background images for frontend pages. Recommended size: 1920x600px.</p>
 
                 <div class="admin-form-grid">
                     @php
-                        $bannerItems = [
-                            ['id' => 'home_banner',           'key' => 'home_banner_path',           'label' => 'Home Page Banner',                        'desc' => 'Displayed on main landing page (/)'],
-                            ['id' => 'league_banner',         'key' => 'league_banner_path',         'label' => 'Tournaments Overview Page Banner',       'desc' => 'Displayed on tournament overview page (/league/{slug})'],
-                            ['id' => 'league_details_banner', 'key' => 'league_details_banner_path', 'label' => 'Tournament Details / Group Page Banner', 'desc' => 'Displayed on group/division details page (/league/{leagueSlug}/{groupCardSlug})'],
-                            ['id' => 'gallery_banner',        'key' => 'gallery_banner_path',        'label' => 'Match Gallery Page Banner',               'desc' => 'Displayed on gallery page (/gallery)'],
-                            ['id' => 'charity_banner',        'key' => 'charity_banner_path',        'label' => 'Charity & Causes Page Banner',              'desc' => 'Displayed on charity listing & cause detail pages (/charity)'],
-                            ['id' => 'mentors_banner',        'key' => 'mentors_banner_path',        'label' => 'Mentors Page Banner',                       'desc' => 'Displayed on mentors discovery page (/player-services/mentors)'],
-                            ['id' => 'coaches_banner',        'key' => 'coaches_banner_path',        'label' => 'Coaches Page Banner',                       'desc' => 'Displayed on coaches discovery page (/player-services/coaches)'],
-                            ['id' => 'mentor_profile_banner', 'key' => 'mentor_profile_banner_path', 'label' => 'Mentor Detail Profile Page Banner',        'desc' => 'Displayed on individual mentor profile pages (/player-services/mentor/{username})'],
-                            ['id' => 'coach_profile_banner',  'key' => 'coach_profile_banner_path',  'label' => 'Coach Detail Profile Page Banner',         'desc' => 'Displayed on individual coach profile pages (/player-services/coach/{username})'],
-                            ['id' => 'privacy_banner',        'key' => 'privacy_banner_path',        'label' => 'Privacy Policy Page Banner',               'desc' => 'Displayed on Privacy Policy page (/privacy-policy)'],
-                            ['id' => 'terms_banner',          'key' => 'terms_banner_path',          'label' => 'Terms & Conditions Page Banner',         'desc' => 'Displayed on Terms & Conditions page (/terms-and-conditions)'],
+                        $bannerFields = [
+                            ['name' => 'home_banner',           'label' => 'Home Page Banner',           'key' => 'home_banner_path'],
+                            ['name' => 'gallery_banner',        'label' => 'Gallery Banner',             'key' => 'gallery_banner_path'],
+                            ['name' => 'charity_banner',        'label' => 'Charity Banner',             'key' => 'charity_banner_path'],
+                            ['name' => 'league_banner',         'label' => 'Tournament Listing Banner',   'key' => 'league_banner_path'],
+                            ['name' => 'league_details_banner', 'label' => 'Tournament Details Banner',   'key' => 'league_details_banner_path'],
+                            ['name' => 'mentors_banner',        'label' => 'Mentors Listing Banner',     'key' => 'mentors_banner_path'],
+                            ['name' => 'coaches_banner',        'label' => 'Coaches Listing Banner',     'key' => 'coaches_banner_path'],
+                            ['name' => 'mentor_profile_banner', 'label' => 'Mentor Profile Banner',      'key' => 'mentor_profile_banner_path'],
+                            ['name' => 'coach_profile_banner',  'label' => 'Coach Profile Banner',       'key' => 'coach_profile_banner_path'],
+                            ['name' => 'privacy_banner',        'label' => 'Privacy Policy Banner',      'key' => 'privacy_banner_path'],
+                            ['name' => 'terms_banner',          'label' => 'Terms & Conditions Banner',  'key' => 'terms_banner_path'],
                         ];
                     @endphp
 
-                    @foreach ($bannerItems as $item)
-                        @php
-                            $path = $banners[$item['key']] ?? 'frontend/images/hero_tennis_banner.png';
-                        @endphp
-                        <div class="admin-form-group" style="grid-column: 1 / -1; display:flex; gap: 14px; align-items:center;">
-                            <img src="{{ asset($path) }}" alt="{{ $item['label'] }} preview" width="152" height="90" style="width:152px;height:90px;object-fit:cover;border:1px solid #d7ead9;border-radius:8px;background:#fff;">
+                    @foreach ($bannerFields as $b)
+                        <div class="admin-form-group" style="grid-column: 1 / -1; display:flex; gap: 14px; align-items:center; background:#fff; padding:12px; border:1px solid #e2e8f0; border-radius:8px;">
+                            <img src="{{ asset($banners[$b['key']] ?? 'frontend/images/hero_tennis_banner.png') }}" alt="{{ $b['label'] }}" width="160" height="70" style="width:160px;height:70px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;">
                             <div style="flex:1;">
-                                <label class="admin-label" for="{{ $item['id'] }}">{{ $item['label'] }}</label>
-                                <input class="admin-input" id="{{ $item['id'] }}" type="file" name="{{ $item['id'] }}" accept="image/jpeg,image/jpg,image/png,image/webp">
-                                <p class="admin-card-text" style="margin-top: 6px; font-size: 13px; opacity: .8;">{{ $item['desc'] }}. JPG, JPEG, PNG, or WebP. Max 4MB.</p>
+                                <label class="admin-label" for="{{ $b['name'] }}">{{ $b['label'] }}</label>
+                                <input class="admin-input" id="{{ $b['name'] }}" type="file" name="{{ $b['name'] }}" accept="image/*">
+                                <p class="admin-card-text" style="margin-top: 4px; font-size: 12px; opacity: .75;">Max 4MB. JPG, PNG, or WebP.</p>
                             </div>
                         </div>
                     @endforeach
                 </div>
-            </div>
 
-            {{-- 2. Stripe Settings Panel --}}
-            <div id="panel-stripe" class="settings-tab-panel" role="tabpanel">
+                <button class="admin-button" type="submit" style="margin-top: 28px;">Save Page Banners</button>
+            </form>
+        </div>
+
+        {{-- 3. Stripe Gateway Panel --}}
+        <div id="panel-stripe" class="settings-tab-panel" role="tabpanel">
+            <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.contact-settings.update') }}">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="setting_section" value="stripe">
+
                 <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Stripe Gateway Configuration</h2>
                 <p class="admin-card-text" style="margin-bottom: 20px;">Set Stripe operating mode, currency, and API credentials.</p>
 
@@ -223,10 +238,18 @@
                         <input class="admin-input" id="stripe_live_secret_key" type="password" name="stripe_live_secret_key" value="{{ old('stripe_live_secret_key', $stripe['live_secret_key']) }}" placeholder="Enter Live Secret Key">
                     </div>
                 </div>
-            </div>
 
-            {{-- 3. SMTP Settings Panel --}}
-            <div id="panel-smtp" class="settings-tab-panel" role="tabpanel">
+                <button class="admin-button" type="submit" style="margin-top: 28px;">Save Stripe Settings</button>
+            </form>
+        </div>
+
+        {{-- 4. SMTP Settings Panel --}}
+        <div id="panel-smtp" class="settings-tab-panel" role="tabpanel">
+            <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.contact-settings.update') }}">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="setting_section" value="smtp">
+
                 <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Email (SMTP) Configuration</h2>
                 <p class="admin-card-text" style="margin-bottom: 20px;">
                     Configure transactional email delivery. Changes take effect immediately without editing <code>.env</code>.
@@ -285,10 +308,37 @@
                                value="{{ old('smtp_from_name', $smtp['from_name']) }}" placeholder="Premier Tennis League">
                     </div>
                 </div>
-            </div>
 
-            {{-- 4. Commission Settings Panel --}}
-            <div id="panel-commission" class="settings-tab-panel" role="tabpanel">
+                <button class="admin-button" type="submit" style="margin-top: 28px;">Save SMTP Settings</button>
+            </form>
+        </div>
+
+        {{-- 5. Test Email Panel --}}
+        <div id="panel-test-smtp" class="settings-tab-panel" role="tabpanel">
+            <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 8px;">Test Email Configuration</h2>
+            <p class="admin-card-text" style="margin-bottom: 16px;">
+                Send a test email to verify your SMTP settings and check for server delivery errors.
+            </p>
+
+            <form method="POST" action="{{ route('admin.contact-settings.test-smtp') }}" style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; max-width:600px;">
+                @csrf
+                <div style="flex:1; min-width:260px;">
+                    <label class="admin-label" for="test_email" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">Recipient Email Address</label>
+                    <input class="admin-input" id="test_email" type="email" name="test_email" value="{{ old('test_email', auth()->user()->email) }}" placeholder="e.g. yourname@domain.com" required style="width:100%; height:42px; border-radius:8px; border:1px solid #CBD5E1; padding:0 14px; font-size:14px;">
+                </div>
+                <button type="submit" class="admin-button" style="height:42px; padding:0 20px; background:#2563EB; color:#ffffff; font-size:14px; font-weight:600; border:none; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-paper-plane"></i> Send Test Email
+                </button>
+            </form>
+        </div>
+
+        {{-- 6. Commission Settings Panel --}}
+        <div id="panel-commission" class="settings-tab-panel" role="tabpanel">
+            <form class="admin-form admin-form-wide" method="POST" action="{{ route('admin.contact-settings.update') }}">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="setting_section" value="commission">
+
                 <h2 class="admin-card-title" style="font-size: 1.1rem; margin-bottom: 12px;">Booking Commission Settings</h2>
                 <p class="admin-card-text" style="margin-bottom: 20px;">Set the platform commission percentage deducted from each booking. The Mentor/Coach receives the remaining amount.</p>
 
@@ -312,10 +362,10 @@
                         </p>
                     </div>
                 </div>
-            </div>
 
-            <button class="admin-button" type="submit" style="margin-top: 28px;">Save Site Settings</button>
-        </form>
+                <button class="admin-button" type="submit" style="margin-top: 28px;">Save Commission Settings</button>
+            </form>
+        </div>
     </section>
 @endsection
 
@@ -358,6 +408,10 @@
             const targetPanel = document.getElementById(`panel-${tabId}`);
             if (targetPanel) {
                 targetPanel.classList.add('is-active');
+            }
+            if (tabId === 'smtp') {
+                const testPanel = document.getElementById('panel-smtp-test');
+                if (testPanel) testPanel.classList.add('is-active');
             }
 
             // Save state
