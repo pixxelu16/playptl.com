@@ -47,19 +47,11 @@ class StudentController extends Controller
 
     public function updatePassword(Request $request): RedirectResponse
     {
-        if ($request->has('password')) {
-            $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
-        }
-        if ($request->has('password_confirmation')) {
-            $request->merge(['password_confirmation' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'))]);
-        }
-        if ($request->has('current_password')) {
-            $request->merge(['current_password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('current_password'))]);
-        }
+        
 
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(8)->letters()->numbers()->symbols()],
         ]);
 
         $request->user()->update([

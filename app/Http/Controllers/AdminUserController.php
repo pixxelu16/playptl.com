@@ -66,7 +66,7 @@ class AdminUserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', Rules\Password::defaults()],
+            'password' => ['required', 'string', Rules\Password::min(8)->letters()->numbers()->symbols()],
             'role' => ['required', Rule::enum(UserRole::class)],
             'spatie_roles' => ['nullable', 'array'],
             'spatie_roles.*' => ['string', 'exists:roles,name'],
@@ -123,7 +123,7 @@ class AdminUserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'password' => ['nullable', 'string', Rules\Password::defaults()],
+            'password' => ['nullable', 'string', Rules\Password::min(8)->letters()->numbers()->symbols()],
             'role' => ['required', Rule::enum(UserRole::class)],
             'spatie_roles' => ['nullable', 'array'],
             'spatie_roles.*' => ['string', 'exists:roles,name'],

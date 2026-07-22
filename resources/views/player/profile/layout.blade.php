@@ -100,7 +100,7 @@
                 </aside>
 
                 <div class="min-w-0 w-full space-y-6 lg:w-[810px] lg:min-w-[810px] lg:max-w-[810px] lg:shrink-0">
-                    @if (session('status') && ! in_array($activeSection ?? '', ['upload', 'location'], true))
+                    @if (session('status') && ! in_array($activeSection ?? '', ['upload', 'location', 'password'], true))
                         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] font-semibold text-emerald-700">
                             {{ session('status') }}
                         </div>

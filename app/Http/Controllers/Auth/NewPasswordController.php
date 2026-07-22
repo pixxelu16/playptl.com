@@ -25,19 +25,12 @@ class NewPasswordController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        if ($request->has('password')) {
-            $decrypted = \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'));
-            $request->merge(['password' => $decrypted]);
-        }
-        if ($request->has('password_confirmation')) {
-            $decryptedConf = \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'));
-            $request->merge(['password_confirmation' => $decryptedConf]);
-        }
+
 
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', PasswordRule::defaults()],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)->letters()->numbers()->symbols()],
         ]);
 
         $status = Password::reset(

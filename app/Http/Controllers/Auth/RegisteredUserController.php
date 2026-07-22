@@ -66,7 +66,7 @@ class RegisteredUserController extends Controller
                 'last_name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
                 'phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
-                'password' => ['required', 'confirmed', Password::defaults()],
+                'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()->symbols()],
                 'city' => ['required', 'string', 'max:255'],
                 'state' => ['required', 'string', 'max:64'],
             ]);
@@ -154,7 +154,7 @@ class RegisteredUserController extends Controller
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()->symbols()],
             'payment_intent_id' => ['required', 'string', 'max:255'],
         ]);
 
