@@ -197,9 +197,34 @@ class BookingController extends Controller
             'commission_rate'  => $commissionRate,
             'commission_amount'=> $totals['commission_amount'],
             'provider_amount'  => $totals['provider_amount'],
-            'status'           => Booking::STATUS_PENDING,
-            'stripe_charge_id' => $validated['stripe_charge_id'] ?? null,
         ]);
+
+        if ($booking->total_amount > 0 && $booking->stripe_charge_id) {
+            try {
+                \App\Models\PaymentHistory::create([
+                    'user_id' => $booking->student_id,
+                    'league_id' => null,
+                    'amount' => $booking->total_amount,
+                    'currency' => strtoupper(SiteSetting::stripeCurrency() ?: 'USD'),
+                    'status' => 'completed',
+                    'transaction_id' => (string) $booking->stripe_charge_id,
+                    'description' => "Booking Session with " . $provider->name,
+                    'meta' => [
+                        'booking_id' => $booking->id,
+                        'provider_id' => $provider->id,
+                        'provider_name' => $provider->name,
+                        'provider_type' => $roleName,
+                        'total_hours' => $booking->total_hours,
+                        'hourly_rate' => $booking->hourly_rate,
+                        'commission_rate' => $booking->commission_rate,
+                        'commission_amount' => $booking->commission_amount,
+                        'provider_amount' => $booking->provider_amount,
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                // Ignore or log error so that booking creation itself is not blocked
+            }
+        }
 
         // Send email notifications
         try {

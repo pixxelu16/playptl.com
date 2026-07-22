@@ -110,6 +110,7 @@
                                 <a href="{{ route('student.bookings') }}" class="{{ $navClass('bookings') }}">My Bookings</a>
                             @elseif(in_array(strtolower($roleName), ['mentor', 'coach']))
                                 <a href="{{ route('provider.bookings') }}" class="{{ $navClass('bookings') }}">Booking Requests</a>
+                                <a href="{{ route(strtolower($roleName) . '.transactions.index') }}" class="{{ $navClass('transactions') }}">Transactions</a>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
