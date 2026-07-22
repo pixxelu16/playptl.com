@@ -57,8 +57,8 @@
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <div style="background: #059669; color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
             <span style="font-size:11px; text-transform:uppercase; font-weight:700; opacity:0.8; letter-spacing:0.05em;">Total Platform Revenue</span>
-            <strong style="display:block; font-size:28px; font-weight:900; margin-top:4px;">${{ number_format($totalRevenue, 2) }}</strong>
-            <p style="font-size:11px; opacity:0.7; margin-top:6px; font-weight:500;">Includes bookings & tournaments</p>
+            <strong style="display:block; font-size:28px; font-weight:900; margin-top:4px;">${{ number_format($totalPlatformRevenue, 2) }}</strong>
+            <p style="font-size:11px; opacity:0.7; margin-top:6px; font-weight:500;">Includes bookings, tournaments & charity</p>
         </div>
         <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Tournament Entry Revenue</span>
@@ -66,14 +66,19 @@
             <p style="font-size:11px; color:#9ca3af; margin-top:6px; font-weight:500;">From player registrations</p>
         </div>
         <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Session Booking Revenue</span>
-            <strong style="display:block; font-size:24px; font-weight:800; color:#1f2937; margin-top:4px;">${{ number_format($bookingRevenue, 2) }}</strong>
-            <p style="font-size:11px; color:#9ca3af; margin-top:6px; font-weight:500;">From mentor/coach sessions</p>
+            <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Admin Payout to Mentor/Coach</span>
+            <strong style="display:block; font-size:24px; font-weight:800; color:#1f2937; margin-top:4px;">${{ number_format($totalPayoutPaid, 2) }}</strong>
+            <p style="font-size:11px; color:#9ca3af; margin-top:6px; font-weight:500;">Paid payouts to providers</p>
         </div>
         <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Total Platform Commissions</span>
-            <strong style="display:block; font-size:24px; font-weight:800; color:#059669; margin-top:4px;">${{ number_format($totalCommission, 2) }}</strong>
+            <strong style="display:block; font-size:24px; font-weight:800; color:#1f2937; margin-top:4px;">${{ number_format($totalCommission, 2) }}</strong>
             <p style="font-size:11px; color:#9ca3af; margin-top:6px; font-weight:500;">Deducted session commissions</p>
+        </div>
+        <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Charity Donation Revenue</span>
+            <strong style="display:block; font-size:24px; font-weight:800; color:#059669; margin-top:4px;">${{ number_format($charityRevenue, 2) }}</strong>
+            <p style="font-size:11px; color:#9ca3af; margin-top:6px; font-weight:500;">From charity donations</p>
         </div>
     </div>
 

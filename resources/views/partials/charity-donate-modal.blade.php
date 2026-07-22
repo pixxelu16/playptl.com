@@ -51,7 +51,6 @@
                     id="charity-donate-modal-amount"
                     type="text"
                     inputmode="decimal"
-                    required
                     value="25"
                     class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20"
                 />
@@ -59,7 +58,7 @@
 
             <div>
                 <label for="charity-donate-name" class="mb-1 block text-[13px] font-semibold text-[#424242]">Full name <span class="text-red-600">*</span></label>
-                <input id="charity-donate-name" name="donor_name" type="text" required autocomplete="name" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
+                <input id="charity-donate-name" name="donor_name" type="text" autocomplete="name" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
             </div>
 
             <div>
@@ -69,17 +68,17 @@
 
             <div>
                 <label for="charity-donate-address" class="mb-1 block text-[13px] font-semibold text-[#424242]">Street address <span class="text-red-600">*</span></label>
-                <input id="charity-donate-address" name="address" type="text" required autocomplete="street-address" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
+                <input id="charity-donate-address" name="address" type="text" autocomplete="street-address" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <label for="charity-donate-city" class="mb-1 block text-[13px] font-semibold text-[#424242]">City <span class="text-red-600">*</span></label>
-                    <input id="charity-donate-city" name="city" type="text" required autocomplete="address-level2" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
+                    <input id="charity-donate-city" name="city" type="text" autocomplete="address-level2" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
                 </div>
                 <div>
                     <label for="charity-donate-state" class="mb-1 block text-[13px] font-semibold text-[#424242]">State <span class="text-red-600">*</span></label>
-                    <input id="charity-donate-state" name="state" type="text" required autocomplete="address-level1" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
+                    <input id="charity-donate-state" name="state" type="text" autocomplete="address-level1" class="min-h-[44px] w-full rounded-lg border border-[#E0E0E0] px-4 py-2.5 text-[15px] text-[#212121] outline-none transition-colors focus:border-[#60a04b] focus:ring-2 focus:ring-[#60a04b]/20" />
                 </div>
             </div>
 
@@ -95,7 +94,6 @@
             </div>
 
             <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                <p id="charity-donate-modal-loader" class="hidden text-[13px] font-medium text-[#60a04b]">Processing payment…</p>
                 <button id="charity-donate-modal-submit" type="submit" class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-[#60a04b] px-8 py-3 text-[15px] font-bold text-white shadow-sm transition-opacity hover:opacity-95 sm:ml-auto sm:w-auto">
                     Donate $25
                 </button>

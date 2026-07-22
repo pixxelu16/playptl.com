@@ -72,9 +72,12 @@
 <section class="admin-card">
     <div class="admin-page-header" style="margin-bottom: 20px;">
         <div>
-            <h1 class="admin-card-title">Booking #{{ $booking->id }}</h1>
+            <h1 class="admin-card-title" style="display:inline-flex; align-items:center; gap:10px;">
+                Booking #{{ $booking->id }}
+                <span class="badge-status {{ $booking->status }}">{{ $booking->statusLabel() }}</span>
+            </h1>
             <p class="admin-card-text">
-                Manage status, view transaction logs, and process payouts for this booking.
+                View session transaction logs and process payouts for this booking.
             </p>
         </div>
         <a class="admin-button admin-button-secondary" href="{{ route('admin.bookings.index') }}">
@@ -218,30 +221,8 @@
     </div>
 
     {{-- Bottom Action Row --}}
-    <div class="booking-detail-grid" style="margin-top: 24px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+    <div style="margin-top: 24px; max-width: 500px;">
         
-        {{-- Status Handler --}}
-        <div class="detail-card">
-            <div class="detail-title"><i class="fa-solid fa-toggle-on"></i> Booking Status</div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
-                <span class="detail-label">Current Status</span>
-                <span class="badge-status {{ $booking->status }}">{{ $booking->statusLabel() }}</span>
-            </div>
-            <form action="{{ route('admin.bookings.update-status', $booking) }}" method="POST" class="admin-form confirm-form" style="margin-top:0;"
-                  data-title="Change Booking Status" data-text="Are you sure you want to force-change this booking's status? If rejected/cancelled and paid, a refund is issued." data-confirm-text="Yes, update status" data-confirm-color="#3b82f6">
-                @csrf
-                @method('PATCH')
-                <div style="display:flex; gap:8px;">
-                    <select name="status" class="admin-input" style="flex:1; height:46px; padding:8px 12px; font-size:14px; border: 1px solid #d7ead9; border-radius:10px;">
-                        @foreach(['pending', 'accepted', 'rejected', 'cancelled'] as $s)
-                            <option value="{{ $s }}" {{ $booking->status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="admin-button" style="height:46px; padding:0 20px;">Update</button>
-                </div>
-            </form>
-        </div>
-
         {{-- Payout Handler --}}
         <div class="detail-card">
             <div class="detail-title"><i class="fa-solid fa-money-bill-transfer"></i> Payout Status</div>
@@ -251,10 +232,16 @@
             </div>
             
             @if($booking->payout_status === 'paid')
-                <p style="font-size: 13px; color: #64748b; margin-top: 8px;">
-                    <i class="fa-solid fa-circle-check" style="color:#059669;"></i> Paid on {{ $booking->payout_paid_at?->format('M d, Y H:i') }}
+                <div style="margin-top: 12px; padding: 12px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; color: #065f46; font-size: 13px; font-weight: 500;">
+                    <i class="fa-solid fa-circle-check"></i> Paid {{ $currencySymbol }}{{ number_format($booking->provider_amount, 2) }} to {{ ucfirst($booking->provider_type) }} <strong>{{ $booking->provider->name }}</strong> manually.
+                </div>
+                <p style="font-size: 12px; color: #64748b; margin-top: 8px; margin-bottom: 0;">
+                    Paid on {{ $booking->payout_paid_at?->format('M d, Y H:i') }}
                 </p>
             @else
+                <div style="margin-top: 12px; margin-bottom: 16px; padding: 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; color: #92400e; font-size: 13px; font-weight: 500;">
+                    <i class="fa-solid fa-circle-info"></i> Please pay {{ $currencySymbol }}{{ number_format($booking->provider_amount, 2) }} to {{ ucfirst($booking->provider_type) }} <strong>{{ $booking->provider->name }}</strong> manually.
+                </div>
                 @if($booking->isAccepted())
                     <form action="{{ route('admin.bookings.mark-paid', $booking) }}" method="POST" class="admin-form confirm-form" style="margin-top:0;"
                           data-title="Mark Payout as Paid" data-text="Are you sure you want to mark this payout as Paid to the Mentor/Coach?" data-confirm-text="Yes, mark paid" data-confirm-color="#059669">
@@ -265,7 +252,7 @@
                         </button>
                     </form>
                 @else
-                    <p style="font-size: 12px; color: #64748b; line-height: 1.4;">
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.4; margin-top: 8px;">
                         Payout is pending and can only be marked as Paid after the booking is <strong>Accepted</strong> by the Mentor/Coach.
                     </p>
                 @endif

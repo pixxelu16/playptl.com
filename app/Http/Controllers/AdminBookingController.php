@@ -71,6 +71,31 @@ class AdminBookingController extends Controller
             'payout_paid_at' => now(),
         ]);
 
+        try {
+            \App\Models\PaymentHistory::create([
+                'user_id' => $booking->provider_id,
+                'league_id' => null,
+                'amount' => $booking->provider_amount,
+                'currency' => strtoupper(\App\Models\SiteSetting::stripeCurrency() ?: 'USD'),
+                'status' => 'completed',
+                'transaction_id' => 'payout_b' . $booking->id . '_' . now()->format('YmdHis'),
+                'description' => "Payout to " . ucfirst($booking->provider_type) . " " . $booking->provider->name . " for Booking #" . $booking->id,
+                'meta' => [
+                    'booking_id' => $booking->id,
+                    'type' => 'provider_payout',
+                    'provider_id' => $booking->provider_id,
+                    'provider_name' => $booking->provider->name,
+                    'provider_type' => $booking->provider_type,
+                    'hours' => $booking->total_hours,
+                    'gross_amount' => $booking->total_amount,
+                    'platform_commission' => $booking->commission_amount,
+                    'payout_amount' => $booking->provider_amount,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            // Ignore error
+        }
+
         return back()->with('success', 'Payout marked as paid.');
     }
 
@@ -85,6 +110,17 @@ class AdminBookingController extends Controller
 
         $oldStatus = $booking->status;
         $booking->update(['status' => $validated['status']]);
+
+        if ($validated['status'] === 'cancelled' || $validated['status'] === 'rejected') {
+            if ($booking->stripe_charge_id) {
+                try {
+                    $paymentHistory = \App\Models\PaymentHistory::where('transaction_id', $booking->stripe_charge_id)->first();
+                    if ($paymentHistory) {
+                        $paymentHistory->update(['status' => 'refunded']);
+                    }
+                } catch (\Throwable $e) {}
+            }
+        }
 
         if ($oldStatus !== $booking->status) {
             try {

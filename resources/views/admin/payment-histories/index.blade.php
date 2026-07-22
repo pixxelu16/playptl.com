@@ -20,6 +20,7 @@
                         <option value="" @selected($status === '')>All</option>
                         <option value="completed" @selected($status === 'completed')>Completed</option>
                         <option value="pending" @selected($status === 'pending')>Pending</option>
+                        <option value="refunded" @selected($status === 'refunded')>Refunded</option>
                         <option value="failed" @selected($status === 'failed')>Failed</option>
                     </select>
                 </div>
@@ -76,14 +77,44 @@
                                     <span style="font-weight:600;color:#1e40af;">Tournament Entry</span>
                                     <span style="display:block;font-size:11px;color:#4b5563;">{{ $p->league?->name ?? ('#'.$p->league_id) }}</span>
                                 @else
-                                    <span style="font-weight:600;color:#047857;">Session Booking</span>
-                                    <span style="display:block;font-size:11px;color:#6b7280;">{{ $p->meta['provider_type'] ?? 'Provider' }} Session</span>
+                                    @if(isset($p->meta['type']) && $p->meta['type'] === 'provider_payout')
+                                        <span style="font-weight:600;color:#dc2626;">Provider Payout</span>
+                                        <span style="display:block;font-size:11px;color:#ef4444;">{{ ucfirst($p->meta['provider_type'] ?? 'Provider') }} Payout</span>
+                                    @else
+                                        <span style="font-weight:600;color:#047857;">Session Booking</span>
+                                        <span style="display:block;font-size:11px;color:#6b7280;">{{ ucfirst($p->meta['provider_type'] ?? 'Provider') }} Session</span>
+                                    @endif
                                 @endif
                             </td>
-                            <td><strong>{{ $p->amount }}</strong></td>
+                            <td>
+                                @php
+                                    $isPayout = isset($p->meta['type']) && $p->meta['type'] === 'provider_payout';
+                                    $currencySymbols = [
+                                        'USD' => '$',
+                                        'INR' => '₹',
+                                        'EUR' => '€',
+                                        'GBP' => '£',
+                                        'CAD' => 'C$',
+                                        'AUD' => 'A$',
+                                    ];
+                                    $sym = $currencySymbols[strtoupper($p->currency)] ?? $p->currency;
+                                @endphp
+                                <strong style="{{ $isPayout ? 'color:#dc2626;' : '' }}">
+                                    {{ $isPayout ? '-' : '' }}{{ $sym }}{{ number_format($p->amount, 2) }}
+                                </strong>
+                            </td>
                             <td>{{ $p->currency }}</td>
                             <td>
-                                <span class="admin-badge {{ $p->status === 'completed' ? 'admin-badge-success' : 'admin-badge-warning' }}">
+                                @php
+                                    $statusColors = [
+                                        'completed' => 'background: #e6f4ea; color: #137333; border: 1px solid #ceead6;',
+                                        'refunded'  => 'background: #fdf2f2; color: #9b1c1c; border: 1px solid #f8b4b4;',
+                                        'pending'   => 'background: #fef7e0; color: #b06000; border: 1px solid #feebc8;',
+                                        'failed'    => 'background: #fdf2f2; color: #9b1c1c; border: 1px solid #f8b4b4;',
+                                    ];
+                                    $badgeStyle = $statusColors[strtolower($p->status)] ?? 'background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb;';
+                                @endphp
+                                <span class="admin-badge" style="text-transform: uppercase; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; {{ $badgeStyle }}">
                                     {{ $p->status }}
                                 </span>
                             </td>
@@ -149,6 +180,17 @@
             const p = JSON.parse(btn.getAttribute('data-payment'));
             const body = document.getElementById('modal-details-body');
             
+            const currencySymbols = {
+                'USD': '$',
+                'INR': '₹',
+                'EUR': '€',
+                'GBP': '£',
+                'CAD': 'C$',
+                'AUD': 'A$'
+            };
+            const currencyUpper = (p.currency || '').toUpperCase();
+            const symbol = currencySymbols[currencyUpper] || currencyUpper;
+            
             let metaHtml = '';
             if (p.meta) {
                 let metaObj = p.meta;
@@ -160,12 +202,29 @@
                     metaHtml += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9fafb;padding:12px;border-radius:8px;border:1px solid #e5e7eb;">`;
                     for (const [key, val] of Object.entries(metaObj)) {
                         const cleanKey = key.replace(/_/g, ' ');
+                        let cleanVal = val;
+                        
+                        const moneyKeys = ['hourly_rate', 'commission_amount', 'provider_amount', 'gross_amount', 'platform_commission', 'payout_amount', 'amount'];
+                        if (moneyKeys.includes(key.toLowerCase()) && !isNaN(parseFloat(val))) {
+                            cleanVal = symbol + parseFloat(val).toFixed(2);
+                        } else if (key.toLowerCase() === 'total_hours' && !isNaN(val)) {
+                            cleanVal = val + ' Hours';
+                        }
+                        
                         metaHtml += `<div style="text-transform:capitalize;color:#6b7280;font-size:12px;">${cleanKey}:</div>`;
-                        metaHtml += `<div style="font-weight:600;color:#111827;font-size:12px;text-align:right;">${val}</div>`;
+                        metaHtml += `<div style="font-weight:600;color:#111827;font-size:12px;text-align:right;">${cleanVal}</div>`;
                     }
                     metaHtml += `</div>`;
                 }
             }
+
+            const statusColors = {
+                'completed': 'background: #e6f4ea; color: #137333; border: 1px solid #ceead6;',
+                'refunded': 'background: #fdf2f2; color: #9b1c1c; border: 1px solid #f8b4b4;',
+                'pending': 'background: #fef7e0; color: #b06000; border: 1px solid #feebc8;',
+                'failed': 'background: #fdf2f2; color: #9b1c1c; border: 1px solid #f8b4b4;'
+            };
+            const badgeStyle = statusColors[(p.status || '').toLowerCase()] || 'background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb;';
 
             body.innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:10px;border-bottom:1px solid #f3f4f6;padding-bottom:12px;margin-bottom:12px;">
@@ -174,9 +233,9 @@
                     <div style="color:#6b7280;">Description:</div>
                     <div style="font-weight:600;">${p.description || '-'}</div>
                     <div style="color:#6b7280;">Amount / Currency:</div>
-                    <div style="font-weight:700;color:#047857;font-size:16px;">${p.amount} ${p.currency}</div>
+                    <div style="font-weight:700;color:#047857;font-size:16px;">${symbol}${parseFloat(p.amount).toFixed(2)} (${p.currency})</div>
                     <div style="color:#6b7280;">Payment Status:</div>
-                    <div><span class="admin-badge ${p.status === 'completed' ? 'admin-badge-success' : 'admin-badge-warning'}" style="text-transform:uppercase;">${p.status}</span></div>
+                    <div><span class="admin-badge" style="text-transform:uppercase; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; ${badgeStyle}">${p.status}</span></div>
                     <div style="color:#6b7280;">Processed At:</div>
                     <div style="font-weight:600;">${new Date(p.created_at).toLocaleString('en-US', {dateStyle:'medium', timeStyle:'short'})}</div>
                 </div>

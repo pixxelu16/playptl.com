@@ -23,7 +23,7 @@ class ProviderBookingController extends Controller
 
         $query = Booking::forProvider(Auth::id())
             ->with('student')
-            ->latest();
+            ->latest('id');
 
         if ($status !== 'all') {
             $query->where('status', $status);
@@ -64,8 +64,19 @@ class ProviderBookingController extends Controller
     {
         abort_unless($booking->provider_id === Auth::id(), 403);
 
-        if (! $booking->isPending()) {
-            return back()->with('error', 'This booking is no longer pending.');
+        $freshStatus = Booking::whereKey($booking->id)->value('status');
+        if ($freshStatus !== Booking::STATUS_PENDING) {
+            $statusLabel = match($freshStatus) {
+                Booking::STATUS_ACCEPTED  => 'accepted',
+                Booking::STATUS_REJECTED  => 'rejected',
+                Booking::STATUS_CANCELLED => 'cancelled',
+                Booking::STATUS_COMPLETED => 'completed',
+                default                   => $freshStatus,
+            };
+            if ($freshStatus === Booking::STATUS_CANCELLED) {
+                return back()->with('error', 'This booking request has already been cancelled by the student.');
+            }
+            return back()->with('error', "This booking request has already been {$statusLabel}. Please refresh the page.");
         }
 
         $booking->update(['status' => Booking::STATUS_ACCEPTED]);
@@ -89,8 +100,19 @@ class ProviderBookingController extends Controller
     {
         abort_unless($booking->provider_id === Auth::id(), 403);
 
-        if (! $booking->isPending()) {
-            return back()->with('error', 'This booking is no longer pending.');
+        $freshStatus = Booking::whereKey($booking->id)->value('status');
+        if ($freshStatus !== Booking::STATUS_PENDING) {
+            $statusLabel = match($freshStatus) {
+                Booking::STATUS_ACCEPTED  => 'accepted',
+                Booking::STATUS_REJECTED  => 'rejected',
+                Booking::STATUS_CANCELLED => 'cancelled',
+                Booking::STATUS_COMPLETED => 'completed',
+                default                   => $freshStatus,
+            };
+            if ($freshStatus === Booking::STATUS_CANCELLED) {
+                return back()->with('error', 'This booking request has already been cancelled by the student.');
+            }
+            return back()->with('error', "This booking request has already been {$statusLabel}. Please refresh the page.");
         }
 
         $refundId = null;
@@ -119,6 +141,15 @@ class ProviderBookingController extends Controller
             'status'          => Booking::STATUS_REJECTED,
             'stripe_refund_id'=> $refundId,
         ]);
+
+        if ($booking->stripe_charge_id) {
+            try {
+                $paymentHistory = \App\Models\PaymentHistory::where('transaction_id', $booking->stripe_charge_id)->first();
+                if ($paymentHistory) {
+                    $paymentHistory->update(['status' => 'refunded']);
+                }
+            } catch (\Throwable $e) {}
+        }
 
         try {
             Mail::to($booking->student->email)->send(new BookingRejectedMail($booking, 'student'));
