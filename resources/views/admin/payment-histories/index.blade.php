@@ -90,7 +90,7 @@
                             <td style="max-width:180px;word-break:break-all;font-family:monospace;font-size:12px;">{{ $p->transaction_id }}</td>
                             <td>{{ $p->description ?? '-' }}</td>
                             <td style="text-align:right;">
-                                <button type="button" class="admin-button admin-button-secondary" onclick="showDetails(this)" data-payment='@json($p)'>
+                                <button type="button" class="admin-button admin-button-secondary" onclick="showDetails(this)" data-payment="{{ json_encode($p) }}">
                                     Details
                                 </button>
                             </td>
@@ -151,14 +151,20 @@
             
             let metaHtml = '';
             if (p.meta) {
-                metaHtml += `<h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;font-size:13px;text-transform:uppercase;color:#4b5563;letter-spacing:0.05em;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">Metadata & Breakdown</h3>`;
-                metaHtml += `<div style="display:grid;grid-template-cols:1fr 1fr;gap:8px;background:#f9fafb;padding:12px;border-radius:8px;border:1px solid #f3f4f6;">`;
-                for (const [key, val] of Object.entries(p.meta)) {
-                    const cleanKey = key.replace(/_/g, ' ');
-                    metaHtml += `<div style="text-transform:capitalize;color:#6b7280;font-size:12px;">${cleanKey}:</div>`;
-                    metaHtml += `<div style="font-weight:600;color:#111827;font-size:12px;text-align:right;">${val}</div>`;
+                let metaObj = p.meta;
+                if (typeof metaObj === 'string') {
+                    try { metaObj = JSON.parse(metaObj); } catch(e) {}
                 }
-                metaHtml += `</div>`;
+                if (typeof metaObj === 'object' && metaObj !== null) {
+                    metaHtml += `<h3 style="font-weight:700;margin-top:16px;margin-bottom:8px;font-size:13px;text-transform:uppercase;color:#4b5563;letter-spacing:0.05em;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">Metadata & Breakdown</h3>`;
+                    metaHtml += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9fafb;padding:12px;border-radius:8px;border:1px solid #e5e7eb;">`;
+                    for (const [key, val] of Object.entries(metaObj)) {
+                        const cleanKey = key.replace(/_/g, ' ');
+                        metaHtml += `<div style="text-transform:capitalize;color:#6b7280;font-size:12px;">${cleanKey}:</div>`;
+                        metaHtml += `<div style="font-weight:600;color:#111827;font-size:12px;text-align:right;">${val}</div>`;
+                    }
+                    metaHtml += `</div>`;
+                }
             }
 
             body.innerHTML = `
@@ -180,12 +186,16 @@
             const modal = document.getElementById('payment-details-modal');
             modal.removeAttribute('hidden');
             modal.removeAttribute('aria-hidden');
+            modal.classList.add('is-open');
+            document.body.classList.add('admin-modal-open');
         }
 
         function closeDetailsModal() {
             const modal = document.getElementById('payment-details-modal');
             modal.setAttribute('hidden', 'true');
             modal.setAttribute('aria-hidden', 'true');
+            modal.classList.remove('is-open');
+            document.body.classList.remove('admin-modal-open');
         }
     </script>
 @endsection
