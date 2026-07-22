@@ -301,9 +301,10 @@ class RegisteredUserController extends Controller
         }
 
         $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $tab, $ageGroup);
+        $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
 
         $user = \Illuminate\Support\Facades\DB::transaction(function () use (
-            $base, $tab, $specific, $phone, $city, $state, $sex, $skillLevel, $intent, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup
+            $base, $tab, $specific, $phone, $city, $state, $sex, $skillLevel, $intent, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup, $amountDecimal
         ) {
             $createdUser = User::create([
                 'name' => $base['name'],
@@ -326,7 +327,6 @@ class RegisteredUserController extends Controller
             \Spatie\Permission\Models\Role::findOrCreate('Player', 'web');
             $createdUser->assignRole('Player');
 
-            $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
             PaymentHistory::create([
                 'user_id' => $createdUser->id,
                 'league_id' => $leagueId,
