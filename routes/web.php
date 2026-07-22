@@ -165,10 +165,10 @@ Route::middleware('auth')->group(function () {
         Route::patch('provider-requests/{user}/approve', [\App\Http\Controllers\AdminProviderRequestController::class, 'approve'])->name('provider-requests.approve');
         Route::patch('provider-requests/{user}/reject', [\App\Http\Controllers\AdminProviderRequestController::class, 'reject'])->name('provider-requests.reject');
         Route::resource('users', \App\Http\Controllers\AdminUserController::class);
-        Route::post('users/{user}/unblock', [\App\Http\Controllers\AdminUserController::class, 'unblock'])->name('admin.users.unblock');
+        Route::post('users/{user}/unblock', [\App\Http\Controllers\AdminUserController::class, 'unblock'])->name('users.unblock');
         // Secure signed route to unlock account directly from email
         Route::get('users/{user}/unlock-signed', [\App\Http\Controllers\AdminUserController::class, 'unlockSigned'])
-            ->name('admin.users.unlock-signed')
+            ->name('users.unlock-signed')
             ->middleware('signed');
 
         // Gallery management
