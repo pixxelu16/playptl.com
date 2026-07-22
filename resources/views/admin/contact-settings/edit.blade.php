@@ -212,9 +212,7 @@
                     <div class="admin-form-group">
                         <label class="admin-label" for="stripe_currency">Currency</label>
                         <select class="admin-input" id="stripe_currency" name="stripe_currency" required>
-                            @foreach(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'INR'] as $currency)
-                                <option value="{{ $currency }}" {{ old('stripe_currency', $stripe['currency']) === $currency ? 'selected' : '' }}>{{ $currency }}</option>
-                            @endforeach
+                            <option value="USD" selected>USD</option>
                         </select>
                     </div>
 

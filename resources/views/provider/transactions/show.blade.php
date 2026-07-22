@@ -29,6 +29,7 @@
             <div class="space-y-4 rounded-xl border border-gray-100 p-5 bg-gray-50/50">
                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Duration & Payout Metrics</h4>
                 <div class="space-y-2 text-sm">
+                    <p class="text-gray-500">Hours / Day: <span class="font-semibold text-gray-700">{{ $booking->hours_per_day }} Hours</span></p>
                     <p class="text-gray-500">Total Hours: <span class="font-bold text-gray-800">{{ $booking->total_hours }} Hours</span></p>
                     <p class="text-gray-500">Hourly Rate: <span class="font-semibold text-gray-700">{{ $currencySymbol }}{{ number_format($booking->hourly_rate, 2) }} / hr</span></p>
                     <p class="text-gray-500">Payout Status: 
@@ -54,7 +55,7 @@
                     <span class="text-gray-800">{{ $currencySymbol }}{{ number_format($booking->total_amount, 2) }}</span>
                 </div>
                 <div class="flex justify-between font-medium text-red-600 py-3">
-                    <span>Platform Commission Deduction ({{ $booking->commission_rate }}%)</span>
+                    <span>Platform Commission Deduction ({{ 100 - $booking->commission_rate }}%)</span>
                     <span>-{{ $currencySymbol }}{{ number_format($booking->commission_amount, 2) }}</span>
                 </div>
                 <div class="flex justify-between items-center font-bold text-lg pt-3">

@@ -184,7 +184,7 @@
                         <th>Type</th>
                         <th>Dates</th>
                         <th style="text-align: right;">Amount</th>
-                        <th style="text-align: right;">Commission</th>
+                        <th style="text-align: right;">Platform Commission</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Payout</th>
                         <th style="text-align: center;">Actions</th>

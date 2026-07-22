@@ -24,7 +24,7 @@ class ProviderTransactionController extends Controller
         // Get bookings with pagination
         $bookings = Booking::where('provider_id', $user->id)
             ->with('student')
-            ->latest()
+            ->latest('id')
             ->paginate(10);
 
         // Calculate summary metrics

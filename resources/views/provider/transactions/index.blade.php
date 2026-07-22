@@ -50,7 +50,7 @@
                         <tr class="hover:bg-gray-50/80 transition-colors">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-900 text-sm">
-                                    {{ $booking->stripe_charge_id ? substr($booking->stripe_charge_id, 0, 15) . '...' : 'Free Session' }}
+                                    {{ $booking->stripe_charge_id ? substr($booking->stripe_charge_id, 0, 15) . '...' : ($booking->total_amount > 0 ? 'Session Booking' : 'Free Session') }}
                                 </div>
                                 <div class="text-xs text-gray-400 mt-0.5">
                                     Student: <span class="font-semibold text-gray-600">{{ $booking->student->name }}</span>
@@ -69,7 +69,7 @@
                             </td>
                             <td class="px-6 py-4 text-xs text-red-600 font-semibold">
                                 -{{ $currencySymbol }}{{ number_format($booking->commission_amount, 2) }}
-                                <span class="text-gray-400">({{ $booking->commission_rate }}%)</span>
+                                <span class="text-gray-400">({{ 100 - $booking->commission_rate }}%)</span>
                             </td>
                             <td class="px-6 py-4 font-extrabold text-emerald-600">
                                 {{ $currencySymbol }}{{ number_format($booking->provider_amount, 2) }}
@@ -91,7 +91,7 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <a href="{{ route(strtolower($roleName) . '.transactions.show', $booking->id) }}"
-                                   class="text-[#5DA44E] hover:text-[#4d8f40] font-bold text-xs uppercase tracking-wider transition-colors">
+                                   class="text-[#5DA44E] hover:text-[#4d8f40] font-bold text-xs uppercase tracking-wider transition-colors inline-flex items-center gap-1 whitespace-nowrap">
                                     Details &rarr;
                                 </a>
                             </td>

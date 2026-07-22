@@ -9,6 +9,7 @@ use App\Models\Group;
 use App\Models\GroupCard;
 use App\Models\PaymentHistory;
 use App\Models\Booking;
+use App\Models\CharityDonation;
 use App\Enums\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,10 +28,16 @@ class AdminDashboardController extends Controller
         $totalUsers = User::count();
 
         // 2. Revenue statistics
-        $totalRevenue = PaymentHistory::where('status', 'completed')->sum('amount');
         $tournamentRevenue = PaymentHistory::where('status', 'completed')->whereNotNull('league_id')->sum('amount');
         $bookingRevenue = PaymentHistory::where('status', 'completed')->whereNull('league_id')->sum('amount');
         $totalCommission = Booking::whereIn('status', [Booking::STATUS_ACCEPTED, Booking::STATUS_COMPLETED])->sum('commission_amount');
+        $charityRevenue = CharityDonation::where('status', 'completed')->where('donation_type', 'money')->sum('amount');
+
+        // Total Platform Revenue: Tournament Entry Revenue + Platform Commission + Charity Revenue
+        $totalPlatformRevenue = $tournamentRevenue + $totalCommission + $charityRevenue;
+
+        // Total payout paid to coaches/mentors (marked as paid)
+        $totalPayoutPaid = Booking::where('payout_status', 'paid')->sum('provider_amount');
 
         // 3. Recent registrations
         $recentStudents = User::where('role', UserRole::Student)->latest()->take(5)->get();
@@ -39,6 +46,25 @@ class AdminDashboardController extends Controller
 
         // 4. Graph data generation (Database-agnostic grouping)
         $payments = PaymentHistory::where('status', 'completed')->get();
+        $donations = CharityDonation::where('status', 'completed')->where('donation_type', 'money')->get();
+
+        // Helper to calculate platform share of a payment history record
+        $getPlatformShare = function ($p) {
+            if (isset($p->meta['type']) && $p->meta['type'] === 'provider_payout') {
+                return 0.0;
+            }
+            if ($p->league_id) {
+                return (float)$p->amount;
+            }
+            if (isset($p->meta['commission_amount'])) {
+                return (float)$p->meta['commission_amount'];
+            }
+            if (isset($p->meta['platform_commission'])) {
+                return (float)$p->meta['platform_commission'];
+            }
+            // Fallback estimation (20% platform commission)
+            return (float)$p->amount * 0.20;
+        };
 
         // Daily (Last 30 Days)
         $dailyData = collect();
@@ -49,7 +75,13 @@ class AdminDashboardController extends Controller
         foreach ($payments as $p) {
             $dateStr = $p->created_at?->format('Y-m-d');
             if ($dailyData->has($dateStr)) {
-                $dailyData->put($dateStr, $dailyData->get($dateStr) + (float)$p->amount);
+                $dailyData->put($dateStr, $dailyData->get($dateStr) + $getPlatformShare($p));
+            }
+        }
+        foreach ($donations as $d) {
+            $dateStr = $d->created_at?->format('Y-m-d');
+            if ($dailyData->has($dateStr)) {
+                $dailyData->put($dateStr, $dailyData->get($dateStr) + (float)$d->amount);
             }
         }
 
@@ -62,7 +94,13 @@ class AdminDashboardController extends Controller
         foreach ($payments as $p) {
             $dateStr = $p->created_at?->startOfWeek()->format('\W\e\e\k W');
             if ($weeklyData->has($dateStr)) {
-                $weeklyData->put($dateStr, $weeklyData->get($dateStr) + (float)$p->amount);
+                $weeklyData->put($dateStr, $weeklyData->get($dateStr) + $getPlatformShare($p));
+            }
+        }
+        foreach ($donations as $d) {
+            $dateStr = $d->created_at?->startOfWeek()->format('\W\e\e\k W');
+            if ($weeklyData->has($dateStr)) {
+                $weeklyData->put($dateStr, $weeklyData->get($dateStr) + (float)$d->amount);
             }
         }
 
@@ -75,7 +113,13 @@ class AdminDashboardController extends Controller
         foreach ($payments as $p) {
             $monthStr = $p->created_at?->format('M Y');
             if ($monthlyData->has($monthStr)) {
-                $monthlyData->put($monthStr, $monthlyData->get($monthStr) + (float)$p->amount);
+                $monthlyData->put($monthStr, $monthlyData->get($monthStr) + $getPlatformShare($p));
+            }
+        }
+        foreach ($donations as $d) {
+            $monthStr = $d->created_at?->format('M Y');
+            if ($monthlyData->has($monthStr)) {
+                $monthlyData->put($monthStr, $monthlyData->get($monthStr) + (float)$d->amount);
             }
         }
 
@@ -88,7 +132,13 @@ class AdminDashboardController extends Controller
         foreach ($payments as $p) {
             $yearStr = $p->created_at?->format('Y');
             if ($yearlyData->has($yearStr)) {
-                $yearlyData->put($yearStr, $yearlyData->get($yearStr) + (float)$p->amount);
+                $yearlyData->put($yearStr, $yearlyData->get($yearStr) + $getPlatformShare($p));
+            }
+        }
+        foreach ($donations as $d) {
+            $yearStr = $d->created_at?->format('Y');
+            if ($yearlyData->has($yearStr)) {
+                $yearlyData->put($yearStr, $yearlyData->get($yearStr) + (float)$d->amount);
             }
         }
 
@@ -107,10 +157,11 @@ class AdminDashboardController extends Controller
             'organisersCount' => $organisersCount,
             'totalUsers' => $totalUsers,
 
-            'totalRevenue' => $totalRevenue,
+            'totalPlatformRevenue' => $totalPlatformRevenue,
             'tournamentRevenue' => $tournamentRevenue,
-            'bookingRevenue' => $bookingRevenue,
+            'totalPayoutPaid' => $totalPayoutPaid,
             'totalCommission' => $totalCommission,
+            'charityRevenue' => $charityRevenue,
 
             'recentStudents' => $recentStudents,
             'recentMentors' => $recentMentors,

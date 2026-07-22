@@ -130,9 +130,9 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'provider_id'          => ['required', 'integer', 'exists:users,id'],
-            'message'              => ['nullable', 'string', 'max:2000'],
-            'student_location'     => ['nullable', 'string', 'max:255'],
-            'student_phone'        => ['nullable', 'string', 'max:30'],
+            'message'              => ['required', 'string', 'max:2000'],
+            'student_location'     => ['required', 'string', 'max:255'],
+            'student_phone'        => ['required', 'string', 'max:30'],
             'from_date'            => ['required', 'date', 'after_or_equal:today'],
             'to_date'              => ['required', 'date', 'gte:from_date'],
             'booking_time'         => ['required', 'date_format:H:i'],
@@ -197,6 +197,7 @@ class BookingController extends Controller
             'commission_rate'  => $commissionRate,
             'commission_amount'=> $totals['commission_amount'],
             'provider_amount'  => $totals['provider_amount'],
+            'stripe_charge_id' => $validated['stripe_charge_id'] ?? null,
         ]);
 
         if ($booking->total_amount > 0 && $booking->stripe_charge_id) {
@@ -216,7 +217,8 @@ class BookingController extends Controller
                         'provider_type' => $roleName,
                         'total_hours' => $booking->total_hours,
                         'hourly_rate' => $booking->hourly_rate,
-                        'commission_rate' => $booking->commission_rate,
+                        'provider_share_rate' => $booking->commission_rate . '%',
+                        'platform_commission_rate' => (100 - $booking->commission_rate) . '%',
                         'commission_amount' => $booking->commission_amount,
                         'provider_amount' => $booking->provider_amount,
                     ],
@@ -285,6 +287,18 @@ class BookingController extends Controller
     {
         abort_unless($booking->student_id === Auth::id(), 403);
 
+        $freshStatus = Booking::whereKey($booking->id)->value('status');
+        if ($freshStatus !== Booking::STATUS_PENDING) {
+            $statusLabel = match($freshStatus) {
+                Booking::STATUS_ACCEPTED  => 'accepted',
+                Booking::STATUS_REJECTED  => 'rejected',
+                Booking::STATUS_CANCELLED => 'cancelled',
+                Booking::STATUS_COMPLETED => 'completed',
+                default                   => $freshStatus,
+            };
+            return back()->with('error', "This booking request has already been {$statusLabel}. Please refresh the page.");
+        }
+
         $refundId = null;
 
         // Issue Stripe refund if charge exists
@@ -311,6 +325,15 @@ class BookingController extends Controller
             'status' => Booking::STATUS_CANCELLED,
             'stripe_refund_id' => $refundId,
         ]);
+
+        if ($booking->stripe_charge_id) {
+            try {
+                $paymentHistory = \App\Models\PaymentHistory::where('transaction_id', $booking->stripe_charge_id)->first();
+                if ($paymentHistory) {
+                    $paymentHistory->update(['status' => 'refunded']);
+                }
+            } catch (\Throwable $e) {}
+        }
 
         // Notify provider, student and admin
         try {
