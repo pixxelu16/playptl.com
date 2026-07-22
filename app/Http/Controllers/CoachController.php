@@ -13,8 +13,43 @@ class CoachController extends Controller
 {
     public function dashboard(Request $request): View
     {
+        $user = $request->user();
+        
+        $revenue = \App\Models\Booking::where('provider_id', $user->id)
+            ->whereIn('status', [\App\Models\Booking::STATUS_ACCEPTED, \App\Models\Booking::STATUS_COMPLETED])
+            ->sum('provider_amount');
+            
+        $studentsCount = \App\Models\Booking::where('provider_id', $user->id)
+            ->distinct('student_id')
+            ->count('student_id');
+
+        $totalBookings = \App\Models\Booking::where('provider_id', $user->id)->count();
+        
+        $pendingBookings = \App\Models\Booking::where('provider_id', $user->id)
+            ->where('status', \App\Models\Booking::STATUS_PENDING)
+            ->count();
+
+        $acceptedBookings = \App\Models\Booking::where('provider_id', $user->id)
+            ->where('status', \App\Models\Booking::STATUS_ACCEPTED)
+            ->count();
+
+        $recentBookings = \App\Models\Booking::where('provider_id', $user->id)
+            ->with('student')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $currencySymbol = \App\Models\SiteSetting::currencySymbol();
+
         return view('coach.dashboard', [
-            'user' => $request->user(),
+            'user' => $user,
+            'revenue' => $revenue,
+            'studentsCount' => $studentsCount,
+            'totalBookings' => $totalBookings,
+            'pendingBookings' => $pendingBookings,
+            'acceptedBookings' => $acceptedBookings,
+            'recentBookings' => $recentBookings,
+            'currencySymbol' => $currencySymbol,
         ]);
     }
 

@@ -107,16 +107,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard', [
-                'leaguesCount' => League::query()->count(),
-                'announcementsCount' => Announcement::query()->count(),
-                'groupsCount' => Group::query()->count(),
-                'groupCardsCount' => GroupCard::query()->count(),
-                'playersCount' => User::query()->where('role', UserRole::Player)->count(),
-                'paymentsCount' => PaymentHistory::query()->count(),
-            ]);
-        })->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('leagues', AdminLeagueController::class);
         Route::get('league-management', [AdminLeagueManagementController::class, 'index'])->name('league-management.index');
@@ -312,6 +303,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\MentorController::class, 'profile'])->name('profile');
         Route::put('/profile', [\App\Http\Controllers\MentorController::class, 'updateProfile'])->name('profile.update');
         Route::put('/change-password', [\App\Http\Controllers\MentorController::class, 'updatePassword'])->name('password.update');
+        Route::get('/transactions', [\App\Http\Controllers\ProviderTransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions/{booking}', [\App\Http\Controllers\ProviderTransactionController::class, 'show'])->name('transactions.show');
     });
 
     Route::middleware('role:coach')->prefix('coach')->name('coach.')->group(function () {
@@ -319,6 +312,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\CoachController::class, 'profile'])->name('profile');
         Route::put('/profile', [\App\Http\Controllers\CoachController::class, 'updateProfile'])->name('profile.update');
         Route::put('/change-password', [\App\Http\Controllers\CoachController::class, 'updatePassword'])->name('password.update');
+        Route::get('/transactions', [\App\Http\Controllers\ProviderTransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions/{booking}', [\App\Http\Controllers\ProviderTransactionController::class, 'show'])->name('transactions.show');
     });
 
     Route::middleware('role:student')->prefix('student')->name('student.')->group(function () {
