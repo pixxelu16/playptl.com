@@ -106,8 +106,10 @@
                                     <span>Book {{ $roleName }}</span>
                                 </a>
                             </div>
-                        @elseif (auth()->check() && !auth()->user()->hasRole('Student'))
-                            {{-- Contact Block (non-students) --}}
+                        @endif
+
+                        @if (auth()->check() && auth()->user()->hasRole('Super Admin'))
+                            {{-- Contact Block (Super Admins only) --}}
                             <div class="w-full space-y-3 mt-8 border-t border-gray-100 pt-6">
                                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider text-left mb-3">Contact Details</h4>
                                 <a href="mailto:{{ $user->email }}" class="flex items-center justify-center gap-2 w-full rounded-lg bg-[#5DA44E] hover:bg-[#4d8f40] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition">
