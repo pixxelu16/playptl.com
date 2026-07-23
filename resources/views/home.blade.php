@@ -248,7 +248,7 @@
                             <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="list">
                                 @foreach ($homeToday as $photo)
                                     <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md">
-                                        <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] ?? 'Match photo' }}" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] ?? 'Match photo' }}" width="540" height="360" class="h-[min(45vh,360px)] w-[min(85vw,540px)] shrink-0 object-cover sm:h-[360px] sm:w-[540px]" loading="lazy" decoding="async">
                                         @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
                                     </li>
                                 @endforeach
@@ -256,7 +256,7 @@
                             <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="presentation" aria-hidden="true">
                                 @foreach ($homeToday as $photo)
                                     <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md" aria-hidden="true">
-                                        <img src="{{ $photo['url'] }}" alt="" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        <img src="{{ $photo['url'] }}" alt="" width="540" height="360" class="h-[min(45vh,360px)] w-[min(85vw,540px)] shrink-0 object-cover sm:h-[360px] sm:w-[540px]" loading="lazy" decoding="async">
                                         @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
                                     </li>
                                 @endforeach
@@ -288,7 +288,7 @@
                             <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="list">
                                 @foreach ($homeYesterday as $photo)
                                     <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md">
-                                        <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] ?? 'Match photo' }}" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        <img src="{{ $photo['url'] }}" alt="{{ $photo['alt'] ?? 'Match photo' }}" width="540" height="360" class="h-[min(45vh,360px)] w-[min(85vw,540px)] shrink-0 object-cover sm:h-[360px] sm:w-[540px]" loading="lazy" decoding="async">
                                         @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
                                     </li>
                                 @endforeach
@@ -296,7 +296,7 @@
                             <ul class="flex shrink-0 items-center gap-5 pr-5 sm:gap-6 sm:pr-6 md:gap-8 md:pr-8" role="presentation" aria-hidden="true">
                                 @foreach ($homeYesterday as $photo)
                                     <li class="relative shrink-0 overflow-hidden rounded-2xl shadow-md" aria-hidden="true">
-                                        <img src="{{ $photo['url'] }}" alt="" width="360" height="540" class="h-[min(70vh,540px)] w-[min(85vw,360px)] shrink-0 object-cover sm:h-[540px] sm:w-[360px]" loading="lazy" decoding="async">
+                                        <img src="{{ $photo['url'] }}" alt="" width="540" height="360" class="h-[min(45vh,360px)] w-[min(85vw,540px)] shrink-0 object-cover sm:h-[360px] sm:w-[540px]" loading="lazy" decoding="async">
                                         @include('partials.gallery-photo-meta', ['item' => $photo, 'compact' => true])
                                     </li>
                                 @endforeach

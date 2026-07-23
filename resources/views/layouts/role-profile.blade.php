@@ -101,6 +101,51 @@
                             </div>
                             <h2 class="mt-4 text-[18px] font-bold leading-tight text-[#333333]">{{ $user->name }}</h2>
                             <p class="mt-1 text-[14px] font-medium text-[#666666]">{{ $roleName }}</p>
+                            @php
+                                $allRoles = $user->roles->pluck('name')->toArray();
+                                if (!in_array($user->role->name, $allRoles)) {
+                                    $allRoles[] = $user->role->name;
+                                }
+                                $allRoles = array_unique(array_map('ucfirst', $allRoles));
+                            @endphp
+                            @if (count($allRoles) > 1)
+                                <div class="mt-4 border-t border-[#D7EAD9] pt-4 text-left">
+                                    <p class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2.5 text-center">Switch Account</p>
+                                    <div class="flex flex-col gap-2">
+                                        @foreach ($allRoles as $rName)
+                                            @php
+                                                $isActiveRole = strtolower($rName) === strtolower($roleName);
+                                                $iconClass = match (strtolower($rName)) {
+                                                    'player' => 'fa-trophy',
+                                                    'student' => 'fa-graduation-cap',
+                                                    'mentor' => 'fa-chalkboard-user',
+                                                    'coach' => 'fa-users-gear',
+                                                    'admin', 'super admin' => 'fa-user-shield',
+                                                    default => 'fa-user',
+                                                };
+                                            @endphp
+                                            @if ($isActiveRole)
+                                                <div class="flex items-center justify-between rounded-lg border border-transparent bg-[#66A157] px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm">
+                                                    <span class="flex items-center gap-2.5">
+                                                        <i class="fa-solid {{ $iconClass }} text-white/95"></i>
+                                                        {{ $rName }} Dashboard
+                                                    </span>
+                                                    <span class="inline-flex h-2 w-2 rounded-full bg-[#B4F000] animate-pulse"></span>
+                                                </div>
+                                            @else
+                                                <a href="{{ route(strtolower($rName) . '.dashboard') }}" 
+                                                   class="group flex items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-4 py-2.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-all duration-200 hover:border-[#66A157] hover:bg-[#F4FAF3] hover:text-[#2d4a2d] hover:shadow-md">
+                                                    <span class="flex items-center gap-2.5">
+                                                        <i class="fa-solid {{ $iconClass }} text-[#66A157] transition-transform duration-200 group-hover:scale-110"></i>
+                                                        {{ $rName }} Dashboard
+                                                    </span>
+                                                    <i class="fa-solid fa-chevron-right text-[10px] text-[#9E9E9E] transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#66A157]"></i>
+                                                </a>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                         
                         <nav class="space-y-2 p-4">
@@ -112,6 +157,7 @@
                                 <a href="{{ route('provider.bookings') }}" class="{{ $navClass('bookings') }}">Booking Requests</a>
                                 <a href="{{ route(strtolower($roleName) . '.transactions.index') }}" class="{{ $navClass('transactions') }}">Transactions</a>
                             @endif
+
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" class="w-full rounded-lg border border-red-200 bg-white px-4 py-3 text-center text-[14px] font-semibold leading-snug text-red-600 transition-colors hover:bg-red-50 sm:text-[15px]">

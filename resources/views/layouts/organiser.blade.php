@@ -161,6 +161,27 @@
             <div class="brand">Organiser Panel</div>
             <a href="{{ route('organiser.dashboard') }}">Dashboard</a>
             <a href="{{ url('/') }}">Website</a>
+            @php
+                $user = auth()->user();
+                $allRoles = $user ? $user->roles->pluck('name')->toArray() : [];
+                if ($user && !in_array($user->role->name, $allRoles)) {
+                    $allRoles[] = $user->role->name;
+                }
+                $allRoles = array_unique(array_map('ucfirst', $allRoles));
+            @endphp
+            @if(count($allRoles) > 1)
+                <div style="padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 15px;">
+                    <div style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.5); text-transform: uppercase;">Switch Panel</div>
+                    @foreach($allRoles as $rName)
+                        @if(strtolower($rName) !== 'organiser')
+                            <a href="{{ route(strtolower($rName) . '.dashboard') }}" style="font-size: 12px; color: #B4F000; padding: 4px 0; display: block;">
+                                &rarr; {{ $rName }}
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="logout" type="submit">Logout</button>

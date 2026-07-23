@@ -33,10 +33,18 @@ class RegisteredUserController extends Controller
 {
     public function create(): View
     {
-        $registrationLeagues = LeagueMenuHelper::registrationLeagues();
+        $registrationLeagues = LeagueMenuHelper::registrationLeagues()
+            ->filter(function ($league) {
+                if ($league->registration_deadline !== null && now()->startOfDay()->gt($league->registration_deadline)) {
+                    return false;
+                }
+                return true;
+            })
+            ->values();
 
         return view('auth.register', [
             'registrationLeagues' => $registrationLeagues,
+            'categories' => \App\Models\Category::query()->orderBy('menu_order')->get(),
             'registrationClosedDivisions' => LeagueRegistrationGate::closedSelectionKeys(),
             'registrationClosedGroupCards' => LeagueRegistrationGate::closedGroupCardKeys(),
             'leagueEntryFees' => LeagueEntryFee::mapForLeagues($registrationLeagues),
@@ -148,12 +156,16 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()->symbols()],
             'payment_intent_id' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'integer', 'exists:categories,id'],
         ]);
 
         $tab = (string) $base['registration_tab'];
+        $categoryModel = \App\Models\Category::findOrFail((int) $base['category']);
+        $category = (string) $categoryModel->id;
+        $isDoublesRegistration = ($tab === 'doubles');
 
         if ($tab === 'singles') {
-            $specific = $request->validate([
+            $rules = [
                 'phone_singles' => ['required', 'string', 'max:32', 'unique:users,phone'],
                 'city_singles' => ['required', 'string', 'max:255'],
                 'state_singles' => ['required', 'string', 'max:64'],
@@ -164,7 +176,21 @@ class RegisteredUserController extends Controller
                 'group_card_singles' => ['required', 'integer', 'exists:group_cards,id'],
                 'singles_first' => ['nullable'],
                 'singles_last' => ['nullable'],
-            ], [], [
+            ];
+            if ($isDoublesRegistration) {
+                $rules = array_merge($rules, [
+                    'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+                    'd2_phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
+                    'd2_city' => ['required', 'string', 'max:255'],
+                    'd2_state' => ['required', 'string', 'max:64'],
+                    'd2_age_group' => ['required', 'string', 'max:32'],
+                    'd2_skill' => ['required', 'string', 'max:32'],
+                    'd2_sex' => ['required', 'string', 'max:32'],
+                    'd2_first' => ['nullable'],
+                    'd2_last' => ['nullable'],
+                ]);
+            }
+            $specific = $request->validate($rules, [], [
                 'phone_singles' => 'phone',
                 'city_singles' => 'city',
                 'state_singles' => 'state',
@@ -173,9 +199,11 @@ class RegisteredUserController extends Controller
                 'sex_singles' => 'gender',
                 'tournament_singles' => 'tournament',
                 'group_card_singles' => 'group',
+                'd2_email' => 'Player 2 email',
+                'd2_phone' => 'Player 2 phone',
             ]);
         } else {
-            $specific = $request->validate([
+            $rules = [
                 'phone_doubles' => ['required', 'string', 'max:32', 'unique:users,phone'],
                 'city_doubles' => ['required', 'string', 'max:255'],
                 'state_doubles' => ['required', 'string', 'max:64'],
@@ -195,7 +223,8 @@ class RegisteredUserController extends Controller
                 'd1_last' => ['nullable'],
                 'd2_first' => ['nullable'],
                 'd2_last' => ['nullable'],
-            ], [], [
+            ];
+            $specific = $request->validate($rules, [], [
                 'phone_doubles' => 'phone',
                 'city_doubles' => 'city',
                 'state_doubles' => 'state',
@@ -207,7 +236,9 @@ class RegisteredUserController extends Controller
                 'd2_email' => 'Player 2 email',
                 'd2_phone' => 'Player 2 phone',
             ]);
+        }
 
+        if ($isDoublesRegistration) {
             $email1 = strtolower((string) $base['email']);
             $email2 = strtolower((string) $specific['d2_email']);
 
@@ -219,8 +250,9 @@ class RegisteredUserController extends Controller
         $leagueId = (int) ($tab === 'singles' ? $specific['tournament_singles'] : $specific['tournament_doubles']);
         $skillLevel = (string) ($tab === 'singles' ? $specific['skill_singles'] : $specific['skill_doubles']);
         $assignmentSkill = $skillLevel;
-        if ($tab === 'doubles') {
-            $skillOne = (string) $specific['skill_doubles'];
+
+        if ($isDoublesRegistration) {
+            $skillOne = (string) ($tab === 'singles' ? $specific['skill_singles'] : $specific['skill_doubles']);
             $skillTwo = (string) $specific['d2_skill'];
             if ($skillOne === 'not-sure' || $skillTwo === 'not-sure') {
                 $assignmentSkill = 'not-sure';
@@ -232,6 +264,7 @@ class RegisteredUserController extends Controller
                 $assignmentSkill = $averageSkill;
             }
         }
+
         $ageGroup = (string) ($tab === 'singles' ? $specific['age_group_singles'] : $specific['age_group_doubles']);
         $sex = (string) ($tab === 'singles' ? $specific['sex_singles'] : $specific['sex_doubles']);
         $phone = (string) ($tab === 'singles' ? $specific['phone_singles'] : $specific['phone_doubles']);
@@ -256,7 +289,8 @@ class RegisteredUserController extends Controller
         $stripe = new StripeClient($secret);
         $intent = $stripe->paymentIntents->retrieve($base['payment_intent_id'], []);
 
-        $expectedAmountCents = LeagueEntryFee::centsForTab($league, $tab);
+        $actualFeeTab = $isDoublesRegistration ? 'doubles' : 'singles';
+        $expectedAmountCents = LeagueEntryFee::centsForTab($league, $actualFeeTab);
         $expectedCurrency = strtolower(SiteSetting::stripeCurrency());
         $intentEmail = strtolower((string) ($intent->metadata['email'] ?? ''));
         $intentLeagueId = (string) ($intent->metadata['league_id'] ?? '');
@@ -274,37 +308,25 @@ class RegisteredUserController extends Controller
         }
 
         $groupCardId = (int) ($tab === 'singles' ? $specific['group_card_singles'] : $specific['group_card_doubles']);
-
-        if ($tab === 'singles') {
-            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
-            if (! $expectedCard instanceof GroupCard) {
-                return $this->fail($request, 'No group is available for your skill level in this tournament.');
-            }
-            if ($groupCardId !== (int) $expectedCard->id) {
-                return $this->fail($request, 'Group assignment does not match your skill level.');
-            }
-            $groupCard = $expectedCard;
-        } else {
-            $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $tab, $assignmentSkill);
-            if (! $expectedCard instanceof GroupCard) {
-                return $this->fail($request, 'No group is available for your team skill level in this tournament.');
-            }
-            if ($groupCardId !== (int) $expectedCard->id) {
-                return $this->fail($request, 'Group assignment does not match your team skill level.');
-            }
-            $groupCard = $expectedCard;
+        $expectedCard = TournamentRegistrationOptions::resolveGroupCardBySkill($league, $actualFeeTab, $assignmentSkill);
+        if (! $expectedCard instanceof GroupCard) {
+            return $this->fail($request, 'No group is available for your skill level in this tournament.');
         }
+        if ($groupCardId !== (int) $expectedCard->id) {
+            return $this->fail($request, 'Group assignment does not match your skill level.');
+        }
+        $groupCard = $expectedCard;
 
         $registrationClosed = LeagueRegistrationGate::closedReason($league, $groupCard, $ageGroup);
         if ($registrationClosed !== null) {
             return $this->fail($request, $registrationClosed);
         }
 
-        $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $tab, $ageGroup);
+        $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $actualFeeTab, $ageGroup);
         $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
 
         $user = \Illuminate\Support\Facades\DB::transaction(function () use (
-            $base, $tab, $specific, $phone, $city, $state, $sex, $skillLevel, $intent, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup, $amountDecimal
+            $base, $tab, $category, $specific, $phone, $city, $state, $sex, $skillLevel, $intent, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup, $amountDecimal, $isDoublesRegistration
         ) {
             $createdUser = User::create([
                 'name' => $base['name'],
@@ -337,12 +359,13 @@ class RegisteredUserController extends Controller
                 'description' => 'Tournament registration fee',
                 'meta' => [
                     'registration_tab' => $tab,
+                    'category' => $category,
                     'payment_intent_status' => (string) $intent->status,
                 ],
             ]);
 
             $primaryTeamKey = null;
-            if ($tab === 'doubles') {
+            if ($isDoublesRegistration) {
                 $primaryTeamKey = (string) Str::uuid();
             }
 
@@ -354,6 +377,7 @@ class RegisteredUserController extends Controller
                     'skill_level' => $skillLevel,
                     'age_group_key' => $ageGroup,
                     'registration_type' => $tab,
+                    'category' => $category,
                     'team_key' => $primaryTeamKey,
                     'payment_status' => 'completed',
                 ]
@@ -362,7 +386,7 @@ class RegisteredUserController extends Controller
             UserSkillLevel::syncToUser($createdUser, $skillLevel);
 
             // Doubles: create/attach second player as separate user + registration
-            if ($tab === 'doubles') {
+            if ($isDoublesRegistration) {
                 $partnerEmail = strtolower((string) $specific['d2_email']);
                 $partnerName = trim(((string) ($specific['d2_first'] ?? '')).' '.((string) ($specific['d2_last'] ?? '')));
 
@@ -381,7 +405,7 @@ class RegisteredUserController extends Controller
                         'role' => UserRole::Player,
                         'status' => 'active',
                         'password' => Hash::make(Str::random(32)),
-                        'registration_type' => 'doubles',
+                        'registration_type' => $tab,
                         'skill_level' => (string) $specific['d2_skill'],
                     ]);
                     try {
@@ -400,7 +424,8 @@ class RegisteredUserController extends Controller
                         'group_id' => $groupId,
                         'skill_level' => (string) $specific['d2_skill'],
                         'age_group_key' => (string) $specific['d2_age_group'],
-                        'registration_type' => 'doubles',
+                        'registration_type' => $tab,
+                        'category' => $category,
                         'team_key' => $primaryTeamKey,
                         'payment_status' => 'completed',
                     ]
@@ -419,7 +444,7 @@ class RegisteredUserController extends Controller
             return $createdUser;
         });
 
-        if ($tab === 'doubles' && isset($partner) && isset($partnerEmail)) {
+        if ($isDoublesRegistration && isset($partner) && isset($partnerEmail)) {
             try {
                 // Use Laravel password reset flow so partner can setup account with same email.
                 $token = PasswordBroker::broker()->createToken($partner);

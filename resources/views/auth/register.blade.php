@@ -53,18 +53,12 @@
                         {{-- Role Selector --}}
                         <div class="mt-4">
                             <label class="mb-2 block text-[12px] font-bold text-[#222] uppercase tracking-wider">Register as <span class="text-red-600">*</span></label>
-                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4" id="role-radio-group">
+                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" id="role-radio-group">
                                 <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border-2 border-[#5DA44E] bg-[#E4F7E7] p-3 text-center transition-all hover:shadow-sm" data-role="player">
                                     <input type="radio" name="registration_role" value="player" checked class="sr-only">
                                     <i class="fa-solid fa-trophy text-[20px] text-[#5DA44E] mb-1"></i>
                                     <span class="text-[13px] font-bold text-[#222]">Player</span>
                                     <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Tournament</span>
-                                </label>
-                                <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border border-[#dddddd] bg-white p-3 text-center transition-all hover:border-[#5DA44E]/50 hover:shadow-sm" data-role="mentor">
-                                    <input type="radio" name="registration_role" value="mentor" class="sr-only">
-                                    <i class="fa-solid fa-handshake-angle text-[20px] text-[#666] mb-1 transition-colors"></i>
-                                    <span class="text-[13px] font-bold text-[#222]">Mentor</span>
-                                    <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Support</span>
                                 </label>
                                 <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border border-[#dddddd] bg-white p-3 text-center transition-all hover:border-[#5DA44E]/50 hover:shadow-sm" data-role="coach">
                                     <input type="radio" name="registration_role" value="coach" class="sr-only">
@@ -218,17 +212,29 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Tournament <span class="text-red-600">*</span></label>
-                                            <select name="tournament_singles"
+                                            <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Category <span class="text-red-600">*</span></label>
+                                            <select name="category"
                                                 required
-                                                class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
-                                                <option value="">Select tournament</option>
-                                                @foreach ($registrationLeagues as $league)
-                                                    <option value="{{ $league->id }}" @selected(old('tournament_singles') == $league->id)>{{ $league->name }}</option>
+                                                class="reg-input category-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
+                                                <option value="">Select category</option>
+                                                @foreach($categories ?? [] as $cat)
+                                                    <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="mt-3">
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Tournament <span class="text-red-600">*</span></label>
+                                        <select name="tournament_singles"
+                                            required
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
+                                            <option value="">Select tournament</option>
+                                            @foreach ($registrationLeagues as $league)
+                                                <option value="{{ $league->id }}" @selected(old('tournament_singles') == $league->id)>{{ $league->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
                                     <div class="tournament-group-wrap mt-3 hidden" data-tab="singles" data-assign-by-skill="1">
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Your group</label>
                                         <input type="text"
@@ -469,6 +475,18 @@
                                                     @endforeach
                                                 </select>
                                             </div>
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Category <span class="text-red-600">*</span></label>
+                                                <select name="category" required
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    <option value="">Select category</option>
+                                                    @foreach($categories ?? [] as $cat)
+                                                        <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4">
                                             <div class="tournament-group-wrap hidden" data-tab="doubles" data-assign-by-skill="1">
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Your group</label>
                                                 <input type="text"

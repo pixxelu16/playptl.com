@@ -15,6 +15,7 @@ class LeagueRegistration extends Model
         'skill_level',
         'age_group_key',
         'registration_type',
+        'category',
         'team_key',
         'payment_status',
     ];
@@ -37,5 +38,10 @@ class LeagueRegistration extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function categoryDetail(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category');
     }
 }

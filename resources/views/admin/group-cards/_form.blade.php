@@ -69,10 +69,16 @@
     <div class="admin-form-group">
         <label class="admin-label" for="tag">Tag</label>
         <select class="admin-input" id="tag" name="tag" required>
-            <option value="single" @selected(old('tag', $groupCard->tag) === 'single')>Single</option>
-            <option value="doubles" @selected(old('tag', $groupCard->tag) === 'doubles')>Doubles</option>
-            <option value="mixed" @selected(old('tag', $groupCard->tag) === 'mixed')>Mixed</option>
-            <option value="youth" @selected(old('tag', $groupCard->tag) === 'youth')>Youth</option>
+            <option value="">Select Category</option>
+            @foreach (($categories ?? []) as $cat)
+                @php
+                    $selected = old('tag', $groupCard->tag) == $cat->id || 
+                                (is_string(old('tag', $groupCard->tag)) && 
+                                 (strtolower(old('tag', $groupCard->tag)) === strtolower($cat->name) || 
+                                  (strtolower($cat->name) === 'singles' && strtolower(old('tag', $groupCard->tag)) === 'single')));
+                @endphp
+                <option value="{{ $cat->id }}" @selected($selected)>{{ $cat->name }}</option>
+            @endforeach
         </select>
     </div>
 

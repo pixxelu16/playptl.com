@@ -42,7 +42,7 @@ class EnsureUserHasRole
         }
 
         if (! $hasRole) {
-            return redirect()->route($user->dashboardRouteName());
+            abort(403, 'You do not have authorization to access this page.');
         }
 
         return $next($request);

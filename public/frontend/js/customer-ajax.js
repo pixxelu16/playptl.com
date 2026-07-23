@@ -186,7 +186,13 @@
     if (!$form || !$form.length) return;
     var tab = $form.data('registration-tab') || 'singles';
     var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
-    var amount = entryFeeForLeague(leagueId, tab);
+    
+    var actualTab = tab;
+    if (tab === 'singles' && $form.find('select[name="category"] option:selected').data('name') === 'Doubles') {
+      actualTab = 'doubles';
+    }
+    
+    var amount = entryFeeForLeague(leagueId, actualTab);
     $form.find('.entry-fee-amount').text(amount);
     $form.data('fee', amount);
   }
@@ -967,6 +973,10 @@
       loadSinglesAssignedGroup();
     });
     $('#singles-register-form select[name="skill_singles"]').on('change', function () {
+      loadSinglesAssignedGroup();
+    });
+    $('#singles-register-form select[name="category"]').on('change', function () {
+      syncRegisterEntryFee($('#singles-register-form'));
       loadSinglesAssignedGroup();
     });
     $('#doubles-register-form select[name="tournament_doubles"]').on('change', function () {
