@@ -96,16 +96,61 @@
                             @endif
                         </div>
 
-                        @if (auth()->check() && auth()->user()->hasRole('Student'))
-                            {{-- Book Now Block (Students only) --}}
-                            <div class="w-full space-y-3 mt-8 border-t border-gray-100 pt-6">
-                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider text-left mb-3">Book a Session</h4>
-                                <a href="{{ route('booking.create', $user->username) }}"
-                                   class="flex items-center justify-center gap-2 w-full rounded-lg bg-[#5DA44E] hover:bg-[#4d8f40] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition">
-                                    <i class="fa-solid fa-calendar-check"></i>
-                                    <span>Book {{ $roleName }}</span>
-                                </a>
-                            </div>
+                        @if (auth()->check())
+                            @php
+                                $activeRole = session('active_dashboard_role');
+                                if (!$activeRole) {
+                                    if (auth()->user()->hasRole('Student')) {
+                                        $activeRole = 'student';
+                                    } else {
+                                        $activeRole = strtolower(auth()->user()->role->value);
+                                    }
+                                }
+                            @endphp
+
+                            @if ($activeRole === 'student')
+                                @if (auth()->id() !== $user->id)
+                                    {{-- Book Now Block (Students only) --}}
+                                    <div class="w-full space-y-3 mt-8 border-t border-gray-100 pt-6">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider text-left mb-3">Book a Session</h4>
+                                        <a href="{{ route('booking.create', $user->username) }}"
+                                           class="flex items-center justify-center gap-2 w-full rounded-lg bg-[#5DA44E] hover:bg-[#4d8f40] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition">
+                                            <i class="fa-solid fa-calendar-check"></i>
+                                            <span>Book {{ $roleName }}</span>
+                                        </a>
+                                    </div>
+                                @else
+                                    {{-- Cannot book oneself --}}
+                                    <div class="w-full space-y-3 mt-8 border-t border-gray-100 pt-6">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider text-left mb-3">Book a Session</h4>
+                                        <p class="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+                                            This is your profile. You cannot book sessions with yourself.
+                                        </p>
+                                    </div>
+                                @endif
+                            @else
+                                {{-- Not active as student --}}
+                                @if (auth()->user()->hasRole('Student'))
+                                    <div class="w-full space-y-3 mt-8 border-t border-gray-100 pt-6">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider text-left mb-3">Book a Session</h4>
+                                        <p class="text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                                            Please switch to your <strong>Student</strong> account using the dashboard panel switcher to book sessions.
+                                        </p>
+                                    </div>
+                                @else
+                                    <div class="w-full space-y-3 mt-8 border-t border-gray-100 pt-6">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider text-left mb-3">Book a Session</h4>
+                                        <form method="POST" action="{{ route('player.become-student') }}">
+                                            @csrf
+                                            <p class="text-xs text-gray-500 mb-2.5">You must register as a Student to book sessions.</p>
+                                            <button type="submit" class="flex items-center justify-center gap-2 w-full rounded-lg bg-[#2E7D32] hover:bg-[#1B5E20] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition">
+                                                <i class="fa-solid fa-graduation-cap"></i>
+                                                <span>Become a Student</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            @endif
                         @endif
 
                         @if (auth()->check() && auth()->user()->hasRole('Super Admin'))

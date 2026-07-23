@@ -39,6 +39,7 @@ class AdminContactSettingController extends Controller
                 'contact_email'      => ['required', 'email', 'max:255'],
                 'contact_address'    => ['required', 'string', 'max:500'],
                 'site_title'         => ['required', 'string', 'max:255'],
+                'enable_free_registration' => ['nullable', 'in:0,1'],
             ]);
 
             $this->updateLogoSetting(
@@ -65,6 +66,7 @@ class AdminContactSettingController extends Controller
             SiteSetting::setValue('contact_email', $validated['contact_email']);
             SiteSetting::setValue('contact_address', $validated['contact_address']);
             SiteSetting::setValue('site_title', $validated['site_title']);
+            SiteSetting::setValue('enable_free_registration', $request->input('enable_free_registration', '0'));
 
             if ($section === 'general') {
                 return back()->with('status', 'General site settings updated successfully.');
