@@ -106,12 +106,18 @@
                     </form>
                 @endif
                 @if(!auth()->user()->hasRole('Mentor'))
-                    <form method="POST" action="{{ route('player.become-mentor') }}" class="flex-1 sm:flex-initial">
-                        @csrf
-                        <button type="submit" class="w-full rounded-lg bg-[#1565C0] hover:bg-[#0D47A1] px-4 py-2 text-xs font-bold text-white transition-colors shadow-sm">
-                            Become a Mentor
+                    @if(auth()->user()->mentor_status === 'pending')
+                        <button type="button" disabled class="w-full rounded-lg bg-gray-400 cursor-not-allowed px-4 py-2 text-xs font-bold text-white shadow-sm flex-1 sm:flex-initial">
+                            Mentor Request Pending Approval
                         </button>
-                    </form>
+                    @else
+                        <form method="POST" action="{{ route('player.become-mentor') }}" class="flex-1 sm:flex-initial">
+                            @csrf
+                            <button type="submit" class="w-full rounded-lg bg-[#1565C0] hover:bg-[#0D47A1] px-4 py-2 text-xs font-bold text-white transition-colors shadow-sm">
+                                Become a Mentor
+                            </button>
+                        </form>
+                    @endif
                 @endif
             </div>
         </div>

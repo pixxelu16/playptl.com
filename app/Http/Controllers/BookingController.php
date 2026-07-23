@@ -24,6 +24,23 @@ class BookingController extends Controller
             abort(404);
         }
 
+        $activeRole = session('active_dashboard_role');
+        if (!$activeRole) {
+            if (Auth::user()->hasRole('Student')) {
+                $activeRole = 'student';
+            } else {
+                $activeRole = strtolower(Auth::user()->role->value);
+            }
+        }
+
+        if ($activeRole !== 'student') {
+            return redirect()->back()->with('error', 'Please switch to your Student account to book a mentor or coach.');
+        }
+
+        if (Auth::id() === $user->id) {
+            return redirect()->back()->with('error', 'You cannot book a session with yourself.');
+        }
+
         $roleName        = $user->hasRole('Mentor') ? 'mentor' : 'coach';
         $commissionRate  = $roleName === 'mentor'
             ? SiteSetting::mentorCommissionPercent()
@@ -52,6 +69,23 @@ class BookingController extends Controller
         $provider = User::findOrFail($validated['provider_id']);
         if (! $provider->hasAnyRole(['Mentor', 'Coach'])) {
             return response()->json(['message' => 'Invalid provider.'], 422);
+        }
+
+        $activeRole = session('active_dashboard_role');
+        if (!$activeRole) {
+            if (Auth::user()->hasRole('Student')) {
+                $activeRole = 'student';
+            } else {
+                $activeRole = strtolower(Auth::user()->role->value);
+            }
+        }
+
+        if ($activeRole !== 'student') {
+            return response()->json(['message' => 'Please switch to your Student account to book a mentor or coach.'], 403);
+        }
+
+        if (Auth::id() === $provider->id) {
+            return response()->json(['message' => 'You cannot book a session with yourself.'], 403);
         }
 
         $roleName       = $provider->hasRole('Mentor') ? 'mentor' : 'coach';
@@ -143,6 +177,23 @@ class BookingController extends Controller
         $provider = User::findOrFail($validated['provider_id']);
         if (! $provider->hasAnyRole(['Mentor', 'Coach'])) {
             abort(422, 'Invalid provider.');
+        }
+
+        $activeRole = session('active_dashboard_role');
+        if (!$activeRole) {
+            if (Auth::user()->hasRole('Student')) {
+                $activeRole = 'student';
+            } else {
+                $activeRole = strtolower(Auth::user()->role->value);
+            }
+        }
+
+        if ($activeRole !== 'student') {
+            return redirect()->back()->with('error', 'Please switch to your Student account to book a mentor or coach.')->withInput();
+        }
+
+        if (Auth::id() === $provider->id) {
+            return redirect()->back()->with('error', 'You cannot book a session with yourself.')->withInput();
         }
 
         $roleName       = $provider->hasRole('Mentor') ? 'mentor' : 'coach';

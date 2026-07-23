@@ -143,6 +143,18 @@
                     </div>
                 </div>
 
+                <h2 class="admin-card-title" style="font-size: 1.1rem; margin: 28px 0 12px;">Registration Mode</h2>
+                <p class="admin-card-text" style="margin-bottom: 20px;">Control player signup settings.</p>
+
+                <div class="admin-form-grid">
+                    <div class="admin-form-group" style="grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;">
+                        <input type="hidden" name="enable_free_registration" value="0">
+                        <input type="checkbox" id="enable_free_registration" name="enable_free_registration" value="1" {{ old('enable_free_registration', \App\Models\SiteSetting::getValue('enable_free_registration', '0')) === '1' ? 'checked' : '' }} style="width: 20px; height: 20px; cursor: pointer; accent-color: #66A157;">
+                        <label class="admin-label" for="enable_free_registration" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 14px; color: #1e293b;">Enable Free Registration (Skip payment on Player Signup)</label>
+                    </div>
+                    <p class="admin-card-text" style="grid-column: 1 / -1; margin-top: -6px; font-size: 13px; opacity: .8;">If enabled, users can register as a Player for free. Stripe card forms and fees will be hidden, and registration submits immediately without payment processing.</p>
+                </div>
+
                 <button class="admin-button" type="submit" style="margin-top: 28px;">Save General Settings</button>
             </form>
         </div>

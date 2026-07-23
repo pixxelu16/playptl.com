@@ -2133,9 +2133,19 @@ class PlayerProfileController extends Controller
     public function becomeMentor(Request $request): \Illuminate\Http\RedirectResponse
     {
         $user = $request->user();
-        \Spatie\Permission\Models\Role::findOrCreate('Mentor', 'web');
-        $user->assignRole('Mentor');
+        
+        $user->update(['mentor_status' => 'pending']);
 
-        return back()->with('status', 'You have successfully registered as a Mentor!');
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\ProviderApplicationReceivedMail($user));
+            $adminEmail = \App\Models\SiteSetting::getValue('contact_email');
+            if ($adminEmail) {
+                \Illuminate\Support\Facades\Mail::to($adminEmail)->send(new \App\Mail\AdminProviderApplicationNotificationMail($user));
+            }
+        } catch (\Throwable $e) {
+            // Ignore email fail
+        }
+
+        return back()->with('status', 'Your request to become a Mentor has been submitted to the administrator for approval.');
     }
 }

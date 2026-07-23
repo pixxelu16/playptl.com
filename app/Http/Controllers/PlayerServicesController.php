@@ -12,7 +12,12 @@ class PlayerServicesController extends Controller
      */
     public function mentors(Request $request)
     {
-        $query = User::where('role', \App\Enums\UserRole::Mentor)->where('status', 'active');
+        $query = User::where(function ($q) {
+            $q->where(function ($sq) {
+                $sq->where('role', \App\Enums\UserRole::Mentor)
+                   ->where('status', 'active');
+            })->orWhere('mentor_status', 'active');
+        });
 
         // Apply filters
         if ($search = trim($request->query('search', ''))) {
@@ -57,7 +62,12 @@ class PlayerServicesController extends Controller
      */
     public function coaches(Request $request)
     {
-        $query = User::where('role', \App\Enums\UserRole::Coach)->where('status', 'active');
+        $query = User::where(function ($q) {
+            $q->where(function ($sq) {
+                $sq->where('role', \App\Enums\UserRole::Coach)
+                   ->where('status', 'active');
+            })->orWhere('coach_status', 'active');
+        });
 
         // Apply filters
         if ($search = trim($request->query('search', ''))) {

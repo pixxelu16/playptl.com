@@ -146,18 +146,27 @@ class RegisteredUserController extends Controller
             return redirect()->route(strtolower($user->role->value) . '.profile')->with('status', 'Registration successful!');
         }
 
-        if (! class_exists(StripeClient::class)) {
+        $isFreeReg = (SiteSetting::getValue('enable_free_registration', '0') === '1');
+
+        if (!$isFreeReg && ! class_exists(StripeClient::class)) {
             return $this->fail($request, 'Payments are temporarily unavailable. Please try again later.');
         }
 
-        $base = $request->validate([
+        $baseRules = [
             'registration_tab' => ['required', 'string', 'in:singles,doubles'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()->symbols()],
-            'payment_intent_id' => ['required', 'string', 'max:255'],
             'category' => ['required', 'integer', 'exists:categories,id'],
-        ]);
+        ];
+
+        if ($isFreeReg) {
+            $baseRules['payment_intent_id'] = ['nullable', 'string', 'max:255'];
+        } else {
+            $baseRules['payment_intent_id'] = ['required', 'string', 'max:255'];
+        }
+
+        $base = $request->validate($baseRules);
 
         $tab = (string) $base['registration_tab'];
         $categoryModel = \App\Models\Category::findOrFail((int) $base['category']);
@@ -277,34 +286,43 @@ class RegisteredUserController extends Controller
             return $this->fail($request, 'Registration is not open for this tournament.');
         }
 
-        if (PaymentHistory::query()->where('transaction_id', $base['payment_intent_id'])->exists()) {
-            return $this->fail($request, 'This payment was already used.');
-        }
-
-        $secret = SiteSetting::stripeSecretKey();
-        if ($secret === '') {
-            return $this->fail($request, 'Stripe is not configured.');
-        }
-
-        $stripe = new StripeClient($secret);
-        $intent = $stripe->paymentIntents->retrieve($base['payment_intent_id'], []);
-
         $actualFeeTab = $isDoublesRegistration ? 'doubles' : 'singles';
         $expectedAmountCents = LeagueEntryFee::centsForTab($league, $actualFeeTab);
-        $expectedCurrency = strtolower(SiteSetting::stripeCurrency());
-        $intentEmail = strtolower((string) ($intent->metadata['email'] ?? ''));
-        $intentLeagueId = (string) ($intent->metadata['league_id'] ?? '');
-        $intentTab = (string) ($intent->metadata['registration_tab'] ?? '');
 
-        if (
-            ! in_array($intent->status, ['succeeded', 'requires_capture'], true)
-            || (int) $intent->amount !== $expectedAmountCents
-            || (string) $intent->currency !== $expectedCurrency
-            || $intentEmail !== strtolower((string) $base['email'])
-            || $intentLeagueId !== (string) $leagueId
-            || $intentTab !== $tab
-        ) {
-            return $this->fail($request, 'Payment not authorized or does not match registration.');
+        if (!$isFreeReg) {
+            if (PaymentHistory::query()->where('transaction_id', $base['payment_intent_id'])->exists()) {
+                return $this->fail($request, 'This payment was already used.');
+            }
+
+            $secret = SiteSetting::stripeSecretKey();
+            if ($secret === '') {
+                return $this->fail($request, 'Stripe is not configured.');
+            }
+
+            $stripe = new StripeClient($secret);
+            $intent = $stripe->paymentIntents->retrieve($base['payment_intent_id'], []);
+
+            $expectedCurrency = strtolower(SiteSetting::stripeCurrency());
+            $intentEmail = strtolower((string) ($intent->metadata['email'] ?? ''));
+            $intentLeagueId = (string) ($intent->metadata['league_id'] ?? '');
+            $intentTab = (string) ($intent->metadata['registration_tab'] ?? '');
+
+            if (
+                ! in_array($intent->status, ['succeeded', 'requires_capture'], true)
+                || (int) $intent->amount !== $expectedAmountCents
+                || (string) $intent->currency !== $expectedCurrency
+                || $intentEmail !== strtolower((string) $base['email'])
+                || $intentLeagueId !== (string) $leagueId
+                || $intentTab !== $tab
+            ) {
+                return $this->fail($request, 'Payment not authorized or does not match registration.');
+            }
+
+            $transactionId = (string) $intent->id;
+            $paymentIntentStatus = (string) $intent->status;
+        } else {
+            $transactionId = 'free_' . Str::uuid();
+            $paymentIntentStatus = 'succeeded';
         }
 
         $groupCardId = (int) ($tab === 'singles' ? $specific['group_card_singles'] : $specific['group_card_doubles']);
@@ -323,10 +341,10 @@ class RegisteredUserController extends Controller
         }
 
         $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $actualFeeTab, $ageGroup);
-        $amountDecimal = number_format($expectedAmountCents / 100, 2, '.', '');
+        $amountDecimal = $isFreeReg ? '0.00' : number_format($expectedAmountCents / 100, 2, '.', '');
 
         $user = \Illuminate\Support\Facades\DB::transaction(function () use (
-            $base, $tab, $category, $specific, $phone, $city, $state, $sex, $skillLevel, $intent, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup, $amountDecimal, $isDoublesRegistration
+            $base, $tab, $category, $specific, $phone, $city, $state, $sex, $skillLevel, $transactionId, $paymentIntentStatus, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup, $amountDecimal, $isDoublesRegistration, $isFreeReg
         ) {
             $createdUser = User::create([
                 'name' => $base['name'],
@@ -343,7 +361,7 @@ class RegisteredUserController extends Controller
                 'sex' => $sex,
                 'skill_level' => $skillLevel,
                 'registration_type' => $tab,
-                'transaction_id' => (string) $intent->id,
+                'transaction_id' => $transactionId,
             ]);
 
             \Spatie\Permission\Models\Role::findOrCreate('Player', 'web');
@@ -355,12 +373,12 @@ class RegisteredUserController extends Controller
                 'amount' => $amountDecimal,
                 'currency' => strtoupper(SiteSetting::stripeCurrency()),
                 'status' => 'completed',
-                'transaction_id' => (string) $intent->id,
+                'transaction_id' => $transactionId,
                 'description' => 'Tournament registration fee',
                 'meta' => [
                     'registration_tab' => $tab,
                     'category' => $category,
-                    'payment_intent_status' => (string) $intent->status,
+                    'payment_intent_status' => $paymentIntentStatus,
                 ],
             ]);
 
@@ -433,12 +451,14 @@ class RegisteredUserController extends Controller
             }
 
             // Capture the Stripe Authorized payment only after everything succeeds
-            try {
-                $stripeClient = new \Stripe\StripeClient(SiteSetting::stripeSecretKey());
-                $stripeClient->paymentIntents->capture($intent->id);
-            } catch (\Throwable $e) {
-                // Throwing here triggers full DB rollback
-                throw new \RuntimeException('Stripe payment capture failed: ' . $e->getMessage());
+            if (!$isFreeReg) {
+                try {
+                    $stripeClient = new \Stripe\StripeClient(SiteSetting::stripeSecretKey());
+                    $stripeClient->paymentIntents->capture($transactionId);
+                } catch (\Throwable $e) {
+                    // Throwing here triggers full DB rollback
+                    throw new \RuntimeException('Stripe payment capture failed: ' . $e->getMessage());
+                }
             }
 
             return $createdUser;

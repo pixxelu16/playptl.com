@@ -109,7 +109,8 @@
                             data-payment-intent-url="{{ route('register.payment-intent') }}"
                             data-register-url="{{ route('register') }}"
                             data-csrf="{{ csrf_token() }}"
-                            data-fee="{{ $feeSingles }}">
+                            data-fee="{{ $feeSingles }}"
+                            data-free-registration="{{ \App\Models\SiteSetting::getValue('enable_free_registration', '0') }}">
                             @csrf
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="singles">
@@ -254,12 +255,14 @@
                             </div>
 
                             {{-- Singles payment --}}
+                            @if (\App\Models\SiteSetting::getValue('enable_free_registration', '0') !== '1')
                             <div class="register-payment-block rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-4">
                                 <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeSingles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
                                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                             </div>
+                            @endif
 
                             <button type="submit"
                                 class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5DA44E] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
@@ -280,7 +283,8 @@
                             data-payment-intent-url="{{ route('register.payment-intent') }}"
                             data-register-url="{{ route('register') }}"
                             data-csrf="{{ csrf_token() }}"
-                            data-fee="{{ $feeDoubles }}">
+                            data-fee="{{ $feeDoubles }}"
+                            data-free-registration="{{ \App\Models\SiteSetting::getValue('enable_free_registration', '0') }}">
                             @csrf
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="doubles">
@@ -507,12 +511,14 @@
                                 </fieldset>
                             </div>
 
+                            @if (\App\Models\SiteSetting::getValue('enable_free_registration', '0') !== '1')
                             <div class="register-payment-block rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-4">
                                 <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeDoubles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
                                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                             </div>
+                            @endif
 
                             <button type="submit"
                                 class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5FA252] text-[15px] font-bold text-white transition-opacity hover:opacity-95">

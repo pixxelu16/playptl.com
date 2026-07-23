@@ -47,6 +47,8 @@ use Spatie\Permission\Traits\HasRoles;
     'failed_login_attempts',
     'is_locked',
     'locked_at',
+    'mentor_status',
+    'coach_status',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
