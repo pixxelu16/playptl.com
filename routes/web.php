@@ -161,6 +161,7 @@ Route::middleware('auth')->group(function () {
         Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
         Route::resource('charity-causes', AdminCharityCauseController::class);
         Route::resource('skills', AdminSkillController::class);
+        Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
         Route::get('provider-requests', [\App\Http\Controllers\AdminProviderRequestController::class, 'index'])->name('provider-requests.index');
         Route::patch('provider-requests/{user}/approve', [\App\Http\Controllers\AdminProviderRequestController::class, 'approve'])->name('provider-requests.approve');
         Route::patch('provider-requests/{user}/reject', [\App\Http\Controllers\AdminProviderRequestController::class, 'reject'])->name('provider-requests.reject');
@@ -273,6 +274,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/my-profile/upload/{upload}', [PlayerProfileController::class, 'destroyMatchUpload'])->name('profile.upload.destroy');
         Route::delete('/my-profile/playoff-upload/{upload}', [PlayerProfileController::class, 'destroyPlayoffMatchUpload'])->name('profile.playoff-upload.destroy');
         Route::get('/my-profile', [PlayerProfileController::class, 'show'])->name('my-profile');
+        Route::post('/my-profile/become-student', [PlayerProfileController::class, 'becomeStudent'])->name('become-student');
+        Route::post('/my-profile/become-mentor', [PlayerProfileController::class, 'becomeMentor'])->name('become-mentor');
         Route::get('/my-profile/choose-league', [PlayerProfileController::class, 'showChooseLeague'])->name('profile.league');
         Route::get('/my-profile/choose-league/partner-lookup', [PlayerProfileController::class, 'lookupLeaguePartner'])->name('profile.league.partner-lookup');
         Route::get('/my-profile/choose-league/tournament-groups', \App\Http\Controllers\Auth\TournamentRegistrationGroupsController::class)->name('profile.league.tournament-groups');

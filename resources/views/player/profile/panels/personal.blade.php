@@ -89,6 +89,34 @@
         </div>
     @endif
 
+    {{-- Become a Student / Become a Mentor buttons --}}
+    @if(!auth()->user()->hasRole('Student') || !auth()->user()->hasRole('Mentor'))
+        <div class="mb-6 rounded-[12px] bg-gradient-to-r from-[#E8F5E9] to-[#C8E6C9] p-5 border border-[#A5D6A7] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <h4 class="text-[15px] font-bold text-[#1b5e20]">Expand Your Tennis Journey</h4>
+                <p class="text-[12px] text-[#2e7d32] mt-0.5">Learn from pro coaches or share your experience as a mentor in the community.</p>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+                @if(!auth()->user()->hasRole('Student'))
+                    <form method="POST" action="{{ route('player.become-student') }}" class="flex-1 sm:flex-initial">
+                        @csrf
+                        <button type="submit" class="w-full rounded-lg bg-[#2E7D32] hover:bg-[#1B5E20] px-4 py-2 text-xs font-bold text-white transition-colors shadow-sm">
+                            Become a Student
+                        </button>
+                    </form>
+                @endif
+                @if(!auth()->user()->hasRole('Mentor'))
+                    <form method="POST" action="{{ route('player.become-mentor') }}" class="flex-1 sm:flex-initial">
+                        @csrf
+                        <button type="submit" class="w-full rounded-lg bg-[#1565C0] hover:bg-[#0D47A1] px-4 py-2 text-xs font-bold text-white transition-colors shadow-sm">
+                            Become a Mentor
+                        </button>
+                    </form>
+                @endif
+            </div>
+        </div>
+    @endif
+
     <form class="space-y-5" action="{{ route('player.profile.update') }}" method="post" enctype="multipart/form-data">
         @csrf
         @method('PUT')

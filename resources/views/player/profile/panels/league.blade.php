@@ -90,7 +90,7 @@
             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
             <input type="hidden" name="skill_singles" value="{{ $playerSkillLevel }}">
 
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 <div>
                     <label class="{{ $profileLabelClass }}">Skill Level</label>
                     <input
@@ -110,7 +110,18 @@
                         @endforeach
                     </select>
                 </div>
+                <div>
+                    <label class="{{ $profileLabelClass }}">Category <span class="text-red-600">*</span></label>
+                    <select name="category" required class="category-select {{ $profileInputClass }} appearance-none pr-10">
+                        <option value="">Select category</option>
+                        @foreach($categories ?? [] as $cat)
+                            <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
+
+
 
             <div class="tournament-group-wrap hidden" data-tab="singles">
                 <label class="{{ $profileLabelClass }}">Your group</label>
@@ -127,7 +138,7 @@
                 <p class="tournament-group-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
             </div>
 
-            <div class="rounded-lg border border-[#EEEEEE] bg-[#FAFAFA] px-4 py-3">
+            <div class="rounded-lg border border-[#EEEEEE] bg-[#FAFAFA] px-4 py-3 mt-4">
                 <p class="text-[13px] font-semibold text-[#333333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeSingles }}</span></p>
                 <label class="{{ $profileLabelClass }} mt-2">Payment card <span class="text-red-600">*</span></label>
                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-lg border border-[#D7E6D7] bg-white px-3 py-3 shadow-sm"></div>
@@ -224,7 +235,7 @@
 
             <div class="border-t border-[#E8E8E8] pt-5">
                 <h4 class="text-center text-[14px] font-bold text-[#333333] underline decoration-[#66A157] decoration-2 underline-offset-4">Other Details</h4>
-                <div class="mt-4 space-y-5">
+                <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div>
                         <label class="{{ $profileLabelClass }}">Tournament <span class="text-red-600">*</span></label>
                         <select name="tournament_doubles" required class="{{ $profileInputClass }} appearance-none pr-10">
@@ -234,6 +245,16 @@
                             @endforeach
                         </select>
                     </div>
+                    <div>
+                        <label class="{{ $profileLabelClass }}">Category <span class="text-red-600">*</span></label>
+                        <select name="category" required class="{{ $profileInputClass }} appearance-none pr-10">
+                            <option value="">Select category</option>
+                            @foreach($categories ?? [] as $cat)
+                                <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
 
                     <div class="tournament-group-wrap hidden" data-tab="doubles">
                         <label class="{{ $profileLabelClass }}">Your group</label>
@@ -250,9 +271,8 @@
                         <p class="tournament-group-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                     </div>
                 </div>
-            </div>
 
-            <div class="rounded-lg border border-[#EEEEEE] bg-[#FAFAFA] px-4 py-3">
+            <div class="rounded-lg border border-[#EEEEEE] bg-[#FAFAFA] px-4 py-3 mt-4">
                 <p class="text-[13px] font-semibold text-[#333333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeDoubles }}</span></p>
                 <label class="{{ $profileLabelClass }} mt-2">Payment card <span class="text-red-600">*</span></label>
                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-lg border border-[#D7E6D7] bg-white px-3 py-3 shadow-sm"></div>
