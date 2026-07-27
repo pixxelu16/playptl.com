@@ -114,7 +114,7 @@
                     <label class="{{ $profileLabelClass }}">Category <span class="text-red-600">*</span></label>
                     <select name="category" required class="category-select {{ $profileInputClass }} appearance-none pr-10">
                         <option value="">Select category</option>
-                        @foreach($categories ?? [] as $cat)
+                        @foreach($categoriesSingles ?? $categories ?? [] as $cat)
                             <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
                         @endforeach
                     </select>
@@ -235,7 +235,7 @@
 
             <div class="border-t border-[#E8E8E8] pt-5">
                 <h4 class="text-center text-[14px] font-bold text-[#333333] underline decoration-[#66A157] decoration-2 underline-offset-4">Other Details</h4>
-                <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-3">
                     <div>
                         <label class="{{ $profileLabelClass }}">Tournament <span class="text-red-600">*</span></label>
                         <select name="tournament_doubles" required class="{{ $profileInputClass }} appearance-none pr-10">
@@ -249,10 +249,21 @@
                         <label class="{{ $profileLabelClass }}">Category <span class="text-red-600">*</span></label>
                         <select name="category" required class="{{ $profileInputClass }} appearance-none pr-10">
                             <option value="">Select category</option>
-                            @foreach($categories ?? [] as $cat)
+                            @foreach($categoriesDoubles ?? $categories ?? [] as $cat)
                                 <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <label class="{{ $profileLabelClass }}">Team Name</label>
+                        <input
+                            type="text"
+                            name="team_name"
+                            value="{{ old('team_name') }}"
+                            placeholder="Enter team name"
+                            class="{{ $profileInputClass }}"
+                            autocomplete="off"
+                        />
                     </div>
                 </div>
 

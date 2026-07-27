@@ -263,12 +263,12 @@
     if (!$form || !$form.length) return;
     var tab = $form.data('registration-tab') || 'singles';
     var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
-    
+
     var actualTab = tab;
     if (tab === 'singles' && $form.find('select[name="category"] option:selected').data('name') === 'Doubles') {
       actualTab = 'doubles';
     }
-    
+
     var amount = entryFeeForLeague(leagueId, actualTab);
     $form.find('.entry-fee-amount').text(amount);
   }
@@ -339,10 +339,10 @@
     var ui = assignedGroupUi($form, tab);
     var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
     var skill = fixedSkillLevel();
-    
+
     var category = tab === 'singles' ? ($form.find('select[name="category"] option:selected').data('name') || '') : 'Doubles';
     var actualTabForSearch = category === 'Doubles' ? 'doubles' : 'singles';
-    
+
     var skillTwo = actualTabForSearch === 'doubles' ? partnerSkillValue($form) : '';
     var url = tournamentGroupsUrl();
 
@@ -414,8 +414,8 @@
     var stripe = stripeKey && window.Stripe ? Stripe(stripeKey, { advancedFraudSignals: false }) : null;
     var elements = stripe
       ? stripe.elements({
-          wallets: { applePay: 'never', googlePay: 'never' },
-        })
+        wallets: { applePay: 'never', googlePay: 'never' },
+      })
       : null;
     var card = null;
     var cardComplete = false;

@@ -276,6 +276,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/my-profile', [PlayerProfileController::class, 'show'])->name('my-profile');
         Route::post('/my-profile/become-student', [PlayerProfileController::class, 'becomeStudent'])->name('become-student');
         Route::post('/my-profile/become-mentor', [PlayerProfileController::class, 'becomeMentor'])->name('become-mentor');
+        Route::post('/my-profile/team-name', [PlayerProfileController::class, 'updateTeamName'])->name('profile.team-name.update');
         Route::get('/my-profile/choose-league', [PlayerProfileController::class, 'showChooseLeague'])->name('profile.league');
         Route::get('/my-profile/choose-league/partner-lookup', [PlayerProfileController::class, 'lookupLeaguePartner'])->name('profile.league.partner-lookup');
         Route::get('/my-profile/choose-league/tournament-groups', \App\Http\Controllers\Auth\TournamentRegistrationGroupsController::class)->name('profile.league.tournament-groups');
