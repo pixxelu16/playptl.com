@@ -143,8 +143,8 @@ class PlayerProfileController extends Controller
             return response()->json(['message' => 'Registration is not open for this tournament.'], 422);
         }
 
-        if ($this->userIsRegisteredInLeague($user, (int) $league->id)) {
-            return response()->json(['message' => 'You are already registered in this tournament.'], 422);
+        if ($this->userIsRegisteredInLeague($user, (int) $league->id, $tab, $category)) {
+            return response()->json(['message' => 'You are already registered in this event category for this tournament.'], 422);
         }
 
         $skillLevel = $this->playerFixedSkillLevel($user, $request);
@@ -243,6 +243,7 @@ class PlayerProfileController extends Controller
                 'd2_first' => ['required', 'string', 'max:255'],
                 'd2_last' => ['required', 'string', 'max:255'],
                 'd2_skill' => ['required', 'string', 'max:32'],
+                'team_name' => ['nullable', 'string', 'max:255'],
             ];
             $specific = $request->validate($rules);
             $leagueId = (int) $specific['tournament_doubles'];
@@ -276,8 +277,8 @@ class PlayerProfileController extends Controller
             $skillLevel = $playerSkill;
         }
 
-        if ($this->userIsRegisteredInLeague($user, $leagueId)) {
-            return response()->json(['message' => 'You are already registered in this tournament.'], 422);
+        if ($this->userIsRegisteredInLeague($user, $leagueId, $tab, $category)) {
+            return response()->json(['message' => 'You are already registered in this event category for this tournament.'], 422);
         }
 
         $league = League::query()->findOrFail($leagueId);
@@ -319,7 +320,7 @@ class PlayerProfileController extends Controller
             return response()->json(['message' => 'You are already registered in this league group.'], 422);
         }
 
-        if (LeagueRegistrationRoster::isInAnotherLeagueSubGroupForType($user->id, $leagueId, $groupCard->id, $actualFeeTab)) {
+        if (LeagueRegistrationRoster::isInAnotherLeagueSubGroupForType($user->id, $leagueId, $groupCardId, $actualFeeTab)) {
             $formatLabel = $actualFeeTab === 'doubles' ? 'doubles' : 'singles';
 
             return response()->json(['message' => "You are already registered in another {$formatLabel} group for this league."], 422);
@@ -375,16 +376,88 @@ class PlayerProfileController extends Controller
             ],
         ]);
 
-        LeagueRegistrationFlow::registerUser($user, $leagueId, [
-            'group_card_id' => $groupCard->id,
-            'group_id' => $groupId,
-            'skill_level' => $skillLevel,
-            'age_group_key' => $ageGroup,
-            'registration_type' => $tab,
-            'category' => $category,
-            'team_key' => $teamKey,
-            'payment_status' => 'completed',
-        ]);
+        $teamName = null;
+
+        if ($isDoublesRegistration) {
+            $partnerEmail = strtolower((string) $specific['d2_email']);
+            $partnerFirstName = trim((string) ($specific['d2_first'] ?? ''));
+            $partnerLastName = trim((string) ($specific['d2_last'] ?? ''));
+            $partnerName = trim($partnerFirstName.' '.$partnerLastName);
+
+            $partner = User::query()->where('email', $partnerEmail)->first();
+            if (! $partner) {
+                $partner = User::create([
+                    'name' => $partnerName !== '' ? $partnerName : $partnerEmail,
+                    'first_name' => $specific['d2_first'],
+                    'last_name' => $specific['d2_last'],
+                    'email' => $partnerEmail,
+                    'phone' => (string) $specific['d2_phone'],
+                    'role' => UserRole::Player,
+                    'status' => 'active',
+                    'password' => Hash::make(Str::random(32)),
+                    'registration_type' => $tab,
+                    'skill_level' => (string) $specific['d2_skill'],
+                ]);
+            } else {
+                UserSkillLevel::syncToUser($partner, (string) $specific['d2_skill']);
+            }
+
+            $userFirstName = trim((string) ($user->first_name ?? ''));
+            $p1Name = $userFirstName !== '' ? $userFirstName : trim((string) $user->name);
+            $p2Name = $partnerFirstName !== '' ? $partnerFirstName : trim((string) $partner->name);
+            $teamName = trim((string) ($specific['team_name'] ?? ''));
+            if ($teamName === '') {
+                $teamName = trim($p1Name . ' & ' . $p2Name);
+            }
+
+            if ($teamKey) {
+                $team = \App\Models\Team::updateOrCreate(
+                    ['team_key' => $teamKey],
+                    [
+                        'name' => $teamName,
+                        'league_id' => $leagueId,
+                    ]
+                );
+                $team->addPlayer($user, 'captain');
+                $team->addPlayer($partner, 'member');
+            }
+
+            LeagueRegistrationFlow::registerUser($user, $leagueId, [
+                'group_card_id' => $groupCard->id,
+                'group_id' => $groupId,
+                'skill_level' => $skillLevel,
+                'age_group_key' => $ageGroup,
+                'registration_type' => $tab,
+                'category' => $category,
+                'team_name' => $teamName,
+                'team_key' => $teamKey,
+                'payment_status' => 'completed',
+            ]);
+
+            LeagueRegistrationFlow::registerUser($partner, $leagueId, [
+                'group_card_id' => $groupCard->id,
+                'group_id' => $groupId,
+                'skill_level' => (string) $specific['d2_skill'],
+                'age_group_key' => $ageGroup,
+                'registration_type' => $tab,
+                'category' => $category,
+                'team_name' => $teamName,
+                'team_key' => $teamKey,
+                'payment_status' => 'completed',
+            ]);
+        } else {
+            LeagueRegistrationFlow::registerUser($user, $leagueId, [
+                'group_card_id' => $groupCard->id,
+                'group_id' => $groupId,
+                'skill_level' => $skillLevel,
+                'age_group_key' => $ageGroup,
+                'registration_type' => $tab,
+                'category' => $category,
+                'team_name' => null,
+                'team_key' => $teamKey,
+                'payment_status' => 'completed',
+            ]);
+        }
 
         $user->update([
             'registration_type' => $tab,
@@ -1900,10 +1973,7 @@ class PlayerProfileController extends Controller
 
         $allLeagues = LeagueMenuHelper::registrationLeagues();
         $registrationLeagues = $allLeagues
-            ->filter(function ($league) use ($registeredLeagueIds) {
-                if (in_array((int) $league->id, $registeredLeagueIds, true)) {
-                    return false;
-                }
+            ->filter(function ($league) {
                 if ($league->registration_deadline !== null && now()->startOfDay()->gt($league->registration_deadline)) {
                     return false;
                 }
@@ -1929,6 +1999,8 @@ class PlayerProfileController extends Controller
             'registeredLeagueCount' => count($registeredLeagueIds),
             'registrationSkillLevelValues' => \App\Models\Skill::allSkills(),
             'categories' => \App\Models\Category::query()->orderBy('menu_order')->get(),
+            'categoriesSingles' => \App\Models\Category::query()->forType('single')->orderBy('menu_order')->get(),
+            'categoriesDoubles' => \App\Models\Category::query()->forType('doubles')->orderBy('menu_order')->get(),
         ];
     }
 
@@ -1958,9 +2030,21 @@ class PlayerProfileController extends Controller
             ->all();
     }
 
-    protected function userIsRegisteredInLeague(User $user, int $leagueId): bool
+    protected function userIsRegisteredInLeague(User $user, int $leagueId, ?string $registrationType = null, ?string $category = null): bool
     {
-        return in_array($leagueId, $this->registeredLeagueIdsForUser($user), true);
+        $query = LeagueRegistration::query()
+            ->where('user_id', $user->id)
+            ->where('league_id', $leagueId);
+
+        if ($registrationType !== null) {
+            $query->where('registration_type', $registrationType);
+        }
+
+        if ($category !== null) {
+            $query->where('category', $category);
+        }
+
+        return $query->exists();
     }
 
     protected function playerFixedSkillLevel(User $user, Request $request): ?string
@@ -2075,7 +2159,7 @@ class PlayerProfileController extends Controller
     protected function playerTournamentGroups(User $user): array
     {
         $registrations = $user->leagueRegistrations()
-            ->with(['league', 'groupCard', 'group'])
+            ->with(['league', 'groupCard', 'group', 'categoryDetail', 'team.players'])
             ->whereHas('league', fn ($q) => $q->whereNull('finished_at'))
             ->orderByDesc('id')
             ->get();
@@ -2101,10 +2185,57 @@ class PlayerProfileController extends Controller
                 ];
             }
 
+            $categoryName = trim((string) ($registration->categoryDetail?->name ?? ''));
+            $teamName = trim((string) ($registration->team_name ?? $registration->team?->name ?? ''));
+
+            $partnerEmail = null;
+            $partnerPhone = null;
+
+            $partnerName = null;
+            if (($registration->registration_type ?? '') === 'doubles') {
+                if ($registration->team && $registration->team->players->isNotEmpty()) {
+                    $partnerUser = $registration->team->players->firstWhere('id', '!=', $user->id);
+                    if ($partnerUser) {
+                        $partnerName = trim((string) ($partnerUser->name ?: $partnerUser->first_name.' '.$partnerUser->last_name));
+                        $partnerEmail = $partnerUser->email;
+                        $partnerPhone = $partnerUser->phone;
+                    }
+                }
+                if (! $partnerName) {
+                    $partnerUserId = LeagueRegistrationRoster::partnerUserIdFor($registration);
+                    if ($partnerUserId) {
+                        $partnerUser = User::find($partnerUserId);
+                        if ($partnerUser) {
+                            $partnerName = trim((string) ($partnerUser->name ?: $partnerUser->first_name.' '.$partnerUser->last_name));
+                            $partnerEmail = $partnerUser->email;
+                            $partnerPhone = $partnerUser->phone;
+                        }
+                    }
+                }
+            }
+
+            $skillLevel = trim((string) ($registration->skill_level ?? ''));
+            if ($skillLevel === '' || $skillLevel === 'not-sure') {
+                $skillLevel = trim((string) ($registration->groupCard?->skill_level_match ?? ''));
+            }
+
             $grouped[$leagueId]['registrations'][] = [
+                'id' => (int) $registration->id,
+                'team_id' => $registration->team?->id,
+                'team_key' => $registration->team_key,
                 'group' => trim((string) ($registration->groupCard?->name ?? '')) ?: '—',
                 'subgroup' => trim((string) ($registration->group?->name ?? '')) ?: 'Unassigned',
                 'format' => ucfirst((string) ($registration->registration_type ?? 'singles')),
+                'is_doubles' => ($registration->registration_type ?? '') === 'doubles',
+                'category' => $categoryName !== '' ? $categoryName : '—',
+                'skill_level' => $skillLevel !== '' ? $skillLevel : '—',
+                'team_name' => $teamName !== '' ? $teamName : null,
+                'partner_name' => $partnerName,
+                'partner_email' => $partnerEmail,
+                'partner_phone' => $partnerPhone,
+                'age_group' => $registration->age_group_key ? strtoupper((string) $registration->age_group_key) : 'All Ages',
+                'payment_status' => ucfirst((string) ($registration->payment_status ?? 'Completed')),
+                'registered_at' => $registration->created_at ? $registration->created_at->format('M d, Y') : '—',
             ];
         }
 
@@ -2119,6 +2250,44 @@ class PlayerProfileController extends Controller
         });
 
         return $groups;
+    }
+
+    public function updateTeamName(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'registration_id' => ['required', 'integer', 'exists:league_registrations,id'],
+            'team_name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $registration = LeagueRegistration::query()
+            ->where('id', (int) $validated['registration_id'])
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhereHas('team.players', function ($pq) use ($user) {
+                      $pq->where('users.id', $user->id);
+                  });
+            })
+            ->firstOrFail();
+
+        $newTeamName = trim((string) $validated['team_name']);
+
+        // Update team_name on registration(s)
+        if (filled($registration->team_key)) {
+            LeagueRegistration::query()
+                ->where('league_id', $registration->league_id)
+                ->where('team_key', $registration->team_key)
+                ->update(['team_name' => $newTeamName]);
+
+            \App\Models\Team::query()
+                ->where('team_key', $registration->team_key)
+                ->update(['name' => $newTeamName]);
+        } else {
+            $registration->update(['team_name' => $newTeamName]);
+        }
+
+        return back()->with('status', 'Team name updated successfully!');
     }
 
     public function becomeStudent(Request $request): \Illuminate\Http\RedirectResponse

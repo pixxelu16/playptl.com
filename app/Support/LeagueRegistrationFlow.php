@@ -109,13 +109,15 @@ class LeagueRegistrationFlow
             [
                 'user_id' => $user->id,
                 'league_id' => $leagueId,
-                'group_card_id' => $attributes['group_card_id'] ?? null,
+                'registration_type' => $registrationType,
+                'category' => $attributes['category'] ?? null,
             ],
             [
+                'group_card_id' => $attributes['group_card_id'] ?? null,
                 'group_id' => $attributes['group_id'] ?? null,
                 'skill_level' => $attributes['skill_level'] ?? null,
                 'age_group_key' => $attributes['age_group_key'] ?? null,
-                'registration_type' => $attributes['registration_type'] ?? 'singles',
+                'team_name' => $attributes['team_name'] ?? null,
                 'team_key' => $attributes['team_key'] ?? null,
                 'payment_status' => $attributes['payment_status'] ?? 'completed',
             ],

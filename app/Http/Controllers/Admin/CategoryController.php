@@ -25,9 +25,15 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
             'menu_order' => ['required', 'integer', 'min:0'],
+            'types' => ['required', 'array', 'min:1'],
+            'types.*' => ['string', Rule::in(['single', 'doubles'])],
         ]);
 
-        Category::create($validated);
+        Category::create([
+            'name' => $validated['name'],
+            'menu_order' => $validated['menu_order'],
+            'type' => implode(',', $validated['types']),
+        ]);
 
         return redirect()->route('admin.categories.index')->with('status', 'Category created successfully!');
     }
@@ -42,9 +48,15 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('categories', 'name')->ignore($category->id)],
             'menu_order' => ['required', 'integer', 'min:0'],
+            'types' => ['required', 'array', 'min:1'],
+            'types.*' => ['string', Rule::in(['single', 'doubles'])],
         ]);
 
-        $category->update($validated);
+        $category->update([
+            'name' => $validated['name'],
+            'menu_order' => $validated['menu_order'],
+            'type' => implode(',', $validated['types']),
+        ]);
 
         return redirect()->route('admin.categories.index')->with('status', 'Category updated successfully!');
     }

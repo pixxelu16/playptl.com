@@ -20,8 +20,16 @@
                             <h4 class="text-[17px] font-bold text-[#333333] sm:text-[18px]">{{ $currentGroup['tournament'] }}</h4>
                             <div class="mt-3 space-y-2">
                                 @foreach ($currentGroup['registrations'] as $entry)
-                                    <div class="rounded-md border border-[#C8E6C0] bg-white px-3 py-2.5 sm:px-4">
-                                        <dl class="grid grid-cols-1 gap-2 text-[13px] sm:grid-cols-3 sm:gap-3">
+                                    <div class="rounded-md border border-[#C8E6C0] bg-white px-3 py-3 sm:px-4">
+                                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#E8ECE8] pb-2.5 mb-3">
+                                            <span class="text-[13px] font-bold text-[#333333] uppercase tracking-wide">{{ $entry['format'] }} — {{ $entry['category'] }}</span>
+                                            <button type="button"
+                                                    onclick='openRegistrationDetailsModal(@json($entry), @json($currentGroup["tournament"]))'
+                                                    class="inline-flex items-center rounded-md bg-[#66A157] px-3 py-1 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#549648]">
+                                                View Details
+                                            </button>
+                                        </div>
+                                        <dl class="grid grid-cols-2 gap-2 text-[13px] sm:grid-cols-4 sm:gap-3">
                                             <div>
                                                 <dt class="font-semibold text-[#666666]">Group</dt>
                                                 <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['group'] }}</dd>
@@ -34,6 +42,39 @@
                                                 <dt class="font-semibold text-[#666666]">Format</dt>
                                                 <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['format'] }}</dd>
                                             </div>
+                                            <div>
+                                                <dt class="font-semibold text-[#666666]">Category</dt>
+                                                <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['category'] ?? '—' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-semibold text-[#666666]">Skill Level</dt>
+                                                <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['skill_level'] ?? '—' }}</dd>
+                                            </div>
+                                            @if(!empty($entry['is_doubles']))
+                                                <div>
+                                                    <dt class="font-semibold text-[#666666] flex items-center gap-1.5">
+                                                        Team Name
+                                                        <button type="button" 
+                                                                onclick="openTeamNameModal('{{ $entry['id'] }}', '{{ addslashes($entry['team_name'] ?? '') }}')"
+                                                                class="inline-flex items-center text-[#66A157] hover:text-[#4d7d40] text-[11px] font-bold underline"
+                                                                title="Edit Team Name">
+                                                            (Edit)
+                                                        </button>
+                                                    </dt>
+                                                    <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['team_name'] ?? '—' }}</dd>
+                                                </div>
+                                            @elseif(!empty($entry['team_name']))
+                                                <div>
+                                                    <dt class="font-semibold text-[#666666]">Team Name</dt>
+                                                    <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['team_name'] }}</dd>
+                                                </div>
+                                            @endif
+                                            @if(!empty($entry['partner_name']))
+                                                <div>
+                                                    <dt class="font-semibold text-[#666666]">Partner</dt>
+                                                    <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['partner_name'] }}</dd>
+                                                </div>
+                                            @endif
                                         </dl>
                                     </div>
                                 @endforeach
@@ -60,20 +101,63 @@
                                 </div>
                                 <p class="mt-1 text-[13px] font-medium text-[#666666]">{{ $group['window'] }}</p>
                                 @foreach ($group['registrations'] as $entry)
-                                    <dl class="mt-2 grid grid-cols-1 gap-2 border-t border-[#F0F0F0] pt-2 text-[13px] sm:grid-cols-3 sm:gap-3 {{ ! $loop->first ? 'mt-3' : '' }}">
-                                        <div>
-                                            <dt class="font-semibold text-[#666666]">Group</dt>
-                                            <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['group'] }}</dd>
+                                    <div class="mt-3 rounded-md border border-[#E0E0E0] bg-white px-3 py-3 sm:px-4">
+                                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#F0F0F0] pb-2.5 mb-3">
+                                            <span class="text-[13px] font-bold text-[#333333] uppercase tracking-wide">{{ $entry['format'] }} — {{ $entry['category'] }}</span>
+                                            <button type="button"
+                                                    onclick='openRegistrationDetailsModal(@json($entry), @json($group["tournament"]))'
+                                                    class="inline-flex items-center rounded-md bg-[#66A157] px-3 py-1 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#549648]">
+                                                View Details
+                                            </button>
                                         </div>
-                                        <div>
-                                            <dt class="font-semibold text-[#666666]">Subgroup</dt>
-                                            <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['subgroup'] }}</dd>
-                                        </div>
-                                        <div>
-                                            <dt class="font-semibold text-[#666666]">Format</dt>
-                                            <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['format'] }}</dd>
-                                        </div>
-                                    </dl>
+                                        <dl class="grid grid-cols-2 gap-2 text-[13px] sm:grid-cols-4 sm:gap-3">
+                                            <div>
+                                                <dt class="font-semibold text-[#666666]">Group</dt>
+                                                <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['group'] }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-semibold text-[#666666]">Subgroup</dt>
+                                                <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['subgroup'] }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-semibold text-[#666666]">Format</dt>
+                                                <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['format'] }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-semibold text-[#666666]">Category</dt>
+                                                <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['category'] ?? '—' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="font-semibold text-[#666666]">Skill Level</dt>
+                                                <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['skill_level'] ?? '—' }}</dd>
+                                            </div>
+                                            @if(!empty($entry['is_doubles']))
+                                                <div>
+                                                    <dt class="font-semibold text-[#666666] flex items-center gap-1.5">
+                                                        Team Name
+                                                        <button type="button" 
+                                                                onclick="openTeamNameModal('{{ $entry['id'] }}', '{{ addslashes($entry['team_name'] ?? '') }}')"
+                                                                class="inline-flex items-center text-[#66A157] hover:text-[#4d7d40] text-[11px] font-bold underline"
+                                                                title="Edit Team Name">
+                                                            (Edit)
+                                                        </button>
+                                                    </dt>
+                                                    <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['team_name'] ?? '—' }}</dd>
+                                                </div>
+                                            @elseif(!empty($entry['team_name']))
+                                                <div>
+                                                    <dt class="font-semibold text-[#666666]">Team Name</dt>
+                                                    <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['team_name'] }}</dd>
+                                                </div>
+                                            @endif
+                                            @if(!empty($entry['partner_name']))
+                                                <div>
+                                                    <dt class="font-semibold text-[#666666]">Partner</dt>
+                                                    <dd class="mt-0.5 font-medium text-[#333333]">{{ $entry['partner_name'] }}</dd>
+                                                </div>
+                                            @endif
+                                        </dl>
+                                    </div>
                                 @endforeach
                             </div>
                         @endforeach
@@ -201,8 +285,154 @@
     </form>
 </div>
 
+<!-- Edit Team Name Modal -->
+<div id="edit-team-name-modal" class="fixed inset-0 z-50 flex hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-[12px] bg-white p-6 shadow-xl">
+        <div class="flex items-center justify-between border-b border-[#EEEEEE] pb-3">
+            <h4 class="text-[16px] font-bold text-[#333333]">Update Team Name</h4>
+            <button type="button" onclick="closeTeamNameModal()" class="text-[#888888] hover:text-[#333333] text-xl font-bold">&times;</button>
+        </div>
+        <form action="{{ route('player.profile.team-name.update') }}" method="POST" class="mt-4 space-y-4">
+            @csrf
+            <input type="hidden" name="registration_id" id="modal-team-name-registration-id" value="">
+            <div>
+                <label for="modal-team-name-input" class="{{ $profileLabelClass }}">Team Name <span class="text-red-600">*</span></label>
+                <input type="text" 
+                       id="modal-team-name-input" 
+                       name="team_name" 
+                       required 
+                       placeholder="Enter new team name" 
+                       class="{{ $profileInputClass }}">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeTeamNameModal()" class="rounded-lg border border-[#DDDDDD] bg-white px-4 py-2 text-[14px] font-semibold text-[#444444] hover:bg-[#F5F5F5]">
+                    Cancel
+                </button>
+                <button type="submit" class="rounded-lg bg-[#66A157] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#549648]">
+                    Save Team Name
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Registration Details Modal -->
+<div id="registration-details-modal" class="fixed inset-0 z-50 flex hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-lg rounded-[12px] bg-white p-6 shadow-xl">
+        <div class="flex items-center justify-between border-b border-[#EEEEEE] pb-3">
+            <h4 class="text-[17px] font-bold text-[#333333]" id="reg-modal-tournament-title">Registration Details</h4>
+            <button type="button" onclick="closeRegistrationDetailsModal()" class="text-[#888888] hover:text-[#333333] text-xl font-bold">&times;</button>
+        </div>
+        <div class="mt-4 space-y-4 text-[14px]">
+            <div class="grid grid-cols-2 gap-4 rounded-lg bg-[#F9FBF9] p-4 border border-[#E8ECE8]">
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Format</span>
+                    <span class="font-bold text-[#333333]" id="reg-modal-format">—</span>
+                </div>
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Category</span>
+                    <span class="font-bold text-[#333333]" id="reg-modal-category">—</span>
+                </div>
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Group / Division</span>
+                    <span class="font-bold text-[#333333]" id="reg-modal-group">—</span>
+                </div>
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Subgroup</span>
+                    <span class="font-bold text-[#333333]" id="reg-modal-subgroup">—</span>
+                </div>
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Skill Level</span>
+                    <span class="font-bold text-[#333333]" id="reg-modal-skill">—</span>
+                </div>
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Age Group</span>
+                    <span class="font-bold text-[#333333]" id="reg-modal-age-group">—</span>
+                </div>
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Payment Status</span>
+                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800" id="reg-modal-payment">—</span>
+                </div>
+                <div>
+                    <span class="block text-[12px] font-semibold text-[#666666]">Registered On</span>
+                    <span class="font-bold text-[#333333]" id="reg-modal-date">—</span>
+                </div>
+            </div>
+
+            <div id="reg-modal-doubles-box" class="hidden rounded-lg bg-[#F0F7EF] p-4 border border-[#C8E6C0] space-y-2">
+                <h5 class="text-[13px] font-bold uppercase text-[#2e7d32]">Doubles & Team Information</h5>
+                <div class="grid grid-cols-2 gap-3 text-[13px]">
+                    <div class="col-span-2">
+                        <span class="block text-[12px] font-semibold text-[#555555]">Team Name</span>
+                        <span class="font-bold text-[#333333]" id="reg-modal-team-name">—</span>
+                    </div>
+                    <div>
+                        <span class="block text-[12px] font-semibold text-[#555555]">Partner Name</span>
+                        <span class="font-bold text-[#333333]" id="reg-modal-partner-name">—</span>
+                    </div>
+                    <div>
+                        <span class="block text-[12px] font-semibold text-[#555555]">Partner Email</span>
+                        <span class="font-medium text-[#333333]" id="reg-modal-partner-email">—</span>
+                    </div>
+                    @if(!empty($entry['partner_phone']))
+                    <div>
+                        <span class="block text-[12px] font-semibold text-[#555555]">Partner Phone</span>
+                        <span class="font-medium text-[#333333]" id="reg-modal-partner-phone">—</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end pt-5 border-t border-[#EEEEEE] mt-4">
+            <button type="button" onclick="closeRegistrationDetailsModal()" class="rounded-lg bg-[#66A157] px-5 py-2 text-[14px] font-semibold text-white hover:bg-[#549648]">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 @push('profile_scripts')
     <script>
+        function openTeamNameModal(registrationId, currentTeamName) {
+            document.getElementById('modal-team-name-registration-id').value = registrationId;
+            document.getElementById('modal-team-name-input').value = currentTeamName;
+            document.getElementById('edit-team-name-modal').classList.remove('hidden');
+        }
+
+        function closeTeamNameModal() {
+            document.getElementById('edit-team-name-modal').classList.add('hidden');
+        }
+
+        function openRegistrationDetailsModal(entry, tournamentName) {
+            document.getElementById('reg-modal-tournament-title').innerText = tournamentName + ' - Details';
+            document.getElementById('reg-modal-format').innerText = entry.format || '—';
+            document.getElementById('reg-modal-category').innerText = entry.category || '—';
+            document.getElementById('reg-modal-group').innerText = entry.group || '—';
+            document.getElementById('reg-modal-subgroup').innerText = entry.subgroup || '—';
+            document.getElementById('reg-modal-skill').innerText = entry.skill_level || '—';
+            document.getElementById('reg-modal-age-group').innerText = entry.age_group || 'All Ages';
+            document.getElementById('reg-modal-payment').innerText = entry.payment_status || 'Completed';
+            document.getElementById('reg-modal-date').innerText = entry.registered_at || '—';
+
+            var doublesBox = document.getElementById('reg-modal-doubles-box');
+            if (entry.is_doubles || entry.team_name || entry.partner_name) {
+                doublesBox.classList.remove('hidden');
+                document.getElementById('reg-modal-team-name').innerText = entry.team_name || '—';
+                document.getElementById('reg-modal-partner-name').innerText = entry.partner_name || '—';
+                document.getElementById('reg-modal-partner-email').innerText = entry.partner_email || '—';
+                var phoneEl = document.getElementById('reg-modal-partner-phone');
+                if (phoneEl) phoneEl.innerText = entry.partner_phone || '—';
+            } else {
+                doublesBox.classList.add('hidden');
+            }
+
+            document.getElementById('registration-details-modal').classList.remove('hidden');
+        }
+
+        function closeRegistrationDetailsModal() {
+            document.getElementById('registration-details-modal').classList.add('hidden');
+        }
+
         (function () {
             document.querySelectorAll('[data-profile-jump-upload]').forEach(function (btn) {
                 btn.addEventListener('click', function () {

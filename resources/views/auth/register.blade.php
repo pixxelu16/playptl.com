@@ -218,12 +218,12 @@
                                                 required
                                                 class="reg-input category-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
                                                 <option value="">Select category</option>
-                                                @foreach($categories ?? [] as $cat)
+                                                @foreach($categoriesSingles ?? $categories ?? [] as $cat)
                                                     <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
-                                    </div>
+                                    </div> 
                                     <div class="mt-3">
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Tournament <span class="text-red-600">*</span></label>
                                         <select name="tournament_singles"
@@ -468,7 +468,7 @@
 
                                     <div class="border-t border-[#e8e8e8] pt-4">
                                         <h2 class="text-center text-[14px] font-bold text-black underline decoration-[#5FA252] decoration-2 underline-offset-4">Other Details</h2>
-                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Tournament <span class="text-red-600">*</span></label>
                                                 <select name="tournament_doubles" required
@@ -481,13 +481,20 @@
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Category <span class="text-red-600">*</span></label>
-                                                <select name="category" required
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
-                                                    <option value="">Select category</option>
-                                                    @foreach($categories ?? [] as $cat)
-                                                        <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
-                                                    @endforeach
-                                                </select>
+                                                <select name="category"
+                                                 required
+                                                 class="reg-input category-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
+                                                 <option value="">Select category</option>
+                                                 @foreach($categoriesDoubles ?? $categories ?? [] as $cat)
+                                                     <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
+                                                 @endforeach
+                                             </select>
+                                            </div>
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Team Name</label>
+                                                <input type="text" name="team_name" value="{{ old('team_name') }}" placeholder="Enter team name"
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    autocomplete="off">
                                             </div>
                                         </div>
                                         <div class="mt-4">

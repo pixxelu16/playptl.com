@@ -25,6 +25,7 @@
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Type</th>
                         <th>Menu Order</th>
                         <th>Created At</th>
                         <th>Actions</th>
@@ -32,8 +33,19 @@
                 </thead>
                 <tbody>
                     @forelse ($categories as $category)
+                        @php
+                            $types = explode(',', $category->type ?? 'single,doubles');
+                            $typeLabels = array_map(function($t) {
+                                return $t === 'single' ? 'Single' : ($t === 'doubles' ? 'Doubles' : ucfirst($t));
+                            }, $types);
+                        @endphp
                         <tr>
                             <td><strong>{{ $category->name }}</strong></td>
+                            <td>
+                                @foreach($typeLabels as $label)
+                                    <span class="admin-badge" style="background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; margin-right:4px;">{{ $label }}</span>
+                                @endforeach
+                            </td>
                             <td>{{ $category->menu_order }}</td>
                             <td>{{ $category->created_at ? $category->created_at->format('M d, Y H:i') : '—' }}</td>
                             <td>
@@ -49,7 +61,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="admin-muted">No categories configured.</td>
+                            <td colspan="5" class="admin-muted">No categories configured.</td>
                         </tr>
                     @endforelse
                 </tbody>

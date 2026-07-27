@@ -42,9 +42,15 @@ class RegisteredUserController extends Controller
             })
             ->values();
 
+        $allCategories = \App\Models\Category::query()->orderBy('menu_order')->get();
+        $categoriesSingles = \App\Models\Category::query()->forType('single')->orderBy('menu_order')->get();
+        $categoriesDoubles = \App\Models\Category::query()->forType('doubles')->orderBy('menu_order')->get();
+
         return view('auth.register', [
             'registrationLeagues' => $registrationLeagues,
-            'categories' => \App\Models\Category::query()->orderBy('menu_order')->get(),
+            'categories' => $allCategories,
+            'categoriesSingles' => $categoriesSingles,
+            'categoriesDoubles' => $categoriesDoubles,
             'registrationClosedDivisions' => LeagueRegistrationGate::closedSelectionKeys(),
             'registrationClosedGroupCards' => LeagueRegistrationGate::closedGroupCardKeys(),
             'leagueEntryFees' => LeagueEntryFee::mapForLeagues($registrationLeagues),
