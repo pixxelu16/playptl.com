@@ -38,14 +38,14 @@
                     @endphp
                     <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer;">
                         <input type="checkbox" name="types[]" value="single" @checked(in_array('single', $oldTypes))>
-                        <span>Single</span>
+                        <span>Singles</span>
                     </label>
                     <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer;">
                         <input type="checkbox" name="types[]" value="doubles" @checked(in_array('doubles', $oldTypes))>
                         <span>Doubles</span>
                     </label>
                 </div>
-                <p class="admin-field-hint">Select whether this category applies to Single, Doubles, or both.</p>
+                <p class="admin-field-hint">Select whether this category applies to Singles, Doubles, or both.</p>
             </div>
 
             <div class="admin-form-group">

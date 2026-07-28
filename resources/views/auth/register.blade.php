@@ -103,6 +103,7 @@
                             class="register-form mt-6 flex flex-col {{ $isDoubles ? 'hidden' : '' }}"
                             method="POST"
                             action="{{ route('register') }}"
+                            autocomplete="off"
                             novalidate
                             data-registration-tab="singles"
                             data-stripe-key="{{ $stripePublishableKey ?? '' }}"
@@ -112,6 +113,10 @@
                             data-fee="{{ $feeSingles }}"
                             data-free-registration="{{ \App\Models\SiteSetting::getValue('enable_free_registration', '0') }}">
                             @csrf
+                            <!-- Fake inputs to prevent aggressive browser autofill -->
+                            <input type="text" style="display:none" aria-hidden="true" tabindex="-1">
+                            <input type="password" style="display:none" aria-hidden="true" tabindex="-1">
+
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="singles">
                             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
@@ -125,13 +130,13 @@
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">First Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="singles_first" name="singles_first" value="{{ old('singles_first') }}" placeholder="First name"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="given-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Last Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="singles_last" name="singles_last" value="{{ old('singles_last') }}" placeholder="Last name"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="family-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -139,13 +144,13 @@
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Email <span class="text-red-600">*</span></label>
                                             <input type="email" name="email" id="singles_email" value="{{ old('email') }}" placeholder="Email"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="email" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Phone Number <span class="text-red-600">*</span></label>
                                             <input type="tel" name="phone_singles" value="{{ old('phone_singles') }}" placeholder="Phone"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                                autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -168,13 +173,13 @@
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">City <span class="text-red-600">*</span></label>
                                             <input type="text" name="city_singles" value="{{ old('city_singles') }}" placeholder="City"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="address-level2" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">State <span class="text-red-600">*</span></label>
                                             <input type="text" name="state_singles" value="{{ old('state_singles') }}" placeholder="State"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="address-level1" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -277,6 +282,7 @@
                             class="register-form mt-6 flex flex-col {{ $isDoubles ? '' : 'hidden' }}"
                             method="POST"
                             action="{{ route('register') }}"
+                            autocomplete="off"
                             novalidate
                             data-registration-tab="doubles"
                             data-stripe-key="{{ $stripePublishableKey ?? '' }}"
@@ -286,6 +292,10 @@
                             data-fee="{{ $feeDoubles }}"
                             data-free-registration="{{ \App\Models\SiteSetting::getValue('enable_free_registration', '0') }}">
                             @csrf
+                            <!-- Fake inputs to prevent aggressive browser autofill -->
+                            <input type="text" style="display:none" aria-hidden="true" tabindex="-1">
+                            <input type="password" style="display:none" aria-hidden="true" tabindex="-1">
+
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="doubles">
                             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
@@ -298,13 +308,13 @@
                                             <label class="mb-1 block text-[12px] font-bold text-black">First Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="d1_first" name="d1_first" value="{{ old('d1_first') }}" placeholder="First name"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="given-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">Last Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="d1_last" name="d1_last" value="{{ old('d1_last') }}" placeholder="Last name"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="family-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -312,13 +322,13 @@
                                             <label class="mb-1 block text-[12px] font-bold text-black">Email <span class="text-red-600">*</span></label>
                                             <input type="email" name="email" id="doubles_email" value="{{ old('email') }}" placeholder="Email"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="email" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">Phone Number <span class="text-red-600">*</span></label>
                                             <input type="tel" name="phone_doubles" value="{{ old('phone_doubles') }}" placeholder="Phone"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                                autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -341,13 +351,13 @@
                                             <label class="mb-1 block text-[12px] font-bold text-black">City <span class="text-red-600">*</span></label>
                                             <input type="text" name="city_doubles" value="{{ old('city_doubles') }}" placeholder="City"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="address-level2" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">State <span class="text-red-600">*</span></label>
                                             <input type="text" name="state_doubles" value="{{ old('state_doubles') }}" placeholder="State"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="address-level1" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -394,13 +404,13 @@
                                                 <label class="mb-1 block text-[12px] font-bold text-black">First Name <span class="text-red-600">*</span></label>
                                                 <input type="text" id="d2_first" name="d2_first" value="{{ old('d2_first') }}" placeholder="First name"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="off" required>
+                                                    autocomplete="new-password" required>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Last Name <span class="text-red-600">*</span></label>
                                                 <input type="text" id="d2_last" name="d2_last" value="{{ old('d2_last') }}" placeholder="Last name"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="off" required>
+                                                    autocomplete="new-password" required>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -408,13 +418,13 @@
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Email <span class="text-red-600">*</span></label>
                                                 <input type="email" name="d2_email" id="d2_email" value="{{ old('d2_email') }}" placeholder="Email"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="email" required>
+                                                autocomplete="off" required>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Phone Number <span class="text-red-600">*</span></label>
                                                 <input type="tel" name="d2_phone" id="d2_phone" value="{{ old('d2_phone') }}" placeholder="Phone"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                                autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -422,13 +432,13 @@
                                                 <label class="mb-1 block text-[12px] font-bold text-black">City <span class="text-red-600">*</span></label>
                                                 <input type="text" name="d2_city" value="{{ old('d2_city') }}" placeholder="City"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="address-level2" required>
+                                                    autocomplete="off" required>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">State <span class="text-red-600">*</span></label>
                                                 <input type="text" name="d2_state" value="{{ old('d2_state') }}" placeholder="State"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="address-level1" required>
+                                                    autocomplete="off" required>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -538,8 +548,13 @@
                             class="register-form mt-6 flex flex-col hidden"
                             method="POST"
                             action="{{ route('register') }}"
+                            autocomplete="off"
                             novalidate>
                             @csrf
+                            <!-- Fake inputs to prevent aggressive browser autofill -->
+                            <input type="text" style="display:none" aria-hidden="true" tabindex="-1">
+                            <input type="password" style="display:none" aria-hidden="true" tabindex="-1">
+
                             <input type="hidden" name="role" value="mentor">
                             <div class="custom_register_form_res mb-4 text-sm"></div>
 
@@ -549,13 +564,13 @@
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">First Name <span class="text-red-600">*</span></label>
                                         <input type="text" name="first_name" value="{{ old('first_name') }}" placeholder="First name"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="given-name" required>
+                                            autocomplete="off" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Last Name <span class="text-red-600">*</span></label>
                                         <input type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Last name"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="family-name" required>
+                                            autocomplete="off" required>
                                     </div>
                                 </div>
 
@@ -564,13 +579,13 @@
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Email <span class="text-red-600">*</span></label>
                                         <input type="email" name="email" value="{{ old('email') }}" placeholder="Email"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="email" required>
+                                            autocomplete="off" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Phone Number <span class="text-red-600">*</span></label>
                                         <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="Phone"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="tel" required>
+                                            autocomplete="off" required>
                                     </div>
                                 </div>
 
@@ -594,13 +609,13 @@
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">City <span class="text-red-600">*</span></label>
                                         <input type="text" name="city" value="{{ old('city') }}" placeholder="City"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            required>
+                                            autocomplete="off" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">State <span class="text-red-600">*</span></label>
                                         <input type="text" name="state" value="{{ old('state') }}" placeholder="State"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            required>
+                                            autocomplete="off" required>
                                     </div>
                                 </div>
                             </div>

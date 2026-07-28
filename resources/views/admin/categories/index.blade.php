@@ -36,7 +36,7 @@
                         @php
                             $types = explode(',', $category->type ?? 'single,doubles');
                             $typeLabels = array_map(function($t) {
-                                return $t === 'single' ? 'Single' : ($t === 'doubles' ? 'Doubles' : ucfirst($t));
+                                return $t === 'single' ? 'Singles' : ($t === 'doubles' ? 'Doubles' : ucfirst($t));
                             }, $types);
                         @endphp
                         <tr>

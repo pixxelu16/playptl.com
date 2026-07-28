@@ -9,14 +9,25 @@
     <p style="margin:0 0 14px;">
         <strong>{{ $inviterName }}</strong> added you as a doubles partner for <strong>{{ $leagueName }}</strong>.
     </p>
-    <p style="margin:0 0 14px;">
-        Set up your account with the same email address and create your password to join the league.
-    </p>
+    @if (!empty($setupUrl))
+        <p style="margin:0 0 14px;">
+            Set up your account with the same email address and create your password to join the league.
+        </p>
 
-    @include('emails.partials.button', [
-        'url' => $setupUrl,
-        'label' => 'Set up my account',
-    ])
+        @include('emails.partials.button', [
+            'url' => $setupUrl,
+            'label' => 'Set up my account',
+        ])
+    @else
+        <p style="margin:0 0 14px;">
+            You can log in to your account to view your active tournament details and match schedule.
+        </p>
+
+        @include('emails.partials.button', [
+            'url' => route('login'),
+            'label' => 'Log in to My Account',
+        ])
+    @endif
 
     <p style="margin:0;font-size:12px;color:#666666;">
         If you did not expect this invitation, you can safely ignore this email.
