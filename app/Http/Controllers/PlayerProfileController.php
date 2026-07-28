@@ -464,12 +464,14 @@ class PlayerProfileController extends Controller
             'transaction_id' => (string) $intent->id,
         ]);
 
+        $isNewPartner = false;
         if ($isDoublesRegistration) {
             $partnerEmail = strtolower((string) $specific['d2_email']);
             $partnerName = trim(((string) $specific['d2_first']).' '.((string) $specific['d2_last']));
 
             $partner = User::query()->where('email', $partnerEmail)->first();
             if (! $partner) {
+                $isNewPartner = true;
                 $partner = User::create([
                     'name' => $partnerName !== '' ? $partnerName : $partnerEmail,
                     'first_name' => $specific['d2_first'],
@@ -496,17 +498,27 @@ class PlayerProfileController extends Controller
                 'team_key' => $teamKey,
                 'payment_status' => 'completed',
             ]);
+        }
 
+        if ($isDoublesRegistration && isset($partner) && isset($partnerEmail)) {
             try {
-                $token = PasswordBroker::broker()->createToken($partner);
-                $setupUrl = route('password.reset', ['token' => $token]).'?email='.urlencode($partnerEmail);
-                Mail::to($partnerEmail)->send(new PartnerAddedMail(
-                    inviterName: (string) $user->name,
-                    leagueName: (string) $league->name,
-                    setupUrl: $setupUrl,
-                ));
-            } catch (\Throwable) {
-                // Registration remains valid if mail fails.
+                if ($isNewPartner) {
+                    $token = PasswordBroker::broker()->createToken($partner);
+                    $setupUrl = route('password.reset', ['token' => $token]).'?email='.urlencode($partnerEmail);
+                    Mail::to($partnerEmail)->send(new PartnerAddedMail(
+                        inviterName: (string) $user->name,
+                        leagueName: (string) $league->name,
+                        setupUrl: $setupUrl,
+                    ));
+                } else {
+                    Mail::to($partnerEmail)->send(new PartnerAddedMail(
+                        inviterName: (string) $user->name,
+                        leagueName: (string) $league->name,
+                        setupUrl: null,
+                    ));
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Partner mail failed: ' . $e->getMessage(), ['exception' => $e]);
             }
         }
 
@@ -518,23 +530,43 @@ class PlayerProfileController extends Controller
                 skillLevel: $skillLevel,
                 amount: $amountDecimal,
                 currency: strtoupper(SiteSetting::stripeCurrency()),
-                paymentIntentId: (string) $intent->id,
+                paymentIntentId: (string) ($intent->id ?? $transactionId ?? ''),
             ));
 
             $adminEmail = SiteSetting::getValue('contact_email');
             if ($adminEmail) {
-                Mail::to($adminEmail)->send(new RegistrationConfirmedMail(
-                    userName: (string) $user->name,
+                $pName = null;
+                $pEmail = null;
+                $pPhone = null;
+                $pSkill = null;
+                if ($tab === 'doubles') {
+                    $pName = trim(((string) ($specific['d2_first'] ?? '')).' '.((string) ($specific['d2_last'] ?? '')));
+                    if ($pName === '') {
+                        $pName = (string) ($specific['d2_email'] ?? '');
+                    }
+                    $pEmail = (string) ($specific['d2_email'] ?? '');
+                    $pPhone = (string) ($specific['d2_phone'] ?? '');
+                    $pSkill = (string) ($specific['d2_skill'] ?? '');
+                }
+
+                Mail::to($adminEmail)->send(new \App\Mail\AdminPlayerRegistrationNotificationMail(
+                    playerName: (string) $user->name,
+                    playerEmail: (string) $user->email,
+                    playerPhone: (string) $user->phone,
                     leagueName: (string) $league->name,
                     registrationType: $tab,
                     skillLevel: $skillLevel,
                     amount: $amountDecimal,
                     currency: strtoupper(SiteSetting::stripeCurrency()),
-                    paymentIntentId: (string) $intent->id,
+                    paymentIntentId: (string) ($intent->id ?? $transactionId ?? ''),
+                    partnerName: $pName,
+                    partnerEmail: $pEmail,
+                    partnerPhone: $pPhone,
+                    partnerSkill: $pSkill,
                 ));
             }
-        } catch (\Throwable) {
-            // Registration remains valid if mail fails.
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Registration confirmed mail failed: ' . $e->getMessage(), ['exception' => $e]);
         }
 
         return response()->json([

@@ -227,6 +227,7 @@ class RegisteredUserController extends Controller
                 'sex_doubles' => ['required', 'string', 'max:32'],
                 'tournament_doubles' => ['required', 'integer', 'exists:leagues,id'],
                 'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
+                'team_name' => ['nullable', 'string', 'max:255'],
                 'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
                 'd2_phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
                 'd2_city' => ['required', 'string', 'max:255'],
@@ -348,9 +349,14 @@ class RegisteredUserController extends Controller
 
         $groupId = LeagueRegistrationFlow::resolveGroupId($leagueId, $groupCard, $actualFeeTab, $ageGroup);
         $amountDecimal = $isFreeReg ? '0.00' : number_format($expectedAmountCents / 100, 2, '.', '');
+        $teamName = trim((string) ($specific['team_name'] ?? ''));
+
+        $partner = null;
+        $partnerEmail = null;
+        $isNewPartner = false;
 
         $user = \Illuminate\Support\Facades\DB::transaction(function () use (
-            $base, $tab, $category, $specific, $phone, $city, $state, $sex, $skillLevel, $transactionId, $paymentIntentStatus, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup, $amountDecimal, $isDoublesRegistration, $isFreeReg
+            $base, $tab, $category, $specific, $phone, $city, $state, $sex, $skillLevel, $transactionId, $paymentIntentStatus, $expectedAmountCents, $leagueId, $groupCard, $groupId, $ageGroup, $amountDecimal, $isDoublesRegistration, $isFreeReg, $teamName, &$partner, &$partnerEmail, &$isNewPartner
         ) {
             $createdUser = User::create([
                 'name' => $base['name'],
@@ -403,6 +409,7 @@ class RegisteredUserController extends Controller
                     'registration_type' => $tab,
                     'category' => $category,
                     'team_key' => $primaryTeamKey,
+                    'team_name' => $teamName !== '' ? $teamName : null,
                     'payment_status' => 'completed',
                 ]
             );
@@ -416,6 +423,7 @@ class RegisteredUserController extends Controller
 
                 $partner = User::query()->where('email', $partnerEmail)->first();
                 if (! $partner) {
+                    $isNewPartner = true;
                     $partner = User::create([
                         'name' => $partnerName !== '' ? $partnerName : $partnerEmail,
                         'first_name' => $specific['d2_first'] ?? null,
@@ -451,6 +459,7 @@ class RegisteredUserController extends Controller
                         'registration_type' => $tab,
                         'category' => $category,
                         'team_key' => $primaryTeamKey,
+                        'team_name' => $teamName !== '' ? $teamName : null,
                         'payment_status' => 'completed',
                     ]
                 );
@@ -472,17 +481,24 @@ class RegisteredUserController extends Controller
 
         if ($isDoublesRegistration && isset($partner) && isset($partnerEmail)) {
             try {
-                // Use Laravel password reset flow so partner can setup account with same email.
-                $token = PasswordBroker::broker()->createToken($partner);
-                $setupUrl = route('password.reset', ['token' => $token]).'?email='.urlencode($partnerEmail);
+                if ($isNewPartner) {
+                    $token = PasswordBroker::broker()->createToken($partner);
+                    $setupUrl = route('password.reset', ['token' => $token]).'?email='.urlencode($partnerEmail);
 
-                Mail::to($partnerEmail)->send(new PartnerAddedMail(
-                    inviterName: (string) $user->name,
-                    leagueName: (string) $league->name,
-                    setupUrl: $setupUrl,
-                ));
+                    Mail::to($partnerEmail)->send(new PartnerAddedMail(
+                        inviterName: (string) $user->name,
+                        leagueName: (string) $league->name,
+                        setupUrl: $setupUrl,
+                    ));
+                } else {
+                    Mail::to($partnerEmail)->send(new PartnerAddedMail(
+                        inviterName: (string) $user->name,
+                        leagueName: (string) $league->name,
+                        setupUrl: null,
+                    ));
+                }
             } catch (\Throwable $e) {
-                // If mail fails, registration/payment is still valid; do not block.
+                \Illuminate\Support\Facades\Log::error('Partner mail send failed: ' . $e->getMessage(), ['exception' => $e]);
             }
         }
 
@@ -494,7 +510,7 @@ class RegisteredUserController extends Controller
                 skillLevel: $skillLevel,
                 amount: $amountDecimal,
                 currency: strtoupper(SiteSetting::stripeCurrency()),
-                paymentIntentId: (string) $intent->id,
+                paymentIntentId: (string) $transactionId,
             ));
 
             $adminEmail = SiteSetting::getValue('contact_email');
@@ -522,7 +538,7 @@ class RegisteredUserController extends Controller
                     skillLevel: $skillLevel,
                     amount: $amountDecimal,
                     currency: strtoupper(SiteSetting::stripeCurrency()),
-                    paymentIntentId: (string) $intent->id,
+                    paymentIntentId: (string) $transactionId,
                     partnerName: $pName,
                     partnerEmail: $pEmail,
                     partnerPhone: $pPhone,

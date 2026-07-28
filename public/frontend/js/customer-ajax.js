@@ -102,6 +102,12 @@
     $doublesForm.toggleClass('hidden', !isDoubles);
     $singlesForm.toggleClass('hidden', isDoubles);
 
+    if (isDoubles) {
+      $doublesForm.trigger('mount-card');
+    } else {
+      $singlesForm.trigger('mount-card');
+    }
+
     if ($tabDoubles.length) {
       $tabDoubles.css('backgroundColor', isDoubles ? greenDoubles : '#fff');
       $tabDoubles.css('color', isDoubles ? '#fff' : '#222');
@@ -404,6 +410,7 @@
       if (isFreeRegistration) return;
       if (!stripe || !elements) return;
       if (card) return;
+      if ($form.hasClass('hidden') || $form.is(':hidden')) return;
       var mount = $form.find('.stripe-card-element').get(0);
       if (!mount) return;
       card = elements.create('card', {
@@ -427,6 +434,10 @@
         $(mount).toggleClass('border-red-500', !cardComplete && event.empty === false);
       });
     }
+
+    $form.on('mount-card', function () {
+      mountCard();
+    });
 
     $form.on('focus input change', 'input, select, textarea', function () {
       var $el = $(this);
@@ -576,9 +587,7 @@
         if (tab === 'singles') {
           computed = ($.trim($form.find('[name="singles_first"]').val()) + ' ' + $.trim($form.find('[name="singles_last"]').val())).trim();
         } else {
-          var a = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
-          var b = ($.trim($form.find('[name="d2_first"]').val()) + ' ' + $.trim($form.find('[name="d2_last"]').val())).trim();
-          computed = (a + ' & ' + b).trim();
+          computed = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
         }
         $form.find('.computed_name').val(computed);
 
@@ -728,9 +737,7 @@
       if (tab === 'singles') {
         computed = ($.trim($form.find('[name="singles_first"]').val()) + ' ' + $.trim($form.find('[name="singles_last"]').val())).trim();
       } else {
-        var a = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
-        var b = ($.trim($form.find('[name="d2_first"]').val()) + ' ' + $.trim($form.find('[name="d2_last"]').val())).trim();
-        computed = (a + ' & ' + b).trim();
+        computed = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
       }
       $form.find('.computed_name').val(computed);
 
