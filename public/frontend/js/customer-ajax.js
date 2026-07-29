@@ -102,6 +102,12 @@
     $doublesForm.toggleClass('hidden', !isDoubles);
     $singlesForm.toggleClass('hidden', isDoubles);
 
+    if (isDoubles) {
+      $doublesForm.trigger('mount-card');
+    } else {
+      $singlesForm.trigger('mount-card');
+    }
+
     if ($tabDoubles.length) {
       $tabDoubles.css('backgroundColor', isDoubles ? greenDoubles : '#fff');
       $tabDoubles.css('color', isDoubles ? '#fff' : '#222');
@@ -186,7 +192,13 @@
     if (!$form || !$form.length) return;
     var tab = $form.data('registration-tab') || 'singles';
     var leagueId = $form.find('select[name="tournament_' + tab + '"]').val();
-    var amount = entryFeeForLeague(leagueId, tab);
+    
+    var actualTab = tab;
+    if (tab === 'singles' && $form.find('select[name="category"] option:selected').data('name') === 'Doubles') {
+      actualTab = 'doubles';
+    }
+    
+    var amount = entryFeeForLeague(leagueId, actualTab);
     $form.find('.entry-fee-amount').text(amount);
     $form.data('fee', amount);
   }
@@ -372,6 +384,7 @@
     var registerUrl = $form.data('register-url') || $form.attr('action') || '';
     var csrf = $form.data('csrf') || '';
 
+    var isFreeRegistration = $form.attr('data-free-registration') === '1';
     var stripe = stripeKey && window.Stripe ? Stripe(stripeKey, { advancedFraudSignals: false }) : null;
     var elements = stripe
       ? stripe.elements({
@@ -394,8 +407,10 @@
     }
 
     function mountCard() {
+      if (isFreeRegistration) return;
       if (!stripe || !elements) return;
       if (card) return;
+      if ($form.hasClass('hidden') || $form.is(':hidden')) return;
       var mount = $form.find('.stripe-card-element').get(0);
       if (!mount) return;
       card = elements.create('card', {
@@ -419,6 +434,10 @@
         $(mount).toggleClass('border-red-500', !cardComplete && event.empty === false);
       });
     }
+
+    $form.on('mount-card', function () {
+      mountCard();
+    });
 
     $form.on('focus input change', 'input, select, textarea', function () {
       var $el = $(this);
@@ -556,6 +575,145 @@
         return;
       }
 
+      if (isFreeRegistration) {
+        // Disable submit + show loader spinner on button
+        $btn.prop('disabled', true).addClass('opacity-75 cursor-not-allowed');
+        var originalBtnText = $btn.html();
+        $btn.html('<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing...');
+        if ($loader.length) $loader.removeClass('hidden');
+
+        // Compute name
+        var computed;
+        if (tab === 'singles') {
+          computed = ($.trim($form.find('[name="singles_first"]').val()) + ' ' + $.trim($form.find('[name="singles_last"]').val())).trim();
+        } else {
+          computed = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
+        }
+        $form.find('.computed_name').val(computed);
+
+        var leagueId = tab === 'singles' ? $form.find('select[name="tournament_singles"]').val() : $form.find('select[name="tournament_doubles"]').val();
+        var skill = tab === 'singles' ? $form.find('select[name="skill_singles"]').val() : $form.find('select[name="skill_doubles"]').val();
+        var $groupSelect = $form.find('.tournament-group-select');
+        var groupCardId = $form.find('.tournament-group-id').val() || ($groupSelect.length ? $groupSelect.val() : '');
+        var email = $form.find('input[name="email"]').val() || $form.find('#singles_email').val() || $form.find('#doubles_email').val();
+
+        if (!leagueId) {
+          var msgLeague = 'Please select a tournament.';
+          setCardError(msgLeague);
+          showToast(msgLeague, 'error');
+          $form.find('select[name="' + (tab === 'singles' ? 'tournament_singles' : 'tournament_doubles') + '"]').addClass('border-red-500');
+          $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
+          if ($loader.length) $loader.addClass('hidden');
+          return;
+        }
+        if (!groupCardId) {
+          var msgGroup = tab === 'singles' || tab === 'doubles'
+            ? 'Your group could not be assigned. Check tournament and skill level(s).'
+            : 'Please select a group for this tournament.';
+          renderResponse($responseBox, 'error', msgGroup);
+          showToast(msgGroup, 'error');
+          if (tab === 'singles' || tab === 'doubles') {
+            $form.find('.tournament-group-preview').addClass('border-red-500');
+          } else if ($groupSelect.length) {
+            $groupSelect.addClass('border-red-500');
+          }
+          $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
+          if ($loader.length) $loader.addClass('hidden');
+          return;
+        }
+        if (isGroupCardClosed(leagueId, groupCardId)) {
+          var msgClosed = 'This group has started. Registration is closed for the selected group.';
+          renderResponse($responseBox, 'error', msgClosed);
+          showToast(msgClosed, 'error');
+          $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
+          if ($loader.length) $loader.addClass('hidden');
+          return;
+        }
+
+        var formDataArray = $form.serializeArray();
+
+        $.ajax({
+          type: 'POST',
+          url: registerUrl,
+          data: formDataArray,
+          dataType: 'html',
+          headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf,
+            'Accept': 'application/json'
+          },
+        })
+        .then(function (response) {
+          var redirectUrl = null;
+          var message = '';
+
+          if (typeof response === 'string') {
+            var text = response.trim();
+            if (text.charAt(0) === '{') {
+              try {
+                response = JSON.parse(text);
+              } catch (e) {}
+            }
+          }
+
+          if (typeof response === 'object' && response !== null) {
+            redirectUrl = response.redirect_url;
+            message = response.message;
+          } else {
+            var $html = $(response);
+            redirectUrl = $html.filter('[data-redirect-url]').attr('data-redirect-url') || $html.find('[data-redirect-url]').attr('data-redirect-url');
+            message = $html.text().trim();
+          }
+
+          if (redirectUrl) {
+            pendingSuccessRedirect = true;
+            showToast(message || 'Registration successful! Redirecting...', 'success');
+            $form[0].reset();
+            window.setTimeout(function () {
+              window.location.href = redirectUrl;
+            }, successRedirectDelayMs);
+            return;
+          }
+          $responseBox.html(response);
+          showToast(message || 'Registration successful!', 'success');
+          $form[0].reset();
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+          var msg = 'Something went wrong.';
+          if (jqXHR && jqXHR.status === 422) {
+            var errors = null;
+            try {
+              errors = JSON.parse(jqXHR.responseText).errors;
+            } catch (err) {}
+            if (errors) {
+              applyFieldErrors($form, errors);
+              var firstErrMsg = '';
+              Object.keys(errors).forEach(function (name) {
+                var firstErr = errors[name][0];
+                if (!firstErrMsg) firstErrMsg = firstErr;
+              });
+              showToast(firstErrMsg || 'Please fix the errors in the form.', 'error');
+              return;
+            }
+          }
+          if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.message) {
+            msg = jqXHR.responseJSON.message;
+          } else if (jqXHR && jqXHR.message) {
+            msg = jqXHR.message;
+          } else if (errorThrown && errorThrown.message) {
+            msg = errorThrown.message;
+          }
+          showToast(msg, 'error');
+        })
+        .always(function () {
+          if (!pendingSuccessRedirect) {
+            $btn.prop('disabled', false).removeClass('opacity-75 cursor-not-allowed').html(originalBtnText);
+          }
+          if ($loader.length) $loader.addClass('hidden');
+        });
+
+        return;
+      }
+
       if (!stripe || !elements) {
         setCardError('Payment is unavailable. Please refresh the page.');
         return;
@@ -579,9 +737,7 @@
       if (tab === 'singles') {
         computed = ($.trim($form.find('[name="singles_first"]').val()) + ' ' + $.trim($form.find('[name="singles_last"]').val())).trim();
       } else {
-        var a = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
-        var b = ($.trim($form.find('[name="d2_first"]').val()) + ' ' + $.trim($form.find('[name="d2_last"]').val())).trim();
-        computed = (a + ' & ' + b).trim();
+        computed = ($.trim($form.find('[name="d1_first"]').val()) + ' ' + $.trim($form.find('[name="d1_last"]').val())).trim();
       }
       $form.find('.computed_name').val(computed);
 
@@ -967,6 +1123,10 @@
       loadSinglesAssignedGroup();
     });
     $('#singles-register-form select[name="skill_singles"]').on('change', function () {
+      loadSinglesAssignedGroup();
+    });
+    $('#singles-register-form select[name="category"]').on('change', function () {
+      syncRegisterEntryFee($('#singles-register-form'));
       loadSinglesAssignedGroup();
     });
     $('#doubles-register-form select[name="tournament_doubles"]').on('change', function () {

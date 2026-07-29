@@ -24,6 +24,23 @@ class BookingController extends Controller
             abort(404);
         }
 
+        $activeRole = session('active_dashboard_role');
+        if (!$activeRole) {
+            if (Auth::user()->hasRole('Student')) {
+                $activeRole = 'student';
+            } else {
+                $activeRole = strtolower(Auth::user()->role->value);
+            }
+        }
+
+        if ($activeRole !== 'student') {
+            return redirect()->back()->with('error', 'Please switch to your Student account to book a mentor or coach.');
+        }
+
+        if (Auth::id() === $user->id) {
+            return redirect()->back()->with('error', 'You cannot book a session with yourself.');
+        }
+
         $roleName        = $user->hasRole('Mentor') ? 'mentor' : 'coach';
         $commissionRate  = $roleName === 'mentor'
             ? SiteSetting::mentorCommissionPercent()
@@ -52,6 +69,23 @@ class BookingController extends Controller
         $provider = User::findOrFail($validated['provider_id']);
         if (! $provider->hasAnyRole(['Mentor', 'Coach'])) {
             return response()->json(['message' => 'Invalid provider.'], 422);
+        }
+
+        $activeRole = session('active_dashboard_role');
+        if (!$activeRole) {
+            if (Auth::user()->hasRole('Student')) {
+                $activeRole = 'student';
+            } else {
+                $activeRole = strtolower(Auth::user()->role->value);
+            }
+        }
+
+        if ($activeRole !== 'student') {
+            return response()->json(['message' => 'Please switch to your Student account to book a mentor or coach.'], 403);
+        }
+
+        if (Auth::id() === $provider->id) {
+            return response()->json(['message' => 'You cannot book a session with yourself.'], 403);
         }
 
         $roleName       = $provider->hasRole('Mentor') ? 'mentor' : 'coach';
@@ -130,9 +164,9 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'provider_id'          => ['required', 'integer', 'exists:users,id'],
-            'message'              => ['nullable', 'string', 'max:2000'],
-            'student_location'     => ['nullable', 'string', 'max:255'],
-            'student_phone'        => ['nullable', 'string', 'max:30'],
+            'message'              => ['required', 'string', 'max:2000'],
+            'student_location'     => ['required', 'string', 'max:255'],
+            'student_phone'        => ['required', 'string', 'max:30'],
             'from_date'            => ['required', 'date', 'after_or_equal:today'],
             'to_date'              => ['required', 'date', 'gte:from_date'],
             'booking_time'         => ['required', 'date_format:H:i'],
@@ -143,6 +177,23 @@ class BookingController extends Controller
         $provider = User::findOrFail($validated['provider_id']);
         if (! $provider->hasAnyRole(['Mentor', 'Coach'])) {
             abort(422, 'Invalid provider.');
+        }
+
+        $activeRole = session('active_dashboard_role');
+        if (!$activeRole) {
+            if (Auth::user()->hasRole('Student')) {
+                $activeRole = 'student';
+            } else {
+                $activeRole = strtolower(Auth::user()->role->value);
+            }
+        }
+
+        if ($activeRole !== 'student') {
+            return redirect()->back()->with('error', 'Please switch to your Student account to book a mentor or coach.')->withInput();
+        }
+
+        if (Auth::id() === $provider->id) {
+            return redirect()->back()->with('error', 'You cannot book a session with yourself.')->withInput();
         }
 
         $roleName       = $provider->hasRole('Mentor') ? 'mentor' : 'coach';
@@ -197,9 +248,36 @@ class BookingController extends Controller
             'commission_rate'  => $commissionRate,
             'commission_amount'=> $totals['commission_amount'],
             'provider_amount'  => $totals['provider_amount'],
-            'status'           => Booking::STATUS_PENDING,
             'stripe_charge_id' => $validated['stripe_charge_id'] ?? null,
         ]);
+
+        if ($booking->total_amount > 0 && $booking->stripe_charge_id) {
+            try {
+                \App\Models\PaymentHistory::create([
+                    'user_id' => $booking->student_id,
+                    'league_id' => null,
+                    'amount' => $booking->total_amount,
+                    'currency' => strtoupper(SiteSetting::stripeCurrency() ?: 'USD'),
+                    'status' => 'completed',
+                    'transaction_id' => (string) $booking->stripe_charge_id,
+                    'description' => "Booking Session with " . $provider->name,
+                    'meta' => [
+                        'booking_id' => $booking->id,
+                        'provider_id' => $provider->id,
+                        'provider_name' => $provider->name,
+                        'provider_type' => $roleName,
+                        'total_hours' => $booking->total_hours,
+                        'hourly_rate' => $booking->hourly_rate,
+                        'provider_share_rate' => $booking->commission_rate . '%',
+                        'platform_commission_rate' => (100 - $booking->commission_rate) . '%',
+                        'commission_amount' => $booking->commission_amount,
+                        'provider_amount' => $booking->provider_amount,
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                // Ignore or log error so that booking creation itself is not blocked
+            }
+        }
 
         // Send email notifications
         try {
@@ -260,6 +338,18 @@ class BookingController extends Controller
     {
         abort_unless($booking->student_id === Auth::id(), 403);
 
+        $freshStatus = Booking::whereKey($booking->id)->value('status');
+        if ($freshStatus !== Booking::STATUS_PENDING) {
+            $statusLabel = match($freshStatus) {
+                Booking::STATUS_ACCEPTED  => 'accepted',
+                Booking::STATUS_REJECTED  => 'rejected',
+                Booking::STATUS_CANCELLED => 'cancelled',
+                Booking::STATUS_COMPLETED => 'completed',
+                default                   => $freshStatus,
+            };
+            return back()->with('error', "This booking request has already been {$statusLabel}. Please refresh the page.");
+        }
+
         $refundId = null;
 
         // Issue Stripe refund if charge exists
@@ -286,6 +376,15 @@ class BookingController extends Controller
             'status' => Booking::STATUS_CANCELLED,
             'stripe_refund_id' => $refundId,
         ]);
+
+        if ($booking->stripe_charge_id) {
+            try {
+                $paymentHistory = \App\Models\PaymentHistory::where('transaction_id', $booking->stripe_charge_id)->first();
+                if ($paymentHistory) {
+                    $paymentHistory->update(['status' => 'refunded']);
+                }
+            } catch (\Throwable $e) {}
+        }
 
         // Notify provider, student and admin
         try {

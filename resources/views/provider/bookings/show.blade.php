@@ -72,6 +72,10 @@
                     </div>
                     <div class="flex items-start gap-3">
                         <i class="fa-solid fa-clock text-[#5DA44E] mt-0.5 w-4"></i>
+                        <div><p class="text-xs text-gray-400">Hours / Day</p><p class="font-semibold text-gray-800">{{ $booking->hours_per_day }} Hours</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-clock text-[#5DA44E] mt-0.5 w-4"></i>
                         <div><p class="text-xs text-gray-400">Duration</p><p class="font-semibold text-gray-800">{{ $booking->total_days }} days × {{ $booking->hours_per_day }} hrs/day = {{ $booking->total_hours }} hrs</p></div>
                     </div>
                     @if($booking->booking_time)

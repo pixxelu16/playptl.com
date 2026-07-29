@@ -94,13 +94,58 @@
                             </div>
                             <h2 class="mt-4 text-[18px] font-bold leading-tight text-[#333333]">{{ $myProfile['name'] }}</h2>
                             <p class="mt-1 text-[14px] font-medium text-[#666666]">{{ $myProfile['roleLine'] }}</p>
+                            @php
+                                $userRoles = auth()->user()->roles->pluck('name')->toArray();
+                                if (!in_array(auth()->user()->role->name, $userRoles)) {
+                                    $userRoles[] = auth()->user()->role->name;
+                                }
+                                $userRoles = array_unique(array_map('ucfirst', $userRoles));
+                            @endphp
+                            @if (count($userRoles) > 1)
+                                <div class="mt-4 border-t border-[#D7EAD9] pt-4 text-left">
+                                    <p class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2.5 text-center">Switch Account</p>
+                                    <div class="flex flex-col gap-2">
+                                        @foreach ($userRoles as $rName)
+                                            @php
+                                                $isActiveRole = strtolower($rName) === 'player';
+                                                $iconClass = match (strtolower($rName)) {
+                                                    'player' => 'fa-trophy',
+                                                    'student' => 'fa-graduation-cap',
+                                                    'mentor' => 'fa-chalkboard-user',
+                                                    'coach' => 'fa-users-gear',
+                                                    'admin', 'super admin' => 'fa-user-shield',
+                                                    default => 'fa-user',
+                                                };
+                                            @endphp
+                                            @if ($isActiveRole)
+                                                <div class="flex items-center justify-between rounded-lg border border-transparent bg-[#66A157] px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm">
+                                                    <span class="flex items-center gap-2.5">
+                                                        <i class="fa-solid {{ $iconClass }} text-white/95"></i>
+                                                        {{ $rName }} Dashboard
+                                                    </span>
+                                                    <span class="inline-flex h-2 w-2 rounded-full bg-[#B4F000] animate-pulse"></span>
+                                                </div>
+                                            @else
+                                                <a href="{{ route(strtolower($rName) . '.dashboard') }}" 
+                                                   class="group flex items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-4 py-2.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-all duration-200 hover:border-[#66A157] hover:bg-[#F4FAF3] hover:text-[#2d4a2d] hover:shadow-md">
+                                                    <span class="flex items-center gap-2.5">
+                                                        <i class="fa-solid {{ $iconClass }} text-[#66A157] transition-transform duration-200 group-hover:scale-110"></i>
+                                                        {{ $rName }} Dashboard
+                                                    </span>
+                                                    <i class="fa-solid fa-chevron-right text-[10px] text-[#9E9E9E] transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#66A157]"></i>
+                                                </a>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                         @include('player.profile._sidebar')
                     </div>
                 </aside>
 
                 <div class="min-w-0 w-full space-y-6 lg:w-[810px] lg:min-w-[810px] lg:max-w-[810px] lg:shrink-0">
-                    @if (session('status') && ! in_array($activeSection ?? '', ['upload', 'location'], true))
+                    @if (session('status') && ! in_array($activeSection ?? '', ['upload', 'location', 'password'], true))
                         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14px] font-semibold text-emerald-700">
                             {{ session('status') }}
                         </div>

@@ -81,6 +81,19 @@
                 </thead>
                 <tbody>
                     @forelse($requests as $user)
+                        @php
+                            $isMentorApp = $user->role === \App\Enums\UserRole::Mentor || !is_null($user->mentor_status);
+                            $roleLabel = $isMentorApp ? 'Mentor' : 'Coach';
+                            $bg = $isMentorApp ? '#E0F2FE' : '#F3E8FF';
+                            $fg = $isMentorApp ? '#0369A1' : '#6B21A8';
+
+                            $status = $user->status;
+                            if ($isMentorApp && !is_null($user->mentor_status)) {
+                                $status = $user->mentor_status;
+                            } elseif (!$isMentorApp && !is_null($user->coach_status)) {
+                                $status = $user->coach_status;
+                            }
+                        @endphp
                         <tr style="border-bottom:1px solid #E2E8F0;">
                             <td style="padding:12px;">
                                 <div style="display:flex; align-items:center; gap:10px;">
@@ -98,8 +111,8 @@
                                 </div>
                             </td>
                             <td style="padding:12px;">
-                                <span style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px; background:{{ $user->hasRole('Mentor') ? '#E0F2FE' : '#F3E8FF' }}; color:{{ $user->hasRole('Mentor') ? '#0369A1' : '#6B21A8' }};">
-                                    {{ $user->hasRole('Mentor') ? 'Mentor' : 'Coach' }}
+                                <span style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px; background:{{ $bg }}; color:{{ $fg }};">
+                                    {{ $roleLabel }}
                                 </span>
                             </td>
                             <td style="padding:12px;">
@@ -115,19 +128,19 @@
                                 {{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}
                             </td>
                             <td style="padding:12px;">
-                                @if($user->status === 'pending')
+                                @if($status === 'pending')
                                     <span style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px; background:#FEF3C7; color:#92400E;">Pending Approval</span>
-                                @elseif($user->status === 'active')
+                                @elseif($status === 'active')
                                     <span style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px; background:#DCFCE7; color:#166534;">Approved</span>
-                                @elseif($user->status === 'rejected')
+                                @elseif($status === 'rejected')
                                     <span style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px; background:#FEE2E2; color:#991B1B;">Rejected</span>
                                 @else
-                                    <span style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px; background:#F1F5F9; color:#475569;">{{ ucfirst($user->status) }}</span>
+                                    <span style="font-size:12px; font-weight:600; padding:4px 10px; border-radius:12px; background:#F1F5F9; color:#475569;">{{ ucfirst($status) }}</span>
                                 @endif
                             </td>
                             <td style="padding:12px; text-align:right;">
                                 <div style="display:inline-flex; gap:6px;">
-                                    @if($user->status !== 'active')
+                                    @if($status !== 'active')
                                         <form id="approve-form-{{ $user->id }}" method="POST" action="{{ route('admin.provider-requests.approve', $user) }}" style="display:inline;">
                                             @csrf
                                             @method('PATCH')
@@ -135,14 +148,14 @@
                                                 data-form-id="approve-form-{{ $user->id }}"
                                                 data-type="approve"
                                                 data-name="{{ $user->name }}"
-                                                data-role="{{ $user->hasRole('Mentor') ? 'Mentor' : 'Coach' }}"
+                                                data-role="{{ $roleLabel }}"
                                                 style="background:#5DA44E; color:#fff; padding:6px 12px; font-size:12px; border:none; border-radius:6px; cursor:pointer;">
                                                 <i class="fa-solid fa-check"></i> Approve
                                             </button>
                                         </form>
                                     @endif
 
-                                    @if($user->status !== 'rejected')
+                                    @if($status !== 'rejected')
                                         <form id="reject-form-{{ $user->id }}" method="POST" action="{{ route('admin.provider-requests.reject', $user) }}" style="display:inline;">
                                             @csrf
                                             @method('PATCH')
@@ -150,7 +163,7 @@
                                                 data-form-id="reject-form-{{ $user->id }}"
                                                 data-type="reject"
                                                 data-name="{{ $user->name }}"
-                                                data-role="{{ $user->hasRole('Mentor') ? 'Mentor' : 'Coach' }}"
+                                                data-role="{{ $roleLabel }}"
                                                 style="background:#DC2626; color:#fff; padding:6px 12px; font-size:12px; border:none; border-radius:6px; cursor:pointer;">
                                                 <i class="fa-solid fa-xmark"></i> Reject
                                             </button>

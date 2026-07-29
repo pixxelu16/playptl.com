@@ -86,7 +86,7 @@
                         <input type="hidden" name="stripe_charge_id" id="stripeChargeId">
 
                         {{-- Message --}}
-                        <div>
+                        <div class="mb-4">
                             <label class="block text-sm font-semibold text-gray-700 mb-2" for="message">
                                 Message to {{ ucfirst($roleName) }}
                             </label>
@@ -123,7 +123,7 @@
                                 <input id="from_date" name="from_date" type="date"
                                     value="{{ old('from_date') }}"
                                     min="{{ date('Y-m-d') }}"
-                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition" required>
+                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition">
                                 @error('from_date')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                             <div>
@@ -131,14 +131,30 @@
                                 <input id="to_date" name="to_date" type="date"
                                     value="{{ old('to_date') }}"
                                     min="{{ date('Y-m-d') }}"
-                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition" required>
+                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition">
                                 @error('to_date')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2" for="booking_time">Preferred Time</label>
-                                <input id="booking_time" name="booking_time" type="time"
-                                    value="{{ old('booking_time', '10:00') }}"
-                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition" required>
+                                <select id="booking_time" name="booking_time"
+                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition">
+                                    @php
+                                        $startTime = \Carbon\Carbon::parse('05:00');
+                                        $endTime = \Carbon\Carbon::parse('22:00');
+                                    @endphp
+                                    @while($startTime->lte($endTime))
+                                        @php
+                                            $timeVal = $startTime->format('H:i');
+                                            $timeLabel = $startTime->format('h:i A');
+                                        @endphp
+                                        <option value="{{ $timeVal }}" @selected(old('booking_time', '10:00') === $timeVal)>
+                                            {{ $timeLabel }}
+                                        </option>
+                                        @php
+                                            $startTime->addMinutes(30);
+                                        @endphp
+                                    @endwhile
+                                </select>
                                 @error('booking_time')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                             <div>
@@ -146,7 +162,7 @@
                                 <input id="hours_per_day" name="hours_per_day" type="number"
                                     value="{{ old('hours_per_day', 1) }}"
                                     min="0.5" max="24" step="0.5"
-                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition" required>
+                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/20 transition">
                                 @error('hours_per_day')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                             </div>
                         </div>
@@ -193,10 +209,6 @@
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">Card Details</label>
                                 <div id="card-element"
                                      class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 min-h-[46px]"></div>
-                                <div id="card-errors" class="mt-4 hidden items-start gap-3 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-                                    <i class="fa-solid fa-circle-exclamation mt-0.5 flex-shrink-0 text-red-500"></i>
-                                    <span id="card-errors-text"></span>
-                                </div>
                             </div>
                         @else
                             <div class="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-[#065f46]">
@@ -205,9 +217,15 @@
                             </div>
                         @endif
 
+                        {{-- Validation Errors Container --}}
+                        <div id="card-errors" class="mt-4 hidden items-start gap-3 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+                            <i class="fa-solid fa-circle-exclamation mt-0.5 flex-shrink-0 text-red-500"></i>
+                            <span id="card-errors-text"></span>
+                        </div>
+
                         {{-- Submit --}}
                         <button id="submitBtn" type="submit"
-                                class="flex w-full items-center justify-center gap-3 rounded-xl bg-[#5DA44E] hover:bg-[#4d8f40] px-6 py-4 text-base font-bold text-white shadow-md transition duration-300 disabled:opacity-60 disabled:cursor-not-allowed">
+                                class="mt-4 flex w-full items-center justify-center gap-3 rounded-xl bg-[#5DA44E] hover:bg-[#4d8f40] px-6 py-4 text-base font-bold text-white shadow-md transition duration-300 disabled:opacity-60 disabled:cursor-not-allowed">
                             <i class="fa-solid fa-calendar-check"></i>
                             <span id="submitBtnText">Submit Booking Request</span>
                         </button>
@@ -322,9 +340,50 @@ const submitTxt = document.getElementById('submitBtnText');
 
 form.addEventListener('submit', async function(e) {
     e.preventDefault();
-    submitBtn.disabled = true;
-    submitTxt.textContent = 'Processing...';
     showError(''); // Clear previous errors
+
+    // Custom Client-Side JS validation
+    const message = document.getElementById('message').value.trim();
+    const location = document.getElementById('student_location').value.trim();
+    const phone = document.getElementById('student_phone').value.trim();
+    const fromVal = fromInput.value.trim();
+    const toVal = toInput.value.trim();
+    const timeVal = document.getElementById('booking_time').value.trim();
+    const hrsVal = hrsInput.value.trim();
+
+    if (!message) {
+        showError('Message to {{ $roleName }} is required.');
+        return;
+    }
+    if (!location) {
+        showError('Your Location is required.');
+        return;
+    }
+    if (!phone) {
+        showError('Your Phone Number is required.');
+        return;
+    }
+    if (!fromVal) {
+        showError('From Date is required.');
+        return;
+    }
+    if (!toVal) {
+        showError('To Date is required.');
+        return;
+    }
+    if (!timeVal) {
+        showError('Preferred Time is required.');
+        return;
+    }
+    if (!hrsVal || parseFloat(hrsVal) <= 0) {
+        showError('Hours / Day must be at least 0.5.');
+        return;
+    }
+
+    submitBtn.disabled = true;
+
+    @if($user->profile_rate > 0)
+    submitTxt.textContent = 'Processing...';
 
     // Fetch PaymentIntent
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -363,6 +422,10 @@ form.addEventListener('submit', async function(e) {
     // Set charge ID and submit form
     document.getElementById('stripeChargeId').value = paymentIntent.id;
     form.submit();
+    @else
+    submitTxt.textContent = 'Submitting...';
+    form.submit();
+    @endif
 });
 @endif
 </script>

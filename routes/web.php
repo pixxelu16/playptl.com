@@ -107,16 +107,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard', [
-                'leaguesCount' => League::query()->count(),
-                'announcementsCount' => Announcement::query()->count(),
-                'groupsCount' => Group::query()->count(),
-                'groupCardsCount' => GroupCard::query()->count(),
-                'playersCount' => User::query()->where('role', UserRole::Player)->count(),
-                'paymentsCount' => PaymentHistory::query()->count(),
-            ]);
-        })->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('leagues', AdminLeagueController::class);
         Route::get('league-management', [AdminLeagueManagementController::class, 'index'])->name('league-management.index');
@@ -170,14 +161,15 @@ Route::middleware('auth')->group(function () {
         Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
         Route::resource('charity-causes', AdminCharityCauseController::class);
         Route::resource('skills', AdminSkillController::class);
+        Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
         Route::get('provider-requests', [\App\Http\Controllers\AdminProviderRequestController::class, 'index'])->name('provider-requests.index');
         Route::patch('provider-requests/{user}/approve', [\App\Http\Controllers\AdminProviderRequestController::class, 'approve'])->name('provider-requests.approve');
         Route::patch('provider-requests/{user}/reject', [\App\Http\Controllers\AdminProviderRequestController::class, 'reject'])->name('provider-requests.reject');
         Route::resource('users', \App\Http\Controllers\AdminUserController::class);
-        Route::post('users/{user}/unblock', [\App\Http\Controllers\AdminUserController::class, 'unblock'])->name('admin.users.unblock');
+        Route::post('users/{user}/unblock', [\App\Http\Controllers\AdminUserController::class, 'unblock'])->name('users.unblock');
         // Secure signed route to unlock account directly from email
         Route::get('users/{user}/unlock-signed', [\App\Http\Controllers\AdminUserController::class, 'unlockSigned'])
-            ->name('admin.users.unlock-signed')
+            ->name('users.unlock-signed')
             ->middleware('signed');
 
         // Gallery management
@@ -248,19 +240,11 @@ Route::middleware('auth')->group(function () {
         })->name('password.edit');
 
         Route::put('/change-password', function (Request $request) {
-            if ($request->has('password')) {
-                $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
-            }
-            if ($request->has('password_confirmation')) {
-                $request->merge(['password_confirmation' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'))]);
-            }
-            if ($request->has('current_password')) {
-                $request->merge(['current_password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('current_password'))]);
-            }
+
 
             $validated = $request->validate([
                 'current_password' => ['required', 'current_password'],
-                'password' => ['required', 'confirmed', Password::defaults()],
+                'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(8)->letters()->numbers()->symbols()],
             ]);
 
             $request->user()->update([
@@ -290,6 +274,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/my-profile/upload/{upload}', [PlayerProfileController::class, 'destroyMatchUpload'])->name('profile.upload.destroy');
         Route::delete('/my-profile/playoff-upload/{upload}', [PlayerProfileController::class, 'destroyPlayoffMatchUpload'])->name('profile.playoff-upload.destroy');
         Route::get('/my-profile', [PlayerProfileController::class, 'show'])->name('my-profile');
+        Route::post('/my-profile/become-student', [PlayerProfileController::class, 'becomeStudent'])->name('become-student');
+        Route::post('/my-profile/become-mentor', [PlayerProfileController::class, 'becomeMentor'])->name('become-mentor');
+        Route::post('/my-profile/team-name', [PlayerProfileController::class, 'updateTeamName'])->name('profile.team-name.update');
         Route::get('/my-profile/choose-league', [PlayerProfileController::class, 'showChooseLeague'])->name('profile.league');
         Route::get('/my-profile/choose-league/partner-lookup', [PlayerProfileController::class, 'lookupLeaguePartner'])->name('profile.league.partner-lookup');
         Route::get('/my-profile/choose-league/tournament-groups', \App\Http\Controllers\Auth\TournamentRegistrationGroupsController::class)->name('profile.league.tournament-groups');
@@ -300,19 +287,11 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('player.profile.password');
         })->name('password.edit');
         Route::put('/change-password', function (Request $request) {
-            if ($request->has('password')) {
-                $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
-            }
-            if ($request->has('password_confirmation')) {
-                $request->merge(['password_confirmation' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'))]);
-            }
-            if ($request->has('current_password')) {
-                $request->merge(['current_password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('current_password'))]);
-            }
+
 
             $validated = $request->validate([
                 'current_password' => ['required', 'current_password'],
-                'password' => ['required', 'confirmed', Password::defaults()],
+                'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(8)->letters()->numbers()->symbols()],
             ]);
 
             $request->user()->update([
@@ -328,6 +307,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\MentorController::class, 'profile'])->name('profile');
         Route::put('/profile', [\App\Http\Controllers\MentorController::class, 'updateProfile'])->name('profile.update');
         Route::put('/change-password', [\App\Http\Controllers\MentorController::class, 'updatePassword'])->name('password.update');
+        Route::get('/transactions', [\App\Http\Controllers\ProviderTransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions/{booking}', [\App\Http\Controllers\ProviderTransactionController::class, 'show'])->name('transactions.show');
     });
 
     Route::middleware('role:coach')->prefix('coach')->name('coach.')->group(function () {
@@ -335,6 +316,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\CoachController::class, 'profile'])->name('profile');
         Route::put('/profile', [\App\Http\Controllers\CoachController::class, 'updateProfile'])->name('profile.update');
         Route::put('/change-password', [\App\Http\Controllers\CoachController::class, 'updatePassword'])->name('password.update');
+        Route::get('/transactions', [\App\Http\Controllers\ProviderTransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions/{booking}', [\App\Http\Controllers\ProviderTransactionController::class, 'show'])->name('transactions.show');
     });
 
     Route::middleware('role:student')->prefix('student')->name('student.')->group(function () {

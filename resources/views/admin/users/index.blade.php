@@ -135,10 +135,10 @@
                             <td style="text-align: right;">
                                 <div class="admin-table-actions" style="justify-content: flex-end;">
                                     @if($user->is_locked)
-                                        <form method="POST" action="{{ route('admin.users.unblock', $user) }}" style="margin:0;display:inline;" title="Unblock Account">
+                                        <form method="POST" action="{{ route('admin.users.unblock', $user) }}" style="margin:0;display:inline;">
                                             @csrf
-                                            <button type="submit" style="background:#16a34a;color:#fff;border:none;padding:5px 10px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;" title="Unblock this account">
-                                                🔓 Unblock
+                                            <button type="submit" title="Unblock Account" style="color: #16a34a;">
+                                                <i class="fa-solid fa-lock-open" aria-hidden="true"></i>
                                             </button>
                                         </form>
                                     @endif

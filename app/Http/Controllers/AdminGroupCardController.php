@@ -6,6 +6,7 @@ use App\Enums\GroupPlayoffFormat;
 use App\Models\GroupCard;
 use App\Models\Group;
 use App\Models\Skill;
+use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,6 +19,7 @@ class AdminGroupCardController extends Controller
     {
         return view('admin.group-cards.index', [
             'groupCards' => GroupCard::query()
+                ->with('category')
                 ->orderBy('display_order')
                 ->latest('id')
                 ->paginate(10),
@@ -35,6 +37,7 @@ class AdminGroupCardController extends Controller
             'playoffFormatOptions' => GroupPlayoffFormat::options(),
             'groups' => Group::query()->orderBy('name')->get(),
             'skills' => Skill::allSkills(),
+            'categories' => Category::query()->orderBy('menu_order')->get(),
         ]);
     }
 
@@ -54,17 +57,18 @@ class AdminGroupCardController extends Controller
     public function show(GroupCard $groupCard): View
     {
         return view('admin.group-cards.show', [
-            'groupCard' => $groupCard->load('groups'),
+            'groupCard' => $groupCard->load(['groups', 'category']),
         ]);
     }
 
     public function edit(GroupCard $groupCard): View
     {
         return view('admin.group-cards.edit', [
-            'groupCard' => $groupCard->load('groups'),
+            'groupCard' => $groupCard->load(['groups', 'category']),
             'groups' => Group::query()->orderBy('name')->get(),
             'playoffFormatOptions' => GroupPlayoffFormat::options(),
             'skills' => Skill::allSkills(),
+            'categories' => Category::query()->orderBy('menu_order')->get(),
         ]);
     }
 
@@ -95,7 +99,7 @@ class AdminGroupCardController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'tag' => ['required', Rule::in(['single', 'doubles', 'mixed', 'youth'])],
+            'tag' => ['required', 'integer', 'exists:categories,id'],
             'players_count' => ['required', 'integer', 'min:0'],
             'groups_count' => ['nullable', 'integer', 'min:0'],
             'display_order' => ['nullable', 'integer', 'min:0'],
@@ -109,6 +113,17 @@ class AdminGroupCardController extends Controller
             'group_ids' => ['nullable', 'array'],
             'group_ids.*' => ['integer', 'exists:groups,id'],
         ]);
+
+        $category = Category::findOrFail((int) $validated['tag']);
+        $validated['category_id'] = $category->id;
+
+        $tagStr = strtolower($category->name);
+        if (in_array($tagStr, ['single', 'singles'], true)) {
+            $tagStr = 'single';
+        } elseif (in_array($tagStr, ['double', 'doubles'], true)) {
+            $tagStr = 'doubles';
+        }
+        $validated['tag'] = $tagStr;
 
         if (isset($validated['skill_level_match']) && is_array($validated['skill_level_match'])) {
             $validated['skill_level_match'] = implode(',', array_filter(array_map('trim', $validated['skill_level_match'])));

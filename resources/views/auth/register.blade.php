@@ -53,18 +53,12 @@
                         {{-- Role Selector --}}
                         <div class="mt-4">
                             <label class="mb-2 block text-[12px] font-bold text-[#222] uppercase tracking-wider">Register as <span class="text-red-600">*</span></label>
-                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4" id="role-radio-group">
+                            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3" id="role-radio-group">
                                 <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border-2 border-[#5DA44E] bg-[#E4F7E7] p-3 text-center transition-all hover:shadow-sm" data-role="player">
                                     <input type="radio" name="registration_role" value="player" checked class="sr-only">
                                     <i class="fa-solid fa-trophy text-[20px] text-[#5DA44E] mb-1"></i>
                                     <span class="text-[13px] font-bold text-[#222]">Player</span>
                                     <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Tournament</span>
-                                </label>
-                                <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border border-[#dddddd] bg-white p-3 text-center transition-all hover:border-[#5DA44E]/50 hover:shadow-sm" data-role="mentor">
-                                    <input type="radio" name="registration_role" value="mentor" class="sr-only">
-                                    <i class="fa-solid fa-handshake-angle text-[20px] text-[#666] mb-1 transition-colors"></i>
-                                    <span class="text-[13px] font-bold text-[#222]">Mentor</span>
-                                    <span class="text-[10px] text-[#666] mt-0.5 leading-tight">Support</span>
                                 </label>
                                 <label class="role-radio-card flex cursor-pointer flex-col items-center justify-center rounded-[8px] border border-[#dddddd] bg-white p-3 text-center transition-all hover:border-[#5DA44E]/50 hover:shadow-sm" data-role="coach">
                                     <input type="radio" name="registration_role" value="coach" class="sr-only">
@@ -109,14 +103,20 @@
                             class="register-form mt-6 flex flex-col {{ $isDoubles ? 'hidden' : '' }}"
                             method="POST"
                             action="{{ route('register') }}"
+                            autocomplete="off"
                             novalidate
                             data-registration-tab="singles"
                             data-stripe-key="{{ $stripePublishableKey ?? '' }}"
                             data-payment-intent-url="{{ route('register.payment-intent') }}"
                             data-register-url="{{ route('register') }}"
                             data-csrf="{{ csrf_token() }}"
-                            data-fee="{{ $feeSingles }}">
+                            data-fee="{{ $feeSingles }}"
+                            data-free-registration="{{ \App\Models\SiteSetting::getValue('enable_free_registration', '0') }}">
                             @csrf
+                            <!-- Fake inputs to prevent aggressive browser autofill -->
+                            <input type="text" style="display:none" aria-hidden="true" tabindex="-1">
+                            <input type="password" style="display:none" aria-hidden="true" tabindex="-1">
+
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="singles">
                             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
@@ -130,13 +130,13 @@
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">First Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="singles_first" name="singles_first" value="{{ old('singles_first') }}" placeholder="First name"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="given-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Last Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="singles_last" name="singles_last" value="{{ old('singles_last') }}" placeholder="Last name"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="family-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -144,13 +144,13 @@
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Email <span class="text-red-600">*</span></label>
                                             <input type="email" name="email" id="singles_email" value="{{ old('email') }}" placeholder="Email"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="email" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Phone Number <span class="text-red-600">*</span></label>
                                             <input type="tel" name="phone_singles" value="{{ old('phone_singles') }}" placeholder="Phone"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                                autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -173,13 +173,13 @@
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">City <span class="text-red-600">*</span></label>
                                             <input type="text" name="city_singles" value="{{ old('city_singles') }}" placeholder="City"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="address-level2" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">State <span class="text-red-600">*</span></label>
                                             <input type="text" name="state_singles" value="{{ old('state_singles') }}" placeholder="State"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
-                                                autocomplete="address-level1" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -218,17 +218,29 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Tournament <span class="text-red-600">*</span></label>
-                                            <select name="tournament_singles"
+                                            <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Category <span class="text-red-600">*</span></label>
+                                            <select name="category"
                                                 required
-                                                class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
-                                                <option value="">Select tournament</option>
-                                                @foreach ($registrationLeagues as $league)
-                                                    <option value="{{ $league->id }}" @selected(old('tournament_singles') == $league->id)>{{ $league->name }}</option>
+                                                class="reg-input category-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
+                                                <option value="">Select category</option>
+                                                @foreach($categoriesSingles ?? $categories ?? [] as $cat)
+                                                    <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
+                                    </div> 
+                                    <div class="mt-3">
+                                        <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Tournament <span class="text-red-600">*</span></label>
+                                        <select name="tournament_singles"
+                                            required
+                                            class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
+                                            <option value="">Select tournament</option>
+                                            @foreach ($registrationLeagues as $league)
+                                                <option value="{{ $league->id }}" @selected(old('tournament_singles') == $league->id)>{{ $league->name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
+
                                     <div class="tournament-group-wrap mt-3 hidden" data-tab="singles" data-assign-by-skill="1">
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Your group</label>
                                         <input type="text"
@@ -248,12 +260,14 @@
                             </div>
 
                             {{-- Singles payment --}}
+                            @if (\App\Models\SiteSetting::getValue('enable_free_registration', '0') !== '1')
                             <div class="register-payment-block rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-4">
                                 <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeSingles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
                                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                             </div>
+                            @endif
 
                             <button type="submit"
                                 class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5DA44E] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
@@ -268,14 +282,20 @@
                             class="register-form mt-6 flex flex-col {{ $isDoubles ? '' : 'hidden' }}"
                             method="POST"
                             action="{{ route('register') }}"
+                            autocomplete="off"
                             novalidate
                             data-registration-tab="doubles"
                             data-stripe-key="{{ $stripePublishableKey ?? '' }}"
                             data-payment-intent-url="{{ route('register.payment-intent') }}"
                             data-register-url="{{ route('register') }}"
                             data-csrf="{{ csrf_token() }}"
-                            data-fee="{{ $feeDoubles }}">
+                            data-fee="{{ $feeDoubles }}"
+                            data-free-registration="{{ \App\Models\SiteSetting::getValue('enable_free_registration', '0') }}">
                             @csrf
+                            <!-- Fake inputs to prevent aggressive browser autofill -->
+                            <input type="text" style="display:none" aria-hidden="true" tabindex="-1">
+                            <input type="password" style="display:none" aria-hidden="true" tabindex="-1">
+
                             <input type="hidden" name="name" class="computed_name" value="{{ old('name') }}">
                             <input type="hidden" name="registration_tab" value="doubles">
                             <input type="hidden" name="payment_intent_id" class="payment_intent_id" value="{{ old('payment_intent_id') }}">
@@ -288,13 +308,13 @@
                                             <label class="mb-1 block text-[12px] font-bold text-black">First Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="d1_first" name="d1_first" value="{{ old('d1_first') }}" placeholder="First name"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="given-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">Last Name <span class="text-red-600">*</span></label>
                                             <input type="text" id="d1_last" name="d1_last" value="{{ old('d1_last') }}" placeholder="Last name"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="family-name" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -302,13 +322,13 @@
                                             <label class="mb-1 block text-[12px] font-bold text-black">Email <span class="text-red-600">*</span></label>
                                             <input type="email" name="email" id="doubles_email" value="{{ old('email') }}" placeholder="Email"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="email" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">Phone Number <span class="text-red-600">*</span></label>
                                             <input type="tel" name="phone_doubles" value="{{ old('phone_doubles') }}" placeholder="Phone"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                                autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -331,13 +351,13 @@
                                             <label class="mb-1 block text-[12px] font-bold text-black">City <span class="text-red-600">*</span></label>
                                             <input type="text" name="city_doubles" value="{{ old('city_doubles') }}" placeholder="City"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="address-level2" required>
+                                                autocomplete="off" required>
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">State <span class="text-red-600">*</span></label>
                                             <input type="text" name="state_doubles" value="{{ old('state_doubles') }}" placeholder="State"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="address-level1" required>
+                                                autocomplete="off" required>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -384,13 +404,13 @@
                                                 <label class="mb-1 block text-[12px] font-bold text-black">First Name <span class="text-red-600">*</span></label>
                                                 <input type="text" id="d2_first" name="d2_first" value="{{ old('d2_first') }}" placeholder="First name"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="off" required>
+                                                    autocomplete="new-password" required>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Last Name <span class="text-red-600">*</span></label>
                                                 <input type="text" id="d2_last" name="d2_last" value="{{ old('d2_last') }}" placeholder="Last name"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="off" required>
+                                                    autocomplete="new-password" required>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -398,13 +418,13 @@
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Email <span class="text-red-600">*</span></label>
                                                 <input type="email" name="d2_email" id="d2_email" value="{{ old('d2_email') }}" placeholder="Email"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="email" required>
+                                                autocomplete="off" required>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Phone Number <span class="text-red-600">*</span></label>
                                                 <input type="tel" name="d2_phone" id="d2_phone" value="{{ old('d2_phone') }}" placeholder="Phone"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                                autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -412,13 +432,13 @@
                                                 <label class="mb-1 block text-[12px] font-bold text-black">City <span class="text-red-600">*</span></label>
                                                 <input type="text" name="d2_city" value="{{ old('d2_city') }}" placeholder="City"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="address-level2" required>
+                                                    autocomplete="off" required>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">State <span class="text-red-600">*</span></label>
                                                 <input type="text" name="d2_state" value="{{ old('d2_state') }}" placeholder="State"
                                                     class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="address-level1" required>
+                                                    autocomplete="off" required>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -458,7 +478,7 @@
 
                                     <div class="border-t border-[#e8e8e8] pt-4">
                                         <h2 class="text-center text-[14px] font-bold text-black underline decoration-[#5FA252] decoration-2 underline-offset-4">Other Details</h2>
-                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Tournament <span class="text-red-600">*</span></label>
                                                 <select name="tournament_doubles" required
@@ -469,6 +489,25 @@
                                                     @endforeach
                                                 </select>
                                             </div>
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Category <span class="text-red-600">*</span></label>
+                                                <select name="category"
+                                                 required
+                                                 class="reg-input category-select h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25">
+                                                 <option value="">Select category</option>
+                                                 @foreach($categoriesDoubles ?? $categories ?? [] as $cat)
+                                                     <option value="{{ $cat->id }}" data-name="{{ $cat->name }}" @selected(old('category') == $cat->id)>{{ $cat->name }}</option>
+                                                 @endforeach
+                                             </select>
+                                            </div>
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Team Name</label>
+                                                <input type="text" name="team_name" value="{{ old('team_name') }}" placeholder="Enter team name"
+                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    autocomplete="off">
+                                            </div>
+                                        </div>
+                                        <div class="mt-4">
                                             <div class="tournament-group-wrap hidden" data-tab="doubles" data-assign-by-skill="1">
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Your group</label>
                                                 <input type="text"
@@ -489,12 +528,14 @@
                                 </fieldset>
                             </div>
 
+                            @if (\App\Models\SiteSetting::getValue('enable_free_registration', '0') !== '1')
                             <div class="register-payment-block rounded-[10px] border border-[#eeeeee] bg-[#fafafa] px-4 py-4">
                                 <p class="text-[13px] font-semibold text-[#333]">Entry Fee: $<span class="entry-fee-amount font-bold">{{ $feeDoubles }}</span></p>
                                 <label class="mb-1 mt-2 block text-[12px] font-bold text-black">Payment card <span class="text-red-600">*</span></label>
                                 <div class="stripe-card-element mt-1 min-h-[46px] rounded-[10px] border border-[#d7e6d7] bg-white px-3 py-3 text-[14px] text-[#111] shadow-[inset_0_1px_0_rgba(0,0,0,0.02)]"></div>
                                 <p class="stripe-card-error mt-1 hidden text-[12px] font-semibold text-red-600"></p>
                             </div>
+                            @endif
 
                             <button type="submit"
                                 class="register-submit-btn disable-button h-12 w-full rounded-[8px] bg-[#5FA252] text-[15px] font-bold text-white transition-opacity hover:opacity-95">
@@ -507,8 +548,13 @@
                             class="register-form mt-6 flex flex-col hidden"
                             method="POST"
                             action="{{ route('register') }}"
+                            autocomplete="off"
                             novalidate>
                             @csrf
+                            <!-- Fake inputs to prevent aggressive browser autofill -->
+                            <input type="text" style="display:none" aria-hidden="true" tabindex="-1">
+                            <input type="password" style="display:none" aria-hidden="true" tabindex="-1">
+
                             <input type="hidden" name="role" value="mentor">
                             <div class="custom_register_form_res mb-4 text-sm"></div>
 
@@ -518,13 +564,13 @@
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">First Name <span class="text-red-600">*</span></label>
                                         <input type="text" name="first_name" value="{{ old('first_name') }}" placeholder="First name"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="given-name" required>
+                                            autocomplete="off" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Last Name <span class="text-red-600">*</span></label>
                                         <input type="text" name="last_name" value="{{ old('last_name') }}" placeholder="Last name"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="family-name" required>
+                                            autocomplete="off" required>
                                     </div>
                                 </div>
 
@@ -533,13 +579,13 @@
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Email <span class="text-red-600">*</span></label>
                                         <input type="email" name="email" value="{{ old('email') }}" placeholder="Email"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="email" required>
+                                            autocomplete="off" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Phone Number <span class="text-red-600">*</span></label>
                                         <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="Phone"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            autocomplete="tel" required>
+                                            autocomplete="off" required>
                                     </div>
                                 </div>
 
@@ -563,13 +609,13 @@
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">City <span class="text-red-600">*</span></label>
                                         <input type="text" name="city" value="{{ old('city') }}" placeholder="City"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            required>
+                                            autocomplete="off" required>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">State <span class="text-red-600">*</span></label>
                                         <input type="text" name="state" value="{{ old('state') }}" placeholder="State"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
-                                            required>
+                                            autocomplete="off" required>
                                     </div>
                                 </div>
                             </div>

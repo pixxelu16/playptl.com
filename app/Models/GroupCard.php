@@ -7,14 +7,20 @@ use Database\Factories\GroupCardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'skill_level_match', 'playoff_format', 'playoff_quarter_spots', 'playoff_r16_spots', 'playoff_ppq_spots', 'tag', 'players_count', 'groups_count', 'status', 'display_order'])]
+#[Fillable(['category_id', 'name', 'slug', 'skill_level_match', 'playoff_format', 'playoff_quarter_spots', 'playoff_r16_spots', 'playoff_ppq_spots', 'tag', 'players_count', 'groups_count', 'status', 'display_order'])]
 class GroupCard extends Model
 {
     /** @use HasFactory<GroupCardFactory> */
     use HasFactory;
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function leagues(): BelongsToMany
     {

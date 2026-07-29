@@ -33,6 +33,35 @@
     return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(2);
   }
 
+  function clearErrors() {
+    form.querySelectorAll('input').forEach(function (el) {
+      el.classList.remove('border-red-500');
+      var existing = el.parentNode.querySelector('.validation-error-msg');
+      if (existing) existing.remove();
+    });
+    var cardEl = document.getElementById('charity-donate-card-element');
+    if (cardEl) {
+      cardEl.classList.remove('border-red-500');
+    }
+    setCardError('');
+    hideAlert();
+  }
+
+  function showFieldError(inputId, message) {
+    var el = document.getElementById(inputId);
+    if (el) {
+      el.classList.add('border-red-500');
+      var err = document.createElement('span');
+      err.className = 'validation-error-msg text-red-500 text-xs mt-1 block';
+      err.style.color = '#dc2626';
+      err.style.fontSize = '12px';
+      err.style.marginTop = '4px';
+      err.style.display = 'block';
+      err.textContent = message;
+      el.parentNode.appendChild(err);
+    }
+  }
+
   function hideAlert() {
     if (!alertBox) return;
     alertBox.textContent = '';
@@ -95,8 +124,14 @@
   }
 
   function setLoading(isLoading) {
-    if (submitBtn) submitBtn.disabled = isLoading;
-    if (loader) loader.classList.toggle('hidden', !isLoading);
+    if (submitBtn) {
+      submitBtn.disabled = isLoading;
+      if (isLoading) {
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing...';
+      } else {
+        updateSubmitLabel();
+      }
+    }
   }
 
   function setCauseContext(causeId, causeTitle) {
@@ -134,8 +169,7 @@
   window.openCharityDonateModal = openModal;
 
   function closeModal() {
-    hideAlert();
-    setCardError('');
+    clearErrors();
     if (form) form.reset();
     if (submitBtn) submitBtn.disabled = false;
     modal.classList.add('hidden');
@@ -180,15 +214,35 @@
   }
 
   function validatePayload(payload) {
-    if (payload.amount == null || payload.amount < 1) return 'Please enter a valid donation amount (minimum $1).';
-    if (!payload.donor_name.trim()) return 'Please enter your name.';
-    if (!payload.address.trim()) return 'Please enter your address.';
-    if (!payload.city.trim()) return 'Please enter your city.';
-    if (!payload.state.trim()) return 'Please enter your state.';
-    if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email.trim())) {
-      return 'Please enter a valid email address.';
+    clearErrors();
+    var hasErrors = false;
+    
+    if (payload.amount == null || payload.amount < 1) {
+      showFieldError('charity-donate-modal-amount', 'Please enter a valid donation amount (minimum $1).');
+      hasErrors = true;
     }
-    return null;
+    if (!payload.donor_name.trim()) {
+      showFieldError('charity-donate-name', 'Please enter your name.');
+      hasErrors = true;
+    }
+    if (!payload.address.trim()) {
+      showFieldError('charity-donate-address', 'Please enter your address.');
+      hasErrors = true;
+    }
+    if (!payload.city.trim()) {
+      showFieldError('charity-donate-city', 'Please enter your city.');
+      hasErrors = true;
+    }
+    if (!payload.state.trim()) {
+      showFieldError('charity-donate-state', 'Please enter your state.');
+      hasErrors = true;
+    }
+    if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email.trim())) {
+      showFieldError('charity-donate-email', 'Please enter a valid email address.');
+      hasErrors = true;
+    }
+    
+    return hasErrors;
   }
 
   function postJson(url, data) {
@@ -240,6 +294,16 @@
   }
 
   if (form) {
+    form.querySelectorAll('input').forEach(function (input) {
+      input.addEventListener('focus', function () {
+        input.classList.remove('border-red-500');
+        var err = input.parentNode.querySelector('.validation-error-msg');
+        if (err) {
+          err.remove();
+        }
+      });
+    });
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       hideAlert();
@@ -251,13 +315,16 @@
 
       mountCard();
       var payload = collectPayload();
-      var validationError = validatePayload(payload);
-      if (validationError) {
-        showError(validationError);
+      var hasValidationErrors = validatePayload(payload);
+      if (hasValidationErrors) {
         return;
       }
 
       if (!cardComplete) {
+        var cardEl = document.getElementById('charity-donate-card-element');
+        if (cardEl) {
+          cardEl.classList.add('border-red-500');
+        }
         setCardError('Card details are required.');
         return;
       }

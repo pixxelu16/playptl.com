@@ -34,6 +34,12 @@
                         <span>Skills</span>
                     </a>
                     @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage settings'))
+                    <a class="admin-nav-link {{ request()->routeIs('admin.categories.*') ? 'is-active' : '' }}" href="{{ route('admin.categories.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-list-ul"></i></span>
+                        <span>Categories</span>
+                    </a>
+                    @endif
                     @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage leagues'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*', 'admin.league-management.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span>
@@ -129,6 +135,28 @@
                     </a>
                     @endif
                 </div>
+
+                @php
+                    $user = auth()->user();
+                    $allRoles = $user ? $user->roles->pluck('name')->toArray() : [];
+                    if ($user && !in_array($user->role->name, $allRoles)) {
+                        $allRoles[] = $user->role->name;
+                    }
+                    $allRoles = array_unique(array_map('ucfirst', $allRoles));
+                @endphp
+                @if(count($allRoles) > 1)
+                    <div class="admin-nav-section">
+                        <p class="admin-nav-label">Switch Panel</p>
+                        @foreach($allRoles as $rName)
+                            @if(strtolower($rName) !== 'admin' && strtolower($rName) !== 'super admin')
+                                <a class="admin-nav-link" href="{{ route(strtolower($rName) . '.dashboard') }}">
+                                    <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-arrow-right-left"></i></span>
+                                    <span>{{ $rName }} Dashboard</span>
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
 
                 <div class="admin-nav-section">
                     <p class="admin-nav-label">Account</p>

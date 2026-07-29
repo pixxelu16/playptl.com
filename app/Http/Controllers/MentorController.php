@@ -13,8 +13,43 @@ class MentorController extends Controller
 {
     public function dashboard(Request $request): View
     {
+        $user = $request->user();
+        
+        $revenue = \App\Models\Booking::where('provider_id', $user->id)
+            ->whereIn('status', [\App\Models\Booking::STATUS_ACCEPTED, \App\Models\Booking::STATUS_COMPLETED])
+            ->sum('provider_amount');
+            
+        $studentsCount = \App\Models\Booking::where('provider_id', $user->id)
+            ->distinct('student_id')
+            ->count('student_id');
+
+        $totalBookings = \App\Models\Booking::where('provider_id', $user->id)->count();
+        
+        $pendingBookings = \App\Models\Booking::where('provider_id', $user->id)
+            ->where('status', \App\Models\Booking::STATUS_PENDING)
+            ->count();
+
+        $acceptedBookings = \App\Models\Booking::where('provider_id', $user->id)
+            ->where('status', \App\Models\Booking::STATUS_ACCEPTED)
+            ->count();
+
+        $recentBookings = \App\Models\Booking::where('provider_id', $user->id)
+            ->with('student')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $currencySymbol = \App\Models\SiteSetting::currencySymbol();
+
         return view('mentor.dashboard', [
-            'user' => $request->user(),
+            'user' => $user,
+            'revenue' => $revenue,
+            'studentsCount' => $studentsCount,
+            'totalBookings' => $totalBookings,
+            'pendingBookings' => $pendingBookings,
+            'acceptedBookings' => $acceptedBookings,
+            'recentBookings' => $recentBookings,
+            'currencySymbol' => $currencySymbol,
         ]);
     }
 
@@ -54,19 +89,11 @@ class MentorController extends Controller
 
     public function updatePassword(Request $request): RedirectResponse
     {
-        if ($request->has('password')) {
-            $request->merge(['password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password'))]);
-        }
-        if ($request->has('password_confirmation')) {
-            $request->merge(['password_confirmation' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('password_confirmation'))]);
-        }
-        if ($request->has('current_password')) {
-            $request->merge(['current_password' => \App\Support\PasswordEncryptionHelper::decrypt((string) $request->input('current_password'))]);
-        }
+        
 
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(8)->letters()->numbers()->symbols()],
         ]);
 
         $request->user()->update([

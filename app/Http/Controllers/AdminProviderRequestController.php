@@ -16,22 +16,50 @@ class AdminProviderRequestController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::whereIn('role', [UserRole::Mentor, UserRole::Coach]);
-
-        // Filter by role if provided
-        if ($roleFilter = $request->query('role')) {
-            if ($roleFilter === 'mentor') {
-                $query->where('role', UserRole::Mentor);
-            } elseif ($roleFilter === 'coach') {
-                $query->where('role', UserRole::Coach);
-            }
-        }
-
-        // Filter by status if provided (default to pending)
         $statusFilter = $request->query('status', 'pending');
-        if ($statusFilter !== 'all') {
-            $query->where('status', $statusFilter);
-        }
+        $roleFilter = $request->query('role');
+
+        $query = User::query();
+
+        // Apply role filter and status filter dynamically
+        $query->where(function ($q) use ($statusFilter, $roleFilter) {
+            // First option: primary role
+            $q->where(function ($sub) use ($statusFilter, $roleFilter) {
+                if ($roleFilter === 'mentor') {
+                    $sub->where('role', UserRole::Mentor);
+                } elseif ($roleFilter === 'coach') {
+                    $sub->where('role', UserRole::Coach);
+                } else {
+                    $sub->whereIn('role', [UserRole::Mentor, UserRole::Coach]);
+                }
+                
+                if ($statusFilter !== 'all') {
+                    $sub->where('status', $statusFilter);
+                }
+            });
+
+            // Second option: secondary Mentor status
+            if (!$roleFilter || $roleFilter === 'mentor') {
+                $q->orWhere(function ($sub) use ($statusFilter) {
+                    if ($statusFilter !== 'all') {
+                        $sub->where('mentor_status', $statusFilter);
+                    } else {
+                        $sub->whereNotNull('mentor_status');
+                    }
+                });
+            }
+
+            // Third option: secondary Coach status
+            if (!$roleFilter || $roleFilter === 'coach') {
+                $q->orWhere(function ($sub) use ($statusFilter) {
+                    if ($statusFilter !== 'all') {
+                        $sub->where('coach_status', $statusFilter);
+                    } else {
+                        $sub->whereNotNull('coach_status');
+                    }
+                });
+            }
+        });
 
         // Search filter
         if ($search = trim($request->query('search', ''))) {
@@ -44,7 +72,14 @@ class AdminProviderRequestController extends Controller
 
         $requests = $query->orderByDesc('id')->paginate(15)->withQueryString();
 
-        $pendingCount = User::whereIn('role', [UserRole::Mentor, UserRole::Coach])->where('status', 'pending')->count();
+        $pendingCount = User::where(function ($q) {
+            $q->where(function ($sub) {
+                $sub->whereIn('role', [UserRole::Mentor, UserRole::Coach])
+                    ->where('status', 'pending');
+            })
+            ->orWhere('mentor_status', 'pending')
+            ->orWhere('coach_status', 'pending');
+        })->count();
 
         return view('admin.provider-requests.index', [
             'requests' => $requests,
@@ -60,11 +95,26 @@ class AdminProviderRequestController extends Controller
      */
     public function approve(User $user): RedirectResponse
     {
-        if (!in_array($user->role, [UserRole::Mentor, UserRole::Coach], true)) {
-            return back()->with('error', 'Selected user is not a Mentor or Coach.');
+        if ($user->mentor_status === 'pending') {
+            $user->update(['mentor_status' => 'active']);
+            \Spatie\Permission\Models\Role::findOrCreate('Mentor', 'web');
+            $user->assignRole('Mentor');
+            $roleLabel = 'Mentor';
+        } elseif ($user->coach_status === 'pending') {
+            $user->update(['coach_status' => 'active']);
+            \Spatie\Permission\Models\Role::findOrCreate('Coach', 'web');
+            $user->assignRole('Coach');
+            $roleLabel = 'Coach';
+        } else {
+            if (!in_array($user->role, [UserRole::Mentor, UserRole::Coach], true)) {
+                return back()->with('error', 'Selected user is not a Mentor or Coach.');
+            }
+            $user->update(['status' => 'active']);
+            $roleName = ucfirst($user->role->value);
+            \Spatie\Permission\Models\Role::findOrCreate($roleName, 'web');
+            $user->assignRole($roleName);
+            $roleLabel = $user->role->value;
         }
-
-        $user->update(['status' => 'active']);
 
         try {
             Mail::to($user->email)->send(new ProviderApplicationDecisionMail($user, 'approved'));
@@ -72,7 +122,7 @@ class AdminProviderRequestController extends Controller
             // Ignore email fail
         }
 
-        return back()->with('success', "{$user->name}'s {$user->role->value} application has been approved successfully. Email notification sent.");
+        return back()->with('success', "{$user->name}'s {$roleLabel} application has been approved successfully. Email notification sent.");
     }
 
     /**
@@ -80,11 +130,19 @@ class AdminProviderRequestController extends Controller
      */
     public function reject(User $user): RedirectResponse
     {
-        if (!in_array($user->role, [UserRole::Mentor, UserRole::Coach], true)) {
-            return back()->with('error', 'Selected user is not a Mentor or Coach.');
+        if ($user->mentor_status === 'pending') {
+            $user->update(['mentor_status' => 'rejected']);
+            $roleLabel = 'Mentor';
+        } elseif ($user->coach_status === 'pending') {
+            $user->update(['coach_status' => 'rejected']);
+            $roleLabel = 'Coach';
+        } else {
+            if (!in_array($user->role, [UserRole::Mentor, UserRole::Coach], true)) {
+                return back()->with('error', 'Selected user is not a Mentor or Coach.');
+            }
+            $user->update(['status' => 'rejected']);
+            $roleLabel = $user->role->value;
         }
-
-        $user->update(['status' => 'rejected']);
 
         try {
             Mail::to($user->email)->send(new ProviderApplicationDecisionMail($user, 'rejected'));
@@ -92,6 +150,6 @@ class AdminProviderRequestController extends Controller
             // Ignore email fail
         }
 
-        return back()->with('error', "{$user->name}'s {$user->role->value} application has been rejected. Email notification sent.");
+        return back()->with('error', "{$user->name}'s {$roleLabel} application has been rejected. Email notification sent.");
     }
 }

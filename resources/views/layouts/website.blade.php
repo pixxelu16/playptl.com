@@ -191,6 +191,12 @@
                         </button>
                         <div id="website-user-menu" role="menu" data-dropdown-panel class="invisible pointer-events-none absolute right-0 z-50 mt-3 min-w-[230px] translate-y-2 overflow-hidden rounded-ui border border-[#E0E0E0] bg-white/95 py-2 opacity-0 shadow-xl shadow-[#1f3d1f]/10 backdrop-blur-md transition-all duration-200 ease-out">
                             <a href="{{ $headerProfileUrl }}" role="menuitem" class="block px-4 py-3 text-[14px] font-semibold text-[#424242] hover:bg-[#E8F5E9] hover:text-[#55A64E]">My Profile Settings</a>
+                            @if ($headerUser->hasRole('Student'))
+                                <a href="{{ route('student.dashboard') }}" role="menuitem" class="block px-4 py-3 text-[14px] font-semibold text-[#424242] hover:bg-[#E8F5E9] hover:text-[#55A64E]">Student Dashboard</a>
+                            @endif
+                            @if ($headerUser->hasRole('Mentor'))
+                                <a href="{{ route('mentor.dashboard') }}" role="menuitem" class="block px-4 py-3 text-[14px] font-semibold text-[#424242] hover:bg-[#E8F5E9] hover:text-[#55A64E]">Mentor Dashboard</a>
+                            @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" role="menuitem" class="block w-full px-4 py-3 text-left text-[14px] font-semibold text-[#424242] hover:bg-[#E8F5E9] hover:text-[#55A64E]">
@@ -252,6 +258,12 @@
                         <img src="{{ $mobileHeaderAvatar }}" alt="" class="h-10 w-10 rounded-full border border-white/30 object-cover">
                         <span>{{ $mobileHeaderUser->name }}</span>
                     </a>
+                    @if ($mobileHeaderUser->hasRole('Student'))
+                        <a href="{{ route('student.dashboard') }}" class="site-mobile-nav__link" style="margin-left: 20px;">Student Dashboard</a>
+                    @endif
+                    @if ($mobileHeaderUser->hasRole('Mentor'))
+                        <a href="{{ route('mentor.dashboard') }}" class="site-mobile-nav__link" style="margin-left: 20px;">Mentor Dashboard</a>
+                    @endif
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="site-mobile-nav__button site-mobile-nav__button--secondary">Logout</button>

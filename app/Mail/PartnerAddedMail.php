@@ -15,7 +15,7 @@ class PartnerAddedMail extends Mailable
     public function __construct(
         public string $inviterName,
         public string $leagueName,
-        public string $setupUrl,
+        public ?string $setupUrl = null,
     ) {}
 
     public function envelope(): Envelope
