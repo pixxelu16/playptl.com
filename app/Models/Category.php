@@ -3,10 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
     protected $fillable = ['name', 'menu_order', 'type'];
+
+    public function groupCards(): HasMany
+    {
+        return $this->hasMany(GroupCard::class);
+    }
 
     public function scopeForType($query, string $type)
     {

@@ -37,7 +37,7 @@
                     @forelse ($groupCards as $groupCard)
                         <tr>
                             <td><strong>{{ $groupCard->name }}</strong></td>
-                            <td>{{ strtoupper($groupCard->tag) }}</td>
+                            <td>{{ $groupCard->category?->name ?? strtoupper($groupCard->tag) }}</td>
                             <td>
                                 @if ($groupCard->skill_level_match)
                                     {{ $groupCard->skill_level_match === 'not-sure' ? 'Not Sure' : $groupCard->skill_level_match }}

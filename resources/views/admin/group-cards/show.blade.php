@@ -42,8 +42,8 @@
                 </ul>
             </div>
             <div>
-                <span>Tag</span>
-                <strong>{{ strtoupper($groupCard->tag) }}</strong>
+                <span>Category / Tag</span>
+                <strong>{{ $groupCard->category?->name ?? strtoupper($groupCard->tag) }}</strong>
             </div>
             <div>
                 <span>Assigned Subgroups</span>
