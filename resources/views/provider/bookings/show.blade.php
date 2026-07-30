@@ -48,22 +48,10 @@
                         <i class="fa-solid fa-user text-[#5DA44E] mt-0.5 w-4"></i>
                         <div><p class="text-xs text-gray-400">Student</p><p class="font-semibold text-gray-800">{{ $booking->student->name }}</p></div>
                     </div>
-                    @if($booking->student->email)
-                    <div class="flex items-start gap-3">
-                        <i class="fa-solid fa-envelope text-[#5DA44E] mt-0.5 w-4"></i>
-                        <div><p class="text-xs text-gray-400">Student Email</p><p class="font-semibold text-gray-800">{{ $booking->student->email }}</p></div>
-                    </div>
-                    @endif
                     @if($booking->student_location)
                     <div class="flex items-start gap-3">
                         <i class="fa-solid fa-location-dot text-[#5DA44E] mt-0.5 w-4"></i>
                         <div><p class="text-xs text-gray-400">Student Location</p><p class="font-semibold text-gray-800">{{ $booking->student_location }}</p></div>
-                    </div>
-                    @endif
-                    @if($booking->student_phone)
-                    <div class="flex items-start gap-3">
-                        <i class="fa-solid fa-phone text-[#5DA44E] mt-0.5 w-4"></i>
-                        <div><p class="text-xs text-gray-400">Student Phone</p><p class="font-semibold text-gray-800">{{ $booking->student_phone }}</p></div>
                     </div>
                     @endif
                     <div class="flex items-start gap-3">

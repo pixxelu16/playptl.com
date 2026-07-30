@@ -106,6 +106,7 @@
                                         $activeRole = strtolower(auth()->user()->role->value);
                                     }
                                 }
+                                $isMentorOrCoach = auth()->user()->hasAnyRole(['Mentor', 'Coach']) || in_array($activeRole, ['mentor', 'coach']);
                             @endphp
 
                             @if ($activeRole === 'student')
@@ -128,8 +129,8 @@
                                         </p>
                                     </div>
                                 @endif
-                            @else
-                                {{-- Not active as student --}}
+                            @elseif (!$isMentorOrCoach)
+                                {{-- Not active as student and not a mentor/coach --}}
                                 @if (auth()->user()->hasRole('Student'))
                                     <div class="w-full space-y-3 mt-8 border-t border-gray-100 pt-6">
                                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider text-left mb-3">Book a Session</h4>
