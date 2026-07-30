@@ -18,7 +18,6 @@
                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Client & Session</h4>
                 <div class="space-y-2 text-sm">
                     <p class="text-gray-500">Student Name: <span class="font-bold text-gray-800">{{ $booking->student->name }}</span></p>
-                    <p class="text-gray-500">Student Phone: <span class="font-semibold text-gray-700">{{ $booking->student_phone ?: 'N/A' }}</span></p>
                     <p class="text-gray-500">Location: <span class="font-semibold text-gray-700">{{ $booking->student_location ?: 'Online / Digital Session' }}</span></p>
                     <p class="text-gray-500">Session Dates: <span class="font-bold text-gray-800">{{ $booking->from_date->format('M d, Y') }} @if($booking->to_date->ne($booking->from_date)) to {{ $booking->to_date->format('M d, Y') }} @endif</span></p>
                     <p class="text-gray-500">Daily Time Slot: <span class="font-semibold text-gray-700">{{ \Carbon\Carbon::createFromFormat('H:i:s', $booking->booking_time)->format('h:i A') }}</span></p>
