@@ -22,6 +22,7 @@ class LeagueMenuHelper
 
         $query = League::query()
             ->select(['id', 'name', 'slug'])
+            ->where('show_in_menu', true)
             ->where('stats', 'active')
             ->whereNull('finished_at');
 

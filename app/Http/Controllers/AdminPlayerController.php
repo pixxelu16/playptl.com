@@ -133,6 +133,7 @@ class AdminPlayerController extends Controller
                     'league:id,name,start_date,end_date,stats,finished_at',
                     'groupCard:id,name',
                     'group:id,name',
+                    'categoryDetail:id,name',
                 ])
                 ->orderByDesc('id')
                 ->get();
@@ -155,10 +156,16 @@ class AdminPlayerController extends Controller
                     ];
                 }
 
+                $categoryName = trim((string) ($registration->categoryDetail?->name ?? ''));
+                if ($categoryName === '' && filled($registration->category)) {
+                    $categoryName = (string) $registration->category;
+                }
+
                 $playerActiveTournaments[$userId][$leagueId]['registrations'][] = [
                     'group' => trim((string) ($registration->groupCard?->name ?? '')) ?: '—',
                     'subgroup' => trim((string) ($registration->group?->name ?? '')) ?: 'Unassigned',
                     'format' => ucfirst((string) ($registration->registration_type ?? 'singles')),
+                    'category' => $categoryName !== '' ? $categoryName : '—',
                 ];
             }
 
@@ -279,6 +286,7 @@ class AdminPlayerController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($player->id)],
             'phone' => ['nullable', 'string', 'max:32'],
             'city' => ['nullable', 'string', 'max:120'],
             'state' => ['nullable', 'string', 'max:120'],
@@ -300,8 +308,6 @@ class AdminPlayerController extends Controller
         if (in_array($enumVal, ['admin', 'organiser', 'player', 'mentor', 'coach', 'student'], true)) {
             $validated['role'] = UserRole::from($enumVal);
         }
-
-        unset($validated['email']);
 
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');

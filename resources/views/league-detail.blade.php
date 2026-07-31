@@ -71,7 +71,9 @@
 
                 <div id="panel-players" role="tabpanel" aria-labelledby="tab-players" data-league-panel="players" class="league-tab-panel">
                     <div id="league-teams-view">
-                        @if (empty($playerGroups))
+                        @if (! ($isUserRegistered ?? false))
+                            @include('partials.league-locked-card')
+                        @elseif (empty($playerGroups))
                             <div class="rounded-xl bg-white p-6 text-center text-[15px] font-semibold text-[#5a8f5a] shadow-[0_2px_12px_rgba(45,74,45,0.08)] ring-1 ring-[#e1f0e1]">
                                 Players will appear here once they are assigned to subgroups.
                             </div>
@@ -253,196 +255,208 @@
                 </div>
 
                 <div id="panel-schedules" role="tabpanel" aria-labelledby="tab-schedules" data-league-panel="schedules" class="league-tab-panel hidden">
-                    @once
-                        @push('styles')
-                            @include('partials.match-scoreboard-styles')
-                        @endpush
-                    @endonce
-                    @if (empty($scheduleDays))
-                        <p class="mt-2 rounded-[10px] bg-white px-5 py-10 text-center text-[15px] font-medium leading-relaxed text-[#757575] shadow-[0_1px_4px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] sm:px-8 sm:text-[16px]">
-                            No matches are scheduled for this division yet. Check back later.
-                        </p>
-                    @endif
-                    @foreach ($scheduleDays as $day)
-                        <h3 class="mb-4 mt-10 text-[15px] font-bold uppercase leading-tight tracking-[0.06em] text-[#212121] first:mt-0 sm:text-[16px]">{{ $day['dateLabel'] }}</h3>
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:gap-6">
-                            @foreach ($day['matches'] as $match)
-                                @php
-                                    $scheduleParticipantIds = $match['participantUserIds'] ?? [];
-                                    $scheduleViewerId = auth()->id();
-                                    $showScheduleMatchMenu = $scheduleViewerId !== null
-                                        && $scheduleParticipantIds !== []
-                                        && in_array((int) $scheduleViewerId, array_map('intval', $scheduleParticipantIds), true);
-                                    $scheduleMenuId = 'schedule-menu-'.$loop->parent->iteration.'-'.$loop->iteration;
-                                @endphp
-                                <article class="relative overflow-visible rounded-[10px] bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] sm:p-5">
-                                    @if (($match['finished'] ?? false) === true)
-                                        @include('partials.match-scoreboard', [
-                                            'score' => $match['score'] ?? '',
-                                            'homeName' => $match['leftName'],
-                                            'awayName' => $match['rightName'],
-                                            'homeMeta' => $match['leftMeta'],
-                                            'awayMeta' => $match['rightMeta'],
-                                            'homeSideWon' => $match['homeSideWon'] ?? null,
-                                        ])
-                                    @else
-                                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-start sm:gap-3">
-                                            <div class="min-w-0 text-left">
-                                                <span class="mb-1 inline-block rounded bg-[#E8F5E9] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#2E7D32]">Home</span>
-                                                <p class="text-[16px] font-bold leading-snug text-[#212121]">{{ $match['leftName'] }}</p>
-                                                <p class="mt-0.5 text-[13px] leading-snug text-[#757575]">{{ $match['leftMeta'] }}</p>
-                                            </div>
-                                            <div class="flex flex-col items-center justify-start gap-1.5 py-1 sm:min-w-[100px]">
-                                                <span class="text-[13px] font-bold uppercase tracking-wide text-[#212121]">VS</span>
-                                                <div class="rounded-full bg-[#E8F5E9] px-3 py-1.5 text-center">
-                                                    <span class="text-[13px] font-semibold text-[#2E7D32] sm:text-[14px]">Pending</span>
+                    @if (! ($isUserRegistered ?? false))
+                        @include('partials.league-locked-card')
+                    @else
+                        @once
+                            @push('styles')
+                                @include('partials.match-scoreboard-styles')
+                            @endpush
+                        @endonce
+                        @if (empty($scheduleDays))
+                            <p class="mt-2 rounded-[10px] bg-white px-5 py-10 text-center text-[15px] font-medium leading-relaxed text-[#757575] shadow-[0_1px_4px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] sm:px-8 sm:text-[16px]">
+                                No matches are scheduled for this division yet. Check back later.
+                            </p>
+                        @endif
+                        @foreach ($scheduleDays as $day)
+                            <h3 class="mb-4 mt-10 text-[15px] font-bold uppercase leading-tight tracking-[0.06em] text-[#212121] first:mt-0 sm:text-[16px]">{{ $day['dateLabel'] }}</h3>
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:gap-6">
+                                @foreach ($day['matches'] as $match)
+                                    @php
+                                        $scheduleParticipantIds = $match['participantUserIds'] ?? [];
+                                        $scheduleViewerId = auth()->id();
+                                        $showScheduleMatchMenu = $scheduleViewerId !== null
+                                            && $scheduleParticipantIds !== []
+                                            && in_array((int) $scheduleViewerId, array_map('intval', $scheduleParticipantIds), true);
+                                        $scheduleMenuId = 'schedule-menu-'.$loop->parent->iteration.'-'.$loop->iteration;
+                                    @endphp
+                                    <article class="relative overflow-visible rounded-[10px] bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] sm:p-5">
+                                        @if (($match['finished'] ?? false) === true)
+                                            @include('partials.match-scoreboard', [
+                                                'score' => $match['score'] ?? '',
+                                                'homeName' => $match['leftName'],
+                                                'awayName' => $match['rightName'],
+                                                'homeMeta' => $match['leftMeta'],
+                                                'awayMeta' => $match['rightMeta'],
+                                                'homeSideWon' => $match['homeSideWon'] ?? null,
+                                            ])
+                                        @else
+                                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-start sm:gap-3">
+                                                <div class="min-w-0 text-left">
+                                                    <span class="mb-1 inline-block rounded bg-[#E8F5E9] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#2E7D32]">Home</span>
+                                                    <p class="text-[16px] font-bold leading-snug text-[#212121]">{{ $match['leftName'] }}</p>
+                                                    <p class="mt-0.5 text-[13px] leading-snug text-[#757575]">{{ $match['leftMeta'] }}</p>
                                                 </div>
-                                            </div>
-                                            <div class="min-w-0 text-right">
-                                                <span class="mb-1 inline-block rounded bg-[#E8F5E9] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#2E7D32]">Away</span>
-                                                <p class="text-[16px] font-bold leading-snug text-[#212121]">{{ $match['rightName'] }}</p>
-                                                <p class="mt-0.5 text-[13px] leading-snug text-[#757575]">{{ $match['rightMeta'] }}</p>
-                                            </div>
-                                        </div>
-                                    @endif
-                                    <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[#E0E0E0] pt-4 text-[13px] text-[#757575] sm:gap-x-6">
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <svg class="h-4 w-4 shrink-0 text-[#757575]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                            {{ $match['dateShort'] }}
-                                        </span>
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <svg class="h-4 w-4 shrink-0 text-[#757575]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            {{ $match['time'] }}
-                                        </span>
-                                        <span class="inline-flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none">
-                                            <svg class="h-4 w-4 shrink-0 text-[#757575]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                            <span class="min-w-0">{{ $match['venue'] }}</span>
-                                        </span>
-                                        @if ($showScheduleMatchMenu)
-                                            <div class="relative ml-auto shrink-0" data-schedule-menu>
-                                                <button
-                                                    type="button"
-                                                    class="rounded p-1 text-[#5A6772] hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#66BB6A]/50"
-                                                    data-schedule-trigger
-                                                    aria-expanded="false"
-                                                    aria-haspopup="menu"
-                                                    aria-controls="{{ $scheduleMenuId }}"
-                                                    aria-label="More options"
-                                                >
-                                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-                                                    </svg>
-                                                </button>
-                                                <div
-                                                    id="{{ $scheduleMenuId }}"
-                                                    data-schedule-dropdown
-                                                    role="menu"
-                                                    aria-hidden="true"
-                                                    class="pointer-events-none invisible absolute right-full top-1/2 z-[70] mr-0 min-w-[145px] -translate-y-1/2 translate-x-[14px] opacity-0 transition-[opacity,visibility] duration-150"
-                                                >
-                                                    <div class="flex items-stretch">
-                                                        <div class="rounded-lg border border-[#E0E0E0] bg-[#FFFFFF] py-1 shadow-[0_4px_18px_rgba(0,0,0,0.1)]">
-                                                            <a href="{{ (! empty($match['groupMatchId'] ?? null)) ? route('player.profile.location', ['match' => $match['groupMatchId']]) : route('player.profile.location') }}" role="menuitem" class="block w-full whitespace-nowrap px-4 py-3 text-left text-[14px] font-semibold leading-snug text-[#4B5563] no-underline transition-colors hover:bg-[#F9FAFB] focus-visible:bg-[#F9FAFB] focus-visible:outline-none">
-                                                                Add Location
-                                                            </a>
-                                                            <a href="{{ (! empty($match['groupMatchId'] ?? null)) ? route('player.profile.upload', ['match' => $match['groupMatchId']]) : route('player.profile.upload') }}" role="menuitem" class="block w-full whitespace-nowrap px-4 py-3 text-left text-[14px] font-semibold leading-snug text-[#4B5563] no-underline transition-colors hover:bg-[#F9FAFB] focus-visible:bg-[#F9FAFB] focus-visible:outline-none">
-                                                                Upload Image
-                                                            </a>
-                                                        </div>
-                                                        <svg class="-ml-px h-[16px] w-[6px] shrink-0 self-center text-[#E0E0E0]" viewBox="0 0 6 16" aria-hidden="true">
-                                                            <path d="M0 0 L6 8 L0 16 Z" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
-                                                        </svg>
+                                                <div class="flex flex-col items-center justify-start gap-1.5 py-1 sm:min-w-[100px]">
+                                                    <span class="text-[13px] font-bold uppercase tracking-wide text-[#212121]">VS</span>
+                                                    <div class="rounded-full bg-[#E8F5E9] px-3 py-1.5 text-center">
+                                                        <span class="text-[13px] font-semibold text-[#2E7D32] sm:text-[14px]">Pending</span>
                                                     </div>
+                                                </div>
+                                                <div class="min-w-0 text-right">
+                                                    <span class="mb-1 inline-block rounded bg-[#E8F5E9] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#2E7D32]">Away</span>
+                                                    <p class="text-[16px] font-bold leading-snug text-[#212121]">{{ $match['rightName'] }}</p>
+                                                    <p class="mt-0.5 text-[13px] leading-snug text-[#757575]">{{ $match['rightMeta'] }}</p>
                                                 </div>
                                             </div>
                                         @endif
-                                    </div>
-                                </article>
-                            @endforeach
-                        </div>
-                    @endforeach
+                                        <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[#E0E0E0] pt-4 text-[13px] text-[#757575] sm:gap-x-6">
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <svg class="h-4 w-4 shrink-0 text-[#757575]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {{ $match['dateShort'] }}
+                                            </span>
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <svg class="h-4 w-4 shrink-0 text-[#757575]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                {{ $match['time'] }}
+                                            </span>
+                                            <span class="inline-flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none">
+                                                <svg class="h-4 w-4 shrink-0 text-[#757575]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                <span class="min-w-0">{{ $match['venue'] }}</span>
+                                            </span>
+                                            @if ($showScheduleMatchMenu)
+                                                <div class="relative ml-auto shrink-0" data-schedule-menu>
+                                                    <button
+                                                        type="button"
+                                                        class="rounded p-1 text-[#5A6772] hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#66BB6A]/50"
+                                                        data-schedule-trigger
+                                                        aria-expanded="false"
+                                                        aria-haspopup="menu"
+                                                        aria-controls="{{ $scheduleMenuId }}"
+                                                        aria-label="More options"
+                                                    >
+                                                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                                        </svg>
+                                                    </button>
+                                                    <div
+                                                        id="{{ $scheduleMenuId }}"
+                                                        data-schedule-dropdown
+                                                        role="menu"
+                                                        aria-hidden="true"
+                                                        class="pointer-events-none invisible absolute right-full top-1/2 z-[70] mr-0 min-w-[145px] -translate-y-1/2 translate-x-[14px] opacity-0 transition-[opacity,visibility] duration-150"
+                                                    >
+                                                        <div class="flex items-stretch">
+                                                            <div class="rounded-lg border border-[#E0E0E0] bg-[#FFFFFF] py-1 shadow-[0_4px_18px_rgba(0,0,0,0.1)]">
+                                                                <a href="{{ (! empty($match['groupMatchId'] ?? null)) ? route('player.profile.location', ['match' => $match['groupMatchId']]) : route('player.profile.location') }}" role="menuitem" class="block w-full whitespace-nowrap px-4 py-3 text-left text-[14px] font-semibold leading-snug text-[#4B5563] no-underline transition-colors hover:bg-[#F9FAFB] focus-visible:bg-[#F9FAFB] focus-visible:outline-none">
+                                                                    Add Location
+                                                                </a>
+                                                                <a href="{{ (! empty($match['groupMatchId'] ?? null)) ? route('player.profile.upload', ['match' => $match['groupMatchId']]) : route('player.profile.upload') }}" role="menuitem" class="block w-full whitespace-nowrap px-4 py-3 text-left text-[14px] font-semibold leading-snug text-[#4B5563] no-underline transition-colors hover:bg-[#F9FAFB] focus-visible:bg-[#F9FAFB] focus-visible:outline-none">
+                                                                    Upload Image
+                                                                </a>
+                                                            </div>
+                                                            <svg class="-ml-px h-[16px] w-[6px] shrink-0 self-center text-[#E0E0E0]" viewBox="0 0 6 16" aria-hidden="true">
+                                                                <path d="M0 0 L6 8 L0 16 Z" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </article>
+                                @endforeach
+                            </div>
+                        @endforeach
+                    @endif
                 </div>
                 <div id="panel-standings-1" role="tabpanel" aria-labelledby="tab-standings-1" data-league-panel="standings-1" class="league-tab-panel hidden">
-                    <div class="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-                        <p class="text-[15px] font-bold leading-snug text-[#212121] sm:text-[16px]">
-                            All {{ count($standingsRows) }} players in one table
-                        </p>
-                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <span class="text-[13px] font-medium text-[#757575] sm:text-[14px]">Sorted by:</span>
-                            <button type="button" class="rounded-full border border-[#E0E0E0] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-colors hover:bg-[#FAFAFA] sm:text-[14px]">
-                                1 · PF
-                            </button>
-                            <button type="button" class="rounded-full border border-[#E0E0E0] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-colors hover:bg-[#FAFAFA] sm:text-[14px]">
-                                2 · PA
-                            </button>
-                            <button type="button" class="rounded-full border border-[#E0E0E0] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-colors hover:bg-[#FAFAFA] sm:text-[14px]">
-                                3 · Game %
-                            </button>
+                    @if (! ($isUserRegistered ?? false))
+                        @include('partials.league-locked-card')
+                    @else
+                        <div class="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="text-[15px] font-bold leading-snug text-[#212121] sm:text-[16px]">
+                                All {{ count($standingsRows) }} players in one table
+                            </p>
+                            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                                <span class="text-[13px] font-medium text-[#757575] sm:text-[14px]">Sorted by:</span>
+                                <button type="button" class="rounded-full border border-[#E0E0E0] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-colors hover:bg-[#FAFAFA] sm:text-[14px]">
+                                    1 · PF
+                                </button>
+                                <button type="button" class="rounded-full border border-[#E0E0E0] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-colors hover:bg-[#FAFAFA] sm:text-[14px]">
+                                    2 · PA
+                                </button>
+                                <button type="button" class="rounded-full border border-[#E0E0E0] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-colors hover:bg-[#FAFAFA] sm:text-[14px]">
+                                    3 · Game %
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="overflow-hidden rounded-[10px] bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.06]">
-                        <div class="overflow-x-auto p-[5px]">
-                            <table class="w-full min-w-[920px] border-collapse text-left">
-                                <thead>
-                                    <tr class="bg-[#e1f0e1] rounded">
-                                        <th scope="col" class="px-4 py-3.5 text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Rank</th>
-                                        <th scope="col" class="px-4 py-3.5 text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Player Name</th>
-                                        <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Matches</th>
-                                        <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Wins</th>
-                                        <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Losses</th>
-                                        <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]" title="Points For">PF</th>
-                                        <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]" title="Points Against">PA</th>
-                                        <th scope="col" class="px-4 py-3.5 text-right text-[13px] font-bold text-[#374151] sm:pl-5 sm:pr-6 sm:text-[14px]">Game%</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-[#E5E7EB] bg-white">
-                                    @foreach ($standingsRows as $row)
-                                        <tr class="transition-colors hover:bg-[#FAFAFA]/80">
-                                            <td class="whitespace-nowrap px-4 py-3.5 align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">
-                                                {{ str_pad((string) $row['rank'], 2, '0', STR_PAD_LEFT) }}
-                                            </td>
-                                            <td class="px-4 py-3.5 align-middle sm:px-5">
-                                                <div class="flex min-w-0 items-center gap-3">
-                                                    <img
-                                                        src="{{ $row['avatarUrl'] ?? asset('upload/user-avatar/default-user-pic.png') }}"
-                                                        alt=""
-                                                        class="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white sm:h-10 sm:w-10"
-                                                        width="40"
-                                                        height="40"
-                                                        loading="lazy"
-                                                        decoding="async"
-                                                    />
-                                                    <span class="truncate text-[14px] font-bold text-[#212121] sm:text-[17px]">{{ $row['name'] }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['matches'] }}</td>
-                                            <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['wins'] }}</td>
-                                            <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['losses'] }}</td>
-                                            <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] font-semibold tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['points'] ?? ($row['pointsFor'] ?? 0) }}</td>
-                                            <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['pointsAgainst'] ?? 0 }}</td>
-                                            <td class="whitespace-nowrap px-4 py-3.5 text-right align-middle text-[14px] font-semibold tabular-nums text-[#66BB6A] sm:pl-5 sm:pr-6 sm:text-[17px]">{{ $row['gamePct'] }}%</td>
+                        <div class="overflow-hidden rounded-[10px] bg-white shadow-[0_1px_8px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.06]">
+                            <div class="overflow-x-auto p-[5px]">
+                                <table class="w-full min-w-[920px] border-collapse text-left">
+                                    <thead>
+                                        <tr class="bg-[#e1f0e1] rounded">
+                                            <th scope="col" class="px-4 py-3.5 text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Rank</th>
+                                            <th scope="col" class="px-4 py-3.5 text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Player Name</th>
+                                            <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Matches</th>
+                                            <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Wins</th>
+                                            <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]">Losses</th>
+                                            <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]" title="Points For">PF</th>
+                                            <th scope="col" class="px-4 py-3.5 text-center text-[13px] font-bold text-[#374151] sm:px-5 sm:text-[14px]" title="Points Against">PA</th>
+                                            <th scope="col" class="px-4 py-3.5 text-right text-[13px] font-bold text-[#374151] sm:pl-5 sm:pr-6 sm:text-[14px]">Game%</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody class="divide-y divide-[#E5E7EB] bg-white">
+                                        @foreach ($standingsRows as $row)
+                                            <tr class="transition-colors hover:bg-[#FAFAFA]/80">
+                                                <td class="whitespace-nowrap px-4 py-3.5 align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">
+                                                    {{ str_pad((string) $row['rank'], 2, '0', STR_PAD_LEFT) }}
+                                                </td>
+                                                <td class="px-4 py-3.5 align-middle sm:px-5">
+                                                    <div class="flex min-w-0 items-center gap-3">
+                                                        <img
+                                                            src="{{ $row['avatarUrl'] ?? asset('upload/user-avatar/default-user-pic.png') }}"
+                                                            alt=""
+                                                            class="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white sm:h-10 sm:w-10"
+                                                            width="40"
+                                                            height="40"
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                        />
+                                                        <span class="truncate text-[14px] font-bold text-[#212121] sm:text-[17px]">{{ $row['name'] }}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['matches'] }}</td>
+                                                <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['wins'] }}</td>
+                                                <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['losses'] }}</td>
+                                                <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] font-semibold tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['points'] ?? ($row['pointsFor'] ?? 0) }}</td>
+                                                <td class="whitespace-nowrap px-4 py-3.5 text-center align-middle text-[14px] tabular-nums text-[#424242] sm:px-5 sm:text-[17px]">{{ $row['pointsAgainst'] ?? 0 }}</td>
+                                                <td class="whitespace-nowrap px-4 py-3.5 text-right align-middle text-[14px] font-semibold tabular-nums text-[#66BB6A] sm:pl-5 sm:pr-6 sm:text-[17px]">{{ $row['gamePct'] }}%</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
                 <div id="panel-playoffs" role="tabpanel" aria-labelledby="tab-playoffs" data-league-panel="playoffs" class="league-tab-panel hidden">
-                    @once
-                        @push('styles')
-                            @include('partials.playoffs-bracket-styles')
-                        @endpush
-                    @endonce
-                    @include('partials.playoffs-bracket-public')
+                    @if (! ($isUserRegistered ?? false))
+                        @include('partials.league-locked-card')
+                    @else
+                        @once
+                            @push('styles')
+                                @include('partials.playoffs-bracket-styles')
+                            @endpush
+                        @endonce
+                        @include('partials.playoffs-bracket-public')
+                    @endif
                 </div>
             </div>
         </section>

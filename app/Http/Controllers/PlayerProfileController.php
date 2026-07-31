@@ -315,12 +315,14 @@ class PlayerProfileController extends Controller
         if (LeagueRegistration::query()
             ->where('user_id', $user->id)
             ->where('league_id', $leagueId)
+            ->where('registration_type', $actualFeeTab)
+            ->where('category', $category)
             ->where('group_card_id', $groupCard->id)
             ->exists()) {
-            return response()->json(['message' => 'You are already registered in this league group.'], 422);
+            return response()->json(['message' => 'You are already registered in this event category for this tournament.'], 422);
         }
 
-        if (LeagueRegistrationRoster::isInAnotherLeagueSubGroupForType($user->id, $leagueId, $groupCardId, $actualFeeTab)) {
+        if (LeagueRegistrationRoster::isInAnotherLeagueSubGroupForType($user->id, $leagueId, $groupCardId, $actualFeeTab, $category)) {
             $formatLabel = $actualFeeTab === 'doubles' ? 'doubles' : 'singles';
 
             return response()->json(['message' => "You are already registered in another {$formatLabel} group for this league."], 422);
