@@ -27,7 +27,17 @@ class LeagueController extends Controller
 {
     public function index(): View
     {
-        return view('league', $this->leagueOverviewPayload(null));
+        $league = League::query()
+            ->where('show_in_menu', true)
+            ->where('stats', 'active')
+            ->latest('id')
+            ->first();
+
+        if (! $league) {
+            abort(404);
+        }
+
+        return view('league', $this->leagueOverviewPayload($league));
     }
 
     public function overview(string $slug): View
@@ -37,6 +47,10 @@ class LeagueController extends Controller
             ->where('slug', $slug)
             ->where('stats', 'active')
             ->firstOrFail();
+
+        if (! $league->show_in_menu) {
+            abort(404);
+        }
 
         return view('league', $this->leagueOverviewPayload($league));
     }
@@ -48,6 +62,10 @@ class LeagueController extends Controller
             ->where('slug', $leagueSlug)
             ->where('stats', 'active')
             ->firstOrFail();
+
+        if (! $league->show_in_menu) {
+            abort(404);
+        }
 
         $groupCard = $league->groupCards->firstWhere('slug', $groupCardSlug);
         if (! $groupCard instanceof GroupCard) {
@@ -92,20 +110,47 @@ class LeagueController extends Controller
         $detail['playerGroups'] = $playerGroups;
         $detail['standingsRows'] = $this->standingsRowsForGroupCard($league, $groupCard, $playerGroups);
 
-        $detail['playerProfiles'] = $this->buildPlayerProfiles(
-            $detail['breadcrumbGroup'],
-            (int) $detail['statPlayers'],
-            (int) $detail['statGroups'],
-            $playerGroups,
-            $detail['standingsRows'],
-            $league,
-            $groupCard,
-        );
+        $isUserRegistered = $this->isUserRegisteredInLeague($league);
+        $detail['isUserRegistered'] = $isUserRegistered;
 
-        $detail['scheduleDays'] = $this->scheduleDaysForGroupCard($league, $groupCard);
-        $detail = array_merge($detail, PlayoffBracketPresenter::publicViewData($league, $groupCard));
+        if ($isUserRegistered) {
+            $detail['playerProfiles'] = $this->buildPlayerProfiles(
+                $detail['breadcrumbGroup'],
+                (int) $detail['statPlayers'],
+                (int) $detail['statGroups'],
+                $playerGroups,
+                $detail['standingsRows'],
+                $league,
+                $groupCard,
+            );
+            $detail['scheduleDays'] = $this->scheduleDaysForGroupCard($league, $groupCard);
+            $detail = array_merge($detail, PlayoffBracketPresenter::publicViewData($league, $groupCard));
+        } else {
+            $detail['playerProfiles'] = [];
+            $detail['scheduleDays'] = [];
+            $detail['standingsRows'] = [];
+            $detail['playoffColumns'] = [];
+        }
 
         return view('league-detail', $detail);
+    }
+
+    protected function isUserRegisteredInLeague(League $league): bool
+    {
+        if (! auth()->check()) {
+            return false;
+        }
+
+        $user = auth()->user();
+
+        if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('admin'))) {
+            return true;
+        }
+
+        return LeagueRegistration::query()
+            ->where('league_id', $league->id)
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     /**

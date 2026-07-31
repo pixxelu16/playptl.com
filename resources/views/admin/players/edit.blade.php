@@ -47,8 +47,8 @@
                 </div>
 
                 <div class="admin-form-group">
-                    <label class="admin-label" for="email">Email</label>
-                    <input class="admin-input" id="email" type="email" value="{{ $player->email }}" disabled style="background:#f3f4f6;border-color:#e5e7eb;color:#6b7280;cursor:not-allowed;">
+                    <label class="admin-label" for="email">Email *</label>
+                    <input class="admin-input" id="email" name="email" type="email" value="{{ old('email', $player->email) }}" required>
                 </div>
 
                 <div class="admin-form-group">

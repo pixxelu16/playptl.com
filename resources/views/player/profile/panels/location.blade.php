@@ -19,6 +19,9 @@
                                 · {{ $entry['subgroup'] }}
                             @endif
                             · {{ $entry['format'] }}
+                            @if (! empty($entry['category']) && $entry['category'] !== '—')
+                                · {{ $entry['category'] }}
+                            @endif
                         </p>
                     @endforeach
                 </div>

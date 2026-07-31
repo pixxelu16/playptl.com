@@ -31,6 +31,7 @@
                         <th>Tournament Name</th>
                         <th>Start Date</th>
                         <th>End Date</th>
+                        <th>Show in Menu</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -52,6 +53,26 @@
                             </td>
                             <td>{{ $league->start_date?->format('M d, Y') ?? '-' }}</td>
                             <td>{{ $league->end_date?->format('M d, Y') ?? '-' }}</td>
+                            <td>
+                                <form method="POST" action="{{ route('admin.leagues.toggle-menu', $league) }}" class="admin-menu-toggle-form">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label class="admin-switch-wrap" title="Toggle Menu Visibility">
+                                        <span class="admin-switch">
+                                            <input
+                                                type="checkbox"
+                                                class="admin-menu-toggle-checkbox"
+                                                data-url="{{ route('admin.leagues.toggle-menu', $league) }}"
+                                                @checked($league->show_in_menu)
+                                            >
+                                            <span class="admin-switch-slider"></span>
+                                        </span>
+                                        <span class="admin-switch-label {{ $league->show_in_menu ? 'is-enabled' : 'is-disabled' }}">
+                                            {{ $league->show_in_menu ? 'Enabled' : 'Disabled' }}
+                                        </span>
+                                    </label>
+                                </form>
+                            </td>
                             <td>
                                 <div class="admin-table-actions">
                                     <a href="{{ route('admin.leagues.show', $league) }}" title="View"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
@@ -96,4 +117,43 @@
             </div>
         @endif
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkboxes = document.querySelectorAll('.admin-menu-toggle-checkbox');
+            checkboxes.forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    const form = this.closest('form');
+                    const url = this.dataset.url || form.action;
+                    const labelSpan = form.querySelector('.admin-switch-label');
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || form.querySelector('input[name="_token"]').value;
+
+                    fetch(url, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (labelSpan) {
+                                labelSpan.textContent = data.show_in_menu ? 'Enabled' : 'Disabled';
+                                labelSpan.className = 'admin-switch-label ' + (data.show_in_menu ? 'is-enabled' : 'is-disabled');
+                            }
+                        } else {
+                            this.checked = !this.checked;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Failed to toggle menu status:', error);
+                        form.submit();
+                    });
+                });
+            });
+        });
+    </script>
 @endsection

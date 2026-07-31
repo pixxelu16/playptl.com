@@ -110,6 +110,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('leagues', AdminLeagueController::class);
+        Route::patch('leagues/{league}/toggle-menu', [AdminLeagueController::class, 'toggleMenu'])->name('leagues.toggle-menu');
         Route::get('league-management', [AdminLeagueManagementController::class, 'index'])->name('league-management.index');
         Route::get('league-management/{league}', [AdminLeagueManagementController::class, 'show'])->name('league-management.show');
         Route::post('league-management/{league}/finish', [AdminLeagueManagementController::class, 'finish'])->name('league-management.finish');
