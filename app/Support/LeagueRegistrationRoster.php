@@ -160,20 +160,26 @@ class LeagueRegistrationRoster
     }
 
     /**
-     * A player may only belong to one sub group per league for each format (singles or doubles).
+     * A player may only belong to one sub group per league for each format (singles or doubles) and category.
      */
     public static function isInAnotherLeagueSubGroupForType(
         int $userId,
         int $leagueId,
         int $targetGroupCardId,
         string $registrationType,
+        ?string $category = null,
     ): bool {
-        return LeagueRegistration::query()
+        $query = LeagueRegistration::query()
             ->where('user_id', $userId)
             ->where('league_id', $leagueId)
             ->where('registration_type', $registrationType)
-            ->where('group_card_id', '!=', $targetGroupCardId)
-            ->exists();
+            ->where('group_card_id', '!=', $targetGroupCardId);
+
+        if ($category !== null) {
+            $query->where('category', $category);
+        }
+
+        return $query->exists();
     }
 
     /**

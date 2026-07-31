@@ -110,3 +110,22 @@
         <option value="completed" @selected(old('stats', $league->stats) === 'completed')>Completed</option>
     </select>
 </div>
+
+<div class="admin-form-group">
+    <span class="admin-label">Show in Menu</span>
+    <label class="admin-switch-wrap" style="margin-top: 6px;">
+        <input type="hidden" name="show_in_menu" value="0">
+        <span class="admin-switch">
+            <input
+                type="checkbox"
+                name="show_in_menu"
+                id="show_in_menu"
+                value="1"
+                @checked(old('show_in_menu', $league->show_in_menu ?? false))
+            >
+            <span class="admin-switch-slider"></span>
+        </span>
+        <span class="admin-switch-label">Enable to display this tournament in the navigation dropdown</span>
+    </label>
+</div>
+

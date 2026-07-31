@@ -99,8 +99,9 @@ class LeagueRegistrationFlow
             }
         }
 
+        $category = isset($attributes['category']) ? (string) $attributes['category'] : null;
         if ($groupCardId
-            && LeagueRegistrationRoster::isInAnotherLeagueSubGroupForType($user->id, $leagueId, $groupCardId, $registrationType)) {
+            && LeagueRegistrationRoster::isInAnotherLeagueSubGroupForType($user->id, $leagueId, $groupCardId, $registrationType, $category)) {
             $formatLabel = $registrationType === 'doubles' ? 'doubles' : 'singles';
             throw new \InvalidArgumentException("Already registered in another {$formatLabel} group for this league.");
         }
