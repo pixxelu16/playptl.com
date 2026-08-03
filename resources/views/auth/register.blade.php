@@ -159,6 +159,7 @@
                                             <input type="password" name="password" required autocomplete="new-password"
                                                 class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] focus:border-[#5DA44E] focus:outline-none focus:ring-2 focus:ring-[#5DA44E]/25"
                                                 placeholder="Create password">
+                                            <p class="mt-1 text-[11px] text-[#666]">Must be at least 8 characters long with letters, numbers & symbols.</p>
                                         </div>
                                         <div>
                                             <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Confirm Password <span class="text-red-600">*</span></label>
@@ -337,6 +338,7 @@
                                             <input type="password" name="password" required autocomplete="new-password"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
                                                 placeholder="Create password">
+                                            <p class="mt-1 text-[11px] text-[#666]">Must be at least 8 characters long with letters, numbers & symbols.</p>
                                         </div>
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">Confirm Password <span class="text-red-600">*</span></label>
@@ -595,6 +597,7 @@
                                         <input type="password" name="password" placeholder="Password"
                                             class="reg-input h-10 w-full rounded-[6px] border border-[#dddddd] bg-white px-3 text-[13px] text-[#333] placeholder:text-[#888] focus:border-[#5DA44E] focus:outline-none focus:ring-[#5DA44E]/25"
                                             autocomplete="new-password" required>
+                                        <p class="mt-1 text-[11px] text-[#666]">Must be at least 8 characters long with letters, numbers & symbols.</p>
                                     </div>
                                     <div>
                                         <label class="mb-0.5 block text-[12px] font-bold text-[#222]">Confirm Password <span class="text-red-600">*</span></label>
