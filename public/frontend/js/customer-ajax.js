@@ -463,7 +463,14 @@
 
       var base = {
         email: { presence: reqMsg('Email'), email: { message: '^Please enter a valid email address.' } },
-        password: { presence: reqMsg('Password'), length: { minimum: 8, message: '^Password must be at least 8 characters.' } },
+        password: {
+          presence: reqMsg('Password'),
+          length: { minimum: 8, message: '^Password must be at least 8 characters.' },
+          format: {
+            pattern: /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/,
+            message: '^The password field must contain at least one letter, one number, and one symbol.'
+          }
+        },
         password_confirmation: {
           presence: reqMsg('Confirm password'),
           equality: { attribute: 'password', message: '^Passwords do not match.' },
@@ -786,21 +793,21 @@
       var d2Email = $form.find('input[name="d2_email"]').val() || '';
       var d2Phone = $form.find('input[name="d2_phone"]').val() || '';
 
+      var piPayload = {};
+      formDataArray.forEach(function (it) {
+        piPayload[it.name] = it.value;
+      });
+      piPayload.name = computed;
+      piPayload.league_id = leagueId;
+      piPayload.skill_level = skill;
+
       $.ajax({
         type: 'POST',
         url: paymentIntentUrl,
         contentType: 'application/json',
         dataType: 'json',
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') || csrf },
-        data: JSON.stringify({
-          league_id: leagueId,
-          registration_tab: tab,
-          skill_level: skill,
-          email: email,
-          phone: phone,
-          d2_email: d2Email,
-          d2_phone: d2Phone,
-        }),
+        data: JSON.stringify(piPayload),
       })
         .then(function (pi) {
           return stripe.confirmCardPayment(pi.client_secret, {
@@ -929,7 +936,14 @@
         last_name: { presence: reqMsg('Last name') },
         email: { presence: reqMsg('Email'), email: { message: '^Please enter a valid email address.' } },
         phone: { presence: reqMsg('Phone number') },
-        password: { presence: reqMsg('Password'), length: { minimum: 8, message: '^Password must be at least 8 characters.' } },
+        password: {
+          presence: reqMsg('Password'),
+          length: { minimum: 8, message: '^Password must be at least 8 characters.' },
+          format: {
+            pattern: /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/,
+            message: '^The password field must contain at least one letter, one number, and one symbol.'
+          }
+        },
         password_confirmation: {
           presence: reqMsg('Confirm password'),
           equality: { attribute: 'password', message: '^Passwords do not match.' },
