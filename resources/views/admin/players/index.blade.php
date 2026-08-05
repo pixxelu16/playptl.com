@@ -105,6 +105,9 @@
                                     $displayName = trim(preg_split('/\s*&\s*/', $rawName)[0] ?? $rawName);
                                 @endphp
                                 <strong>{{ $displayName !== '' ? $displayName : '—' }}</strong>
+                                @if($player->is_locked)
+                                    <span title="Locked at {{ $player->locked_at?->format('M d Y H:i') }}" style="display:inline-block;margin-left:6px;font-size:10px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:2px 7px;border-radius:20px;font-weight:700;vertical-align:middle;">🔒 LOCKED</span>
+                                @endif
                             </td>
                             <td>
                                 @php $userRole = $player->roles->first()?->name ?? $player->role->value ?? 'Player'; @endphp
@@ -173,6 +176,14 @@
                             <td>{{ $player->created_at?->format('M d, Y') ?? '-' }}</td>
                             <td>
                                 <div class="admin-table-actions">
+                                    @if($player->is_locked)
+                                        <form method="POST" action="{{ route('admin.users.unblock', $player) }}" style="margin:0;display:inline;">
+                                            @csrf
+                                            <button type="submit" title="Unblock Account" style="color: #16a34a; background:none; border:none; padding:0; cursor:pointer;">
+                                                <i class="fa-solid fa-lock-open" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('admin.players.edit', ['player' => $player] + $indexQuery) }}" title="Edit player">
                                         <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                     </a>
