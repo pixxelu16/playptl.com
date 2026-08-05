@@ -184,7 +184,7 @@ class AdminUserController extends Controller
             'failed_login_attempts' => 0,
         ])->save();
 
-        return redirect()->route('admin.users.index')
+        return redirect()->back()
             ->with('status', "Account for {$user->name} ({$user->email}) has been unlocked.");
     }
 
