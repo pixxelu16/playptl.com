@@ -105,6 +105,7 @@ class LeagueController extends Controller
         $detail['leagueSlug'] = $leagueSlug;
         $detail['leagueId'] = $league->id;
         $detail['groupCardId'] = $groupCard->id;
+        $detail['isRealized'] = (bool) ($league->realize_tournament ?? false);
         $detail['breadcrumbLeagueLabel'] = Str::upper($league->name);
         $detail['statSeasonRange'] = $seasonRange;
         $detail['playerGroups'] = $playerGroups;
@@ -1186,6 +1187,7 @@ class LeagueController extends Controller
         }
 
         return [
+            'isRealized' => (bool) ($league?->realize_tournament ?? false),
             'currentLeagueSlug' => $league?->slug,
             'pageTitle' => $leagueName.' | Premier Tennis League',
             'pageMetaDescription' => ($league?->description && trim($league->description) !== '')

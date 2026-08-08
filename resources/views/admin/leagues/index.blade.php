@@ -32,6 +32,7 @@
                         <th>Start Date</th>
                         <th>End Date</th>
                         <th>Show in Menu</th>
+                        <th>Realize Tournament</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -74,6 +75,26 @@
                                 </form>
                             </td>
                             <td>
+                                <form method="POST" action="{{ route('admin.leagues.toggle-realize', $league) }}" class="admin-realize-toggle-form">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label class="admin-switch-wrap" title="Toggle Realize Tournament">
+                                        <span class="admin-switch">
+                                            <input
+                                                type="checkbox"
+                                                class="admin-realize-toggle-checkbox"
+                                                data-url="{{ route('admin.leagues.toggle-realize', $league) }}"
+                                                @checked($league->realize_tournament)
+                                            >
+                                            <span class="admin-switch-slider"></span>
+                                        </span>
+                                        <span class="admin-switch-label {{ $league->realize_tournament ? 'is-enabled' : 'is-disabled' }}">
+                                            {{ $league->realize_tournament ? 'Enabled' : 'Disabled' }}
+                                        </span>
+                                    </label>
+                                </form>
+                            </td>
+                            <td>
                                 <div class="admin-table-actions">
                                     <a href="{{ route('admin.leagues.show', $league) }}" title="View"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
                                     <a href="{{ route('admin.leagues.edit', $league) }}" title="Edit"><i class="fa-solid fa-pen" aria-hidden="true"></i></a>
@@ -87,7 +108,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6">
+                            <td colspan="7">
                                 <div class="admin-empty-state">
                                     <i class="fa-solid fa-trophy" aria-hidden="true"></i>
                                     <p>No tournaments found. Create your first tournament.</p>
@@ -120,8 +141,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const checkboxes = document.querySelectorAll('.admin-menu-toggle-checkbox');
-            checkboxes.forEach(function (checkbox) {
+            const toggleCheckboxes = document.querySelectorAll('.admin-menu-toggle-checkbox, .admin-realize-toggle-checkbox');
+            toggleCheckboxes.forEach(function (checkbox) {
                 checkbox.addEventListener('change', function () {
                     const form = this.closest('form');
                     const url = this.dataset.url || form.action;
@@ -141,15 +162,16 @@
                     .then(data => {
                         if (data.success) {
                             if (labelSpan) {
-                                labelSpan.textContent = data.show_in_menu ? 'Enabled' : 'Disabled';
-                                labelSpan.className = 'admin-switch-label ' + (data.show_in_menu ? 'is-enabled' : 'is-disabled');
+                                const isEnabled = data.show_in_menu !== undefined ? data.show_in_menu : data.realize_tournament;
+                                labelSpan.textContent = isEnabled ? 'Enabled' : 'Disabled';
+                                labelSpan.className = 'admin-switch-label ' + (isEnabled ? 'is-enabled' : 'is-disabled');
                             }
                         } else {
                             this.checked = !this.checked;
                         }
                     })
                     .catch(error => {
-                        console.error('Failed to toggle menu status:', error);
+                        console.error('Failed to toggle status:', error);
                         form.submit();
                     });
                 });

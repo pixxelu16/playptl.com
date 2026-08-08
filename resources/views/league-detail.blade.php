@@ -54,6 +54,9 @@
         <section class="bg-[#e8f5e9] font-['Montserrat',ui-sans-serif,system-ui,sans-serif] text-[#2d4a2d] antialiased" aria-labelledby="league-detail-tabs-heading">
             <h2 id="league-detail-tabs-heading" class="sr-only">League section tabs</h2>
             <div class="mx-auto max-w-[1400px] px-5 py-10 sm:px-8 sm:py-12 lg:px-14 lg:py-16">
+                @if (! ($isRealized ?? true))
+                    @include('partials.league-unrealized-card')
+                @else
                 <div id="league-tablist" class="mb-8 flex flex-wrap gap-2 sm:mb-10 sm:gap-3" role="tablist" aria-label="League section">
                     <button type="button" id="tab-players" role="tab" aria-selected="true" aria-controls="panel-players" data-league-tab="players" class="league-tab-btn rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-colors sm:px-5 sm:text-[15px] bg-[#5E9E52] text-white shadow-sm">
                         Players / Teams
@@ -458,6 +461,7 @@
                         @include('partials.playoffs-bracket-public')
                     @endif
                 </div>
+                @endif
             </div>
         </section>
     </main>

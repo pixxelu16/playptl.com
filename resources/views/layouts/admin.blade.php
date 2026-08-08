@@ -111,6 +111,10 @@
                         <span>Official Partners</span>
                     </a>
                     @endif
+                    <a class="admin-nav-link {{ request()->routeIs('admin.rules.*') ? 'is-active' : '' }}" href="{{ route('admin.rules.index') }}">
+                        <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-book"></i></span>
+                        <span>Rules &amp; Regulations</span>
+                    </a>
                     @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage roles'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.roles.*') ? 'is-active' : '' }}" href="{{ route('admin.roles.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>

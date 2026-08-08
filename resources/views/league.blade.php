@@ -46,41 +46,45 @@
 
         <section class="bg-[#E4F7E7] font-['Montserrat',ui-sans-serif,system-ui,sans-serif] antialiased" aria-labelledby="league-groups-heading">
             <div class="mx-auto max-w-[1400px] px-5 py-14 sm:py-16 lg:px-14 lg:py-24">
-                <h2 id="league-groups-heading" class="mb-11 text-center text-[22px] font-bold uppercase leading-[1.2] tracking-[0.08em] sm:mb-14 sm:text-[26px] md:text-[30px] lg:text-[34px] lg:tracking-[0.1em]">
-                    <span class="text-[#333333]">{{ $breadcrumbCurrent }}</span><span class="text-[#4CAF50]"> {{ $groupsHeadingGreen }}</span>
-                </h2>
+                @if (! ($isRealized ?? true))
+                    @include('partials.league-unrealized-card')
+                @else
+                    <h2 id="league-groups-heading" class="mb-11 text-center text-[22px] font-bold uppercase leading-[1.2] tracking-[0.08em] sm:mb-14 sm:text-[26px] md:text-[30px] lg:text-[34px] lg:tracking-[0.1em]">
+                        <span class="text-[#333333]">{{ $breadcrumbCurrent }}</span><span class="text-[#4CAF50]"> {{ $groupsHeadingGreen }}</span>
+                    </h2>
 
-                <div class="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-x-10 md:gap-y-8 lg:gap-x-12 lg:gap-y-10">
-                    @forelse ($groupCards as $card)
-                        <article class="relative overflow-hidden rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.06)] ring-1 ring-[#E8F5E9]">
-                            <div class="relative z-[1] flex min-h-[128px] items-center gap-3 px-5 py-6 pr-[7rem] sm:min-h-[140px] sm:gap-5 sm:px-7 sm:py-7">
-                                <div class="min-w-0 flex-1">
-                                    <span class="inline-block rounded-md bg-[#E8F5E9] px-2.5 py-1.5 text-[14px] font-bold uppercase leading-none tracking-[0.12em] text-[#4CAF50] sm:tracking-[0.14em]">{{ $card['tag'] }}</span>
-                                    <h3 class="mt-3.5 text-[17px] font-bold leading-snug text-[#333333] sm:text-[18px]">{{ $card['title'] }}</h3>
-                                    <p class="mt-2 text-[16px] font-normal leading-relaxed text-[#777777]">{{ $card['meta'] }}</p>
+                    <div class="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-x-10 md:gap-y-8 lg:gap-x-12 lg:gap-y-10">
+                        @forelse ($groupCards as $card)
+                            <article class="relative overflow-hidden rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.06)] ring-1 ring-[#E8F5E9]">
+                                <div class="relative z-[1] flex min-h-[128px] items-center gap-3 px-5 py-6 pr-[7rem] sm:min-h-[140px] sm:gap-5 sm:px-7 sm:py-7">
+                                    <div class="min-w-0 flex-1">
+                                        <span class="inline-block rounded-md bg-[#E8F5E9] px-2.5 py-1.5 text-[14px] font-bold uppercase leading-none tracking-[0.12em] text-[#4CAF50] sm:tracking-[0.14em]">{{ $card['tag'] }}</span>
+                                        <h3 class="mt-3.5 text-[17px] font-bold leading-snug text-[#333333] sm:text-[18px]">{{ $card['title'] }}</h3>
+                                        <p class="mt-2 text-[16px] font-normal leading-relaxed text-[#777777]">{{ $card['meta'] }}</p>
+                                    </div>
+                                    <a href="{{ route('league.group', ['leagueSlug' => $currentLeagueSlug, 'groupCardSlug' => $card['slug']]) }}" class="shrink-0 self-center whitespace-nowrap text-[18px] font-semibold leading-tight text-[#4CAF50] underline decoration-[#4CAF50] decoration-1 underline-offset-[3px] transition-opacity hover:opacity-85">View More</a>
                                 </div>
-                                <a href="{{ route('league.group', ['leagueSlug' => $currentLeagueSlug, 'groupCardSlug' => $card['slug']]) }}" class="shrink-0 self-center whitespace-nowrap text-[18px] font-semibold leading-tight text-[#4CAF50] underline decoration-[#4CAF50] decoration-1 underline-offset-[3px] transition-opacity hover:opacity-85">View More</a>
-                            </div>
 
-                            <div class="pointer-events-none absolute inset-y-0 right-0 z-0 flex h-full w-[6.5rem] items-stretch justify-end sm:w-[30%]" aria-hidden="true">
-                                <img
-                                    src="{{ asset('frontend/images/league-ring.png') }}"
-                                    alt=""
-                                    class="h-full w-full min-h-full object-cover object-right opacity-95"
-                                    loading="lazy"
-                                    decoding="async"
-                                />
+                                <div class="pointer-events-none absolute inset-y-0 right-0 z-0 flex h-full w-[6.5rem] items-stretch justify-end sm:w-[30%]" aria-hidden="true">
+                                    <img
+                                        src="{{ asset('frontend/images/league-ring.png') }}"
+                                        alt=""
+                                        class="h-full w-full min-h-full object-cover object-right opacity-95"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                </div>
+                            </article>
+                        @empty
+                            <div class="md:col-span-2">
+                                <div class="rounded-xl border border-[#d7ead9] bg-white px-6 py-10 text-center shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+                                    <p class="text-[22px] font-bold uppercase tracking-[0.08em] text-[#333333]">No List Found</p>
+                                    <p class="mt-3 text-[16px] text-[#6f7f72]">No groups are available for this league right now.</p>
+                                </div>
                             </div>
-                        </article>
-                    @empty
-                        <div class="md:col-span-2">
-                            <div class="rounded-xl border border-[#d7ead9] bg-white px-6 py-10 text-center shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-                                <p class="text-[22px] font-bold uppercase tracking-[0.08em] text-[#333333]">No List Found</p>
-                                <p class="mt-3 text-[16px] text-[#6f7f72]">No groups are available for this league right now.</p>
-                            </div>
-                        </div>
-                    @endforelse
-                </div>
+                        @endforelse
+                    </div>
+                @endif
             </div>
         </section>
     </main>

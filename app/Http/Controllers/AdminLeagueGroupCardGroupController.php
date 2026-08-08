@@ -167,7 +167,6 @@ class AdminLeagueGroupCardGroupController extends Controller
             [$partnerOptionsByRegId, $currentPartnerRegIdByRegId] = $this->partnerFieldMaps(
                 $activeGroupRoster->merge($unassignedRoster),
                 $allGroupCardRegistrations,
-                $activePool,
             );
         }
 
@@ -195,13 +194,11 @@ class AdminLeagueGroupCardGroupController extends Controller
     /**
      * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $rosterEntries
      * @param  \Illuminate\Support\Collection<int, LeagueRegistration>  $allGroupCardRegistrations
-     * @param  \Illuminate\Support\Collection<int, LeagueRegistration>  $activeSubgroupPool
      * @return array{array<int, list<array{registration_id: int, user_id: int, label: string}>>, array<int, int|null>}
      */
     private function partnerFieldMaps(
         \Illuminate\Support\Collection $rosterEntries,
         \Illuminate\Support\Collection $allGroupCardRegistrations,
-        \Illuminate\Support\Collection $activeSubgroupPool,
     ): array {
         $options = [];
         $current = [];
@@ -209,13 +206,10 @@ class AdminLeagueGroupCardGroupController extends Controller
         foreach ($rosterEntries as $entry) {
             /** @var LeagueRegistration $registration */
             $registration = $entry['registration'];
-            $pool = ($registration->group_id ?? null) !== null
-                ? $activeSubgroupPool
-                : $allGroupCardRegistrations;
 
             $options[(int) $registration->id] = LeagueRegistrationRoster::partnerOptionsFor(
                 $registration,
-                $pool,
+                $allGroupCardRegistrations,
             )->all();
             $current[(int) $registration->id] = LeagueRegistrationRoster::partnerRegistrationIdFor($registration);
         }

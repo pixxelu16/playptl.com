@@ -144,23 +144,20 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $partnerRegistrationId = (int) $validated['partner_registration_id'];
         $partnerRegistration = LeagueRegistration::query()->findOrFail($partnerRegistrationId);
-        abort_unless($partnerRegistration->league_id === $league->id && $partnerRegistration->group_card_id === $groupCard->id, 422);
+        abort_unless($partnerRegistration->league_id === $league->id, 422);
 
-        if (! LeagueRegistrationRoster::isAvailableAsPartner($partnerRegistration, (int) $registration->user_id)) {
+        if ((int) $partnerRegistration->user_id === (int) $registration->user_id) {
             return back()->withErrors([
-                'partner_registration_id' => 'That player already has a partner in this group.',
+                'partner_registration_id' => 'A player cannot partner with themselves.',
             ]);
+        }
+
+        if ($partnerRegistration->group_card_id === null || (int) $partnerRegistration->group_card_id !== (int) $groupCard->id) {
+            $partnerRegistration->update(['group_card_id' => $groupCard->id]);
         }
 
         $targetGroupId = $registration->group_id ?? $partnerRegistration->group_id;
         if ($targetGroupId !== null) {
-            if ($registration->group_id !== null && $partnerRegistration->group_id !== null
-                && (int) $registration->group_id !== (int) $partnerRegistration->group_id) {
-                return back()->withErrors([
-                    'partner_registration_id' => 'Partner must be in the same subgroup or unassigned.',
-                ]);
-            }
-
             LeagueRegistrationRoster::updateGroupForEntry($registration, (int) $targetGroupId);
             LeagueRegistrationRoster::updateGroupForEntry($partnerRegistration, (int) $targetGroupId);
         }
