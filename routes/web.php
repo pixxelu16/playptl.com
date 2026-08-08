@@ -57,6 +57,8 @@ Route::post('/charity/donation', [CharityDonationController::class, 'store'])->n
 
 Route::get('/privacy-policy', [LegalPageController::class, 'privacyPolicy'])->name('privacy-policy');
 Route::get('/terms-and-conditions', [LegalPageController::class, 'termsAndConditions'])->name('terms-and-conditions');
+Route::get('/rules', [\App\Http\Controllers\RulesController::class, 'index'])->name('rules');
+Route::get('/rules-and-regulations', [\App\Http\Controllers\RulesController::class, 'index']);
 
 Route::get('/league', function () {
     abort(404);
@@ -111,6 +113,7 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('leagues', AdminLeagueController::class);
         Route::patch('leagues/{league}/toggle-menu', [AdminLeagueController::class, 'toggleMenu'])->name('leagues.toggle-menu');
+        Route::patch('leagues/{league}/toggle-realize', [AdminLeagueController::class, 'toggleRealize'])->name('leagues.toggle-realize');
         Route::get('league-management', [AdminLeagueManagementController::class, 'index'])->name('league-management.index');
         Route::get('league-management/{league}', [AdminLeagueManagementController::class, 'show'])->name('league-management.show');
         Route::post('league-management/{league}/finish', [AdminLeagueManagementController::class, 'finish'])->name('league-management.finish');
@@ -162,6 +165,15 @@ Route::middleware('auth')->group(function () {
         Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
         Route::resource('charity-causes', AdminCharityCauseController::class);
         Route::resource('skills', AdminSkillController::class);
+        Route::get('rules', [\App\Http\Controllers\AdminRulesController::class, 'index'])->name('rules.index');
+        Route::post('rules/sections', [\App\Http\Controllers\AdminRulesController::class, 'storeSection'])->name('rules.store-section');
+        Route::delete('rules/sections/{section}', [\App\Http\Controllers\AdminRulesController::class, 'destroySection'])->name('rules.destroy-section');
+        Route::post('rules/sections/{section}/items', [\App\Http\Controllers\AdminRulesController::class, 'storeItem'])->name('rules.store-item');
+        Route::put('rules/items/{item}', [\App\Http\Controllers\AdminRulesController::class, 'updateItem'])->name('rules.update-item');
+        Route::delete('rules/items/{item}', [\App\Http\Controllers\AdminRulesController::class, 'destroyItem'])->name('rules.destroy-item');
+        Route::post('rules/version', [\App\Http\Controllers\AdminRulesController::class, 'updateVersion'])->name('rules.update-version');
+        Route::post('rules/faqs', [\App\Http\Controllers\AdminRulesController::class, 'storeFaq'])->name('rules.store-faq');
+        Route::delete('rules/faqs/{faq}', [\App\Http\Controllers\AdminRulesController::class, 'destroyFaq'])->name('rules.destroy-faq');
         Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
         Route::get('provider-requests', [\App\Http\Controllers\AdminProviderRequestController::class, 'index'])->name('provider-requests.index');
         Route::patch('provider-requests/{user}/approve', [\App\Http\Controllers\AdminProviderRequestController::class, 'approve'])->name('provider-requests.approve');

@@ -129,3 +129,21 @@
     </label>
 </div>
 
+<div class="admin-form-group">
+    <span class="admin-label">Realize Tournament</span>
+    <label class="admin-switch-wrap" style="margin-top: 6px;">
+        <input type="hidden" name="realize_tournament" value="0">
+        <span class="admin-switch">
+            <input
+                type="checkbox"
+                name="realize_tournament"
+                id="realize_tournament"
+                value="1"
+                @checked(old('realize_tournament', $league->realize_tournament ?? false))
+            >
+            <span class="admin-switch-slider"></span>
+        </span>
+        <span class="admin-switch-label">Enable to mark this tournament as realized</span>
+    </label>
+</div>
+

@@ -79,6 +79,7 @@ class LeagueMenuHelper
     public static function acceptsRegistration(League $league): bool
     {
         return $league->finished_at === null
+            && (bool) $league->realize_tournament
             && in_array((string) ($league->stats ?? ''), self::REGISTRATION_STATUSES, true);
     }
 

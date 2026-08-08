@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'logo_path', 'description', 'stats', 'show_in_menu', 'start_date', 'end_date', 'registration_deadline', 'playoffs_started_at', 'playoffs_closed_at', 'playoff_start_date', 'playoff_end_date', 'finished_at', 'type', 'singles_entry_fee_cents', 'doubles_entry_fee_cents'])]
+#[Fillable(['name', 'slug', 'logo_path', 'description', 'stats', 'show_in_menu', 'realize_tournament', 'start_date', 'end_date', 'registration_deadline', 'playoffs_started_at', 'playoffs_closed_at', 'playoff_start_date', 'playoff_end_date', 'finished_at', 'type', 'singles_entry_fee_cents', 'doubles_entry_fee_cents'])]
 class League extends Model
 {
     /** @use HasFactory<LeagueFactory> */
@@ -23,6 +23,7 @@ class League extends Model
     {
         return [
             'show_in_menu' => 'boolean',
+            'realize_tournament' => 'boolean',
             'start_date' => 'date',
             'end_date' => 'date',
             'registration_deadline' => 'date',

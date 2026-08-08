@@ -344,6 +344,7 @@
                 <nav aria-label="Community">
                     <h2 class="mb-5 text-[13px] font-bold uppercase tracking-[0.16em] text-white">Community</h2>
                     <ul class="space-y-3 text-[15px]">
+                        <li><a href="{{ route('rules') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Rules &amp; Regulations</a></li>
                         <li><a href="{{ route('charity') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Charity</a></li>
                         <li><a href="{{ route('privacy-policy') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Privacy Policy</a></li>
                         <li><a href="{{ route('terms-and-conditions') }}" class="text-[rgba(255,255,255,0.56)] transition-colors hover:text-white">Terms and Conditions</a></li>

@@ -384,8 +384,11 @@ class LeagueRegistrationRoster
         LeagueRegistration $registration,
         Collection $candidateRegs,
     ): Collection {
+        $selfUserId = (int) $registration->user_id;
+
         return $candidateRegs
-            ->filter(fn (LeagueRegistration $candidate) => self::isAvailableAsPartner($candidate, (int) $registration->user_id))
+            ->filter(fn (LeagueRegistration $candidate) => (int) $candidate->user_id !== $selfUserId)
+            ->unique('user_id')
             ->map(fn (LeagueRegistration $candidate) => [
                 'registration_id' => (int) $candidate->id,
                 'user_id' => (int) $candidate->user_id,
