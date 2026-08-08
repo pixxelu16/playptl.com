@@ -112,6 +112,24 @@ class AdminLeagueController extends Controller
         return redirect()->back()->with('status', 'Menu visibility updated successfully.');
     }
 
+    public function toggleRealize(Request $request, League $league)
+    {
+        $newStatus = ! (bool) $league->realize_tournament;
+        $league->update([
+            'realize_tournament' => $newStatus,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'realize_tournament' => (bool) $league->realize_tournament,
+                'message' => 'Realize Tournament status updated successfully.',
+            ]);
+        }
+
+        return redirect()->back()->with('status', 'Realize Tournament status updated successfully.');
+    }
+
     public function destroy(League $league): RedirectResponse
     {
         $this->deleteLogo($league->logo_path);
@@ -131,6 +149,7 @@ class AdminLeagueController extends Controller
             'description' => ['nullable', 'string'],
             'stats' => ['nullable', Rule::in(['active', 'deactive', 'upcoming', 'completed'])],
             'show_in_menu' => ['nullable', 'boolean'],
+            'realize_tournament' => ['nullable', 'boolean'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'type' => ['nullable', Rule::in(['single', 'doubles'])],
@@ -141,6 +160,7 @@ class AdminLeagueController extends Controller
         ]);
 
         $validated['show_in_menu'] = $request->boolean('show_in_menu');
+        $validated['realize_tournament'] = $request->boolean('realize_tournament');
         $validated['singles_entry_fee_cents'] = LeagueEntryFee::centsFromDollarsInput($validated['singles_entry_fee']);
         $validated['doubles_entry_fee_cents'] = LeagueEntryFee::centsFromDollarsInput($validated['doubles_entry_fee']);
 
