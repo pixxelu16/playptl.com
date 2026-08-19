@@ -101,7 +101,7 @@ class AdminLeagueGroupCardAssignPlayerController extends Controller
         ]);
 
         $player = User::query()->findOrFail((int) $validated['user_id']);
-        abort_unless($player->role === UserRole::Player, 404);
+        abort_unless(strtolower((string) ($player->role instanceof UserRole ? $player->role->value : $player->role)) === 'player', 404);
 
         $alreadyInSubGroup = LeagueRegistration::query()
             ->where('user_id', $player->id)

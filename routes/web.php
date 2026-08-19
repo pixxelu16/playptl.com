@@ -92,6 +92,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store']);
+    Route::get('/register/partner-lookup', [RegisteredUserController::class, 'lookupPartner'])->name('register.partner-lookup');
     Route::get('/register/tournament-groups', \App\Http\Controllers\Auth\TournamentRegistrationGroupsController::class)->name('register.tournament-groups');
     Route::post('/register/payment-intent', RegisterStripePaymentIntentController::class)->name('register.payment-intent');
 
@@ -111,91 +112,156 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
 
-        Route::resource('leagues', AdminLeagueController::class);
-        Route::patch('leagues/{league}/toggle-menu', [AdminLeagueController::class, 'toggleMenu'])->name('leagues.toggle-menu');
-        Route::patch('leagues/{league}/toggle-realize', [AdminLeagueController::class, 'toggleRealize'])->name('leagues.toggle-realize');
-        Route::get('league-management', [AdminLeagueManagementController::class, 'index'])->name('league-management.index');
-        Route::get('league-management/{league}', [AdminLeagueManagementController::class, 'show'])->name('league-management.show');
-        Route::post('league-management/{league}/finish', [AdminLeagueManagementController::class, 'finish'])->name('league-management.finish');
+        // Tournaments & League Management
+        Route::middleware('permission:manage leagues')->group(function () {
+            Route::resource('leagues', AdminLeagueController::class);
+            Route::patch('leagues/{league}/toggle-menu', [AdminLeagueController::class, 'toggleMenu'])->name('leagues.toggle-menu');
+            Route::patch('leagues/{league}/toggle-realize', [AdminLeagueController::class, 'toggleRealize'])->name('leagues.toggle-realize');
+            Route::get('league-management', [AdminLeagueManagementController::class, 'index'])->name('league-management.index');
+            Route::get('league-management/{league}', [AdminLeagueManagementController::class, 'show'])->name('league-management.show');
+            Route::post('league-management/{league}/finish', [AdminLeagueManagementController::class, 'finish'])->name('league-management.finish');
 
-        Route::get('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'index'])->name('league-management.groups.index');
-        Route::get('league-management/{league}/group-cards/{groupCard}/groups/create', [AdminLeagueGroupCardGroupController::class, 'create'])->name('league-management.groups.create');
-        Route::post('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'store'])->name('league-management.groups.store');
+            Route::get('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'index'])->name('league-management.groups.index');
+            Route::get('league-management/{league}/group-cards/{groupCard}/groups/create', [AdminLeagueGroupCardGroupController::class, 'create'])->name('league-management.groups.create');
+            Route::post('league-management/{league}/group-cards/{groupCard}/groups', [AdminLeagueGroupCardGroupController::class, 'store'])->name('league-management.groups.store');
 
-        Route::get('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'index'])->name('league-management.assign-players.index');
-        Route::post('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'store'])->name('league-management.assign-players.store');
+            Route::get('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'index'])->name('league-management.assign-players.index');
+            Route::post('league-management/{league}/group-cards/{groupCard}/assign-players', [AdminLeagueGroupCardAssignPlayerController::class, 'store'])->name('league-management.assign-players.store');
 
-        Route::get('league-management/{league}/group-cards/{groupCard}/players', [AdminLeagueGroupCardPlayerController::class, 'index'])->name('league-management.players.index');
-        Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}', [AdminLeagueGroupCardPlayerController::class, 'updateGroup'])->name('league-management.players.update-group');
-        Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}/partner', [AdminLeagueGroupCardPlayerController::class, 'updatePartner'])->name('league-management.players.update-partner');
-        Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}/sub-group', [AdminLeagueGroupCardPlayerController::class, 'updateSubGroup'])->name('league-management.players.update-subgroup');
+            Route::get('league-management/{league}/group-cards/{groupCard}/players', [AdminLeagueGroupCardPlayerController::class, 'index'])->name('league-management.players.index');
+            Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}', [AdminLeagueGroupCardPlayerController::class, 'updateGroup'])->name('league-management.players.update-group');
+            Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}/partner', [AdminLeagueGroupCardPlayerController::class, 'updatePartner'])->name('league-management.players.update-partner');
+            Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}/sub-group', [AdminLeagueGroupCardPlayerController::class, 'updateSubGroup'])->name('league-management.players.update-subgroup');
+            Route::put('league-management/{league}/group-cards/{groupCard}/players/{registration}/team-name', [AdminLeagueGroupCardPlayerController::class, 'updateTeamName'])->name('league-management.players.update-team-name');
 
-        Route::get('league-management/{league}/group-cards/{groupCard}/points', [AdminLeagueGroupCardPointsController::class, 'index'])->name('league-management.points.index');
-        Route::get('league-management/{league}/group-cards/{groupCard}/qualifier', [AdminLeagueGroupCardQualifierController::class, 'index'])->name('league-management.qualifier.index');
-        Route::put('league-management/{league}/group-cards/{groupCard}/qualifier', [AdminLeagueGroupCardQualifierController::class, 'update'])->name('league-management.qualifier.update');
-        Route::post('league-management/{league}/group-cards/{groupCard}/qualifier/clear', [AdminLeagueGroupCardQualifierController::class, 'clearAll'])->name('league-management.qualifier.clear');
-        Route::get('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'index'])->name('league-management.matches.index');
-        Route::post('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'store'])->name('league-management.matches.store');
-        Route::post('league-management/{league}/group-cards/{groupCard}/matches/schedule-dates', [AdminGroupMatchController::class, 'saveScheduleDates'])->name('league-management.matches.save-schedule-dates');
-        Route::post('league-management/{league}/group-cards/{groupCard}/matches/cancel-schedule', [AdminGroupMatchController::class, 'cancelSchedule'])->name('league-management.matches.cancel-schedule');
-        Route::post('league-management/{league}/group-cards/{groupCard}/matches/generate-round-robin', [AdminGroupMatchController::class, 'generateRoundRobin'])->name('league-management.matches.generate-round-robin');
-        Route::put('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'update'])->name('league-management.matches.update');
-        Route::delete('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'destroy'])->name('league-management.matches.destroy');
+            Route::get('league-management/{league}/group-cards/{groupCard}/points', [AdminLeagueGroupCardPointsController::class, 'index'])->name('league-management.points.index');
+            Route::get('league-management/{league}/group-cards/{groupCard}/qualifier', [AdminLeagueGroupCardQualifierController::class, 'index'])->name('league-management.qualifier.index');
+            Route::put('league-management/{league}/group-cards/{groupCard}/qualifier', [AdminLeagueGroupCardQualifierController::class, 'update'])->name('league-management.qualifier.update');
+            Route::post('league-management/{league}/group-cards/{groupCard}/qualifier/clear', [AdminLeagueGroupCardQualifierController::class, 'clearAll'])->name('league-management.qualifier.clear');
+            Route::get('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'index'])->name('league-management.matches.index');
+            Route::post('league-management/{league}/group-cards/{groupCard}/matches', [AdminGroupMatchController::class, 'store'])->name('league-management.matches.store');
+            Route::post('league-management/{league}/group-cards/{groupCard}/matches/schedule-dates', [AdminGroupMatchController::class, 'saveScheduleDates'])->name('league-management.matches.save-schedule-dates');
+            Route::post('league-management/{league}/group-cards/{groupCard}/matches/cancel-schedule', [AdminGroupMatchController::class, 'cancelSchedule'])->name('league-management.matches.cancel-schedule');
+            Route::post('league-management/{league}/group-cards/{groupCard}/matches/generate-round-robin', [AdminGroupMatchController::class, 'generateRoundRobin'])->name('league-management.matches.generate-round-robin');
+            Route::put('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'update'])->name('league-management.matches.update');
+            Route::delete('league-management/{league}/group-cards/{groupCard}/matches/{groupMatch}', [AdminGroupMatchController::class, 'destroy'])->name('league-management.matches.destroy');
 
-        Route::get('league-management/{league}/group-cards/{groupCard}/playoffs', [AdminPlayoffMatchController::class, 'index'])->name('league-management.playoffs.index');
-        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/dates', [AdminPlayoffMatchController::class, 'savePlayoffDates'])->name('league-management.playoffs.dates');
-        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/start', [AdminPlayoffMatchController::class, 'startPlayoffs'])->name('league-management.playoffs.start');
-        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/close', [AdminPlayoffMatchController::class, 'closePlayoffs'])->name('league-management.playoffs.close');
-        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/bracket', [AdminPlayoffMatchController::class, 'storeBracket'])->name('league-management.playoffs.store-bracket');
-        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/rebuild', [AdminPlayoffMatchController::class, 'rebuildFromQualifier'])->name('league-management.playoffs.rebuild');
-        Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/pull-winners', [AdminPlayoffMatchController::class, 'pullWinners'])->name('league-management.playoffs.pull-winners');
-        Route::put('league-management/{league}/group-cards/{groupCard}/playoffs/{playoffMatch}', [AdminPlayoffMatchController::class, 'update'])->name('league-management.playoffs.update');
-        Route::resource('announcements', AdminAnnouncementController::class);
-        Route::resource('official-partners', AdminOfficialPartnerController::class)->except(['show']);
-        Route::get('contact-settings', [AdminContactSettingController::class, 'edit'])->name('contact-settings.edit');
-        Route::put('contact-settings', [AdminContactSettingController::class, 'update'])->name('contact-settings.update');
-        Route::post('contact-settings/test-smtp', [AdminContactSettingController::class, 'testSmtp'])->name('contact-settings.test-smtp');
-        Route::resource('groups', AdminGroupController::class);
-        Route::resource('group-cards', AdminGroupCardController::class);
-        Route::resource('players', AdminPlayerController::class)->only(['index', 'edit', 'update', 'destroy']);
-        Route::resource('roles', \App\Http\Controllers\AdminRoleController::class);
-        Route::get('payment-histories', [AdminPaymentHistoryController::class, 'index'])->name('payment-histories.index');
-        Route::get('charity-donations', [AdminCharityDonationController::class, 'index'])->name('charity-donations.index');
-        Route::get('charity-donations/email-recipient-count', [AdminCharityDonationController::class, 'recipientCount'])->name('charity-donations.email-recipient-count');
-        Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
-        Route::resource('charity-causes', AdminCharityCauseController::class);
-        Route::resource('skills', AdminSkillController::class);
-        Route::get('rules', [\App\Http\Controllers\AdminRulesController::class, 'index'])->name('rules.index');
-        Route::post('rules/sections', [\App\Http\Controllers\AdminRulesController::class, 'storeSection'])->name('rules.store-section');
-        Route::delete('rules/sections/{section}', [\App\Http\Controllers\AdminRulesController::class, 'destroySection'])->name('rules.destroy-section');
-        Route::post('rules/sections/{section}/items', [\App\Http\Controllers\AdminRulesController::class, 'storeItem'])->name('rules.store-item');
-        Route::put('rules/items/{item}', [\App\Http\Controllers\AdminRulesController::class, 'updateItem'])->name('rules.update-item');
-        Route::delete('rules/items/{item}', [\App\Http\Controllers\AdminRulesController::class, 'destroyItem'])->name('rules.destroy-item');
-        Route::post('rules/version', [\App\Http\Controllers\AdminRulesController::class, 'updateVersion'])->name('rules.update-version');
-        Route::post('rules/faqs', [\App\Http\Controllers\AdminRulesController::class, 'storeFaq'])->name('rules.store-faq');
-        Route::delete('rules/faqs/{faq}', [\App\Http\Controllers\AdminRulesController::class, 'destroyFaq'])->name('rules.destroy-faq');
-        Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
-        Route::get('provider-requests', [\App\Http\Controllers\AdminProviderRequestController::class, 'index'])->name('provider-requests.index');
-        Route::patch('provider-requests/{user}/approve', [\App\Http\Controllers\AdminProviderRequestController::class, 'approve'])->name('provider-requests.approve');
-        Route::patch('provider-requests/{user}/reject', [\App\Http\Controllers\AdminProviderRequestController::class, 'reject'])->name('provider-requests.reject');
-        Route::resource('users', \App\Http\Controllers\AdminUserController::class);
-        Route::post('users/{user}/unblock', [\App\Http\Controllers\AdminUserController::class, 'unblock'])->name('users.unblock');
+            Route::get('league-management/{league}/group-cards/{groupCard}/playoffs', [AdminPlayoffMatchController::class, 'index'])->name('league-management.playoffs.index');
+            Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/dates', [AdminPlayoffMatchController::class, 'savePlayoffDates'])->name('league-management.playoffs.dates');
+            Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/start', [AdminPlayoffMatchController::class, 'startPlayoffs'])->name('league-management.playoffs.start');
+            Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/close', [AdminPlayoffMatchController::class, 'closePlayoffs'])->name('league-management.playoffs.close');
+            Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/bracket', [AdminPlayoffMatchController::class, 'storeBracket'])->name('league-management.playoffs.store-bracket');
+            Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/rebuild', [AdminPlayoffMatchController::class, 'rebuildFromQualifier'])->name('league-management.playoffs.rebuild');
+            Route::post('league-management/{league}/group-cards/{groupCard}/playoffs/pull-winners', [AdminPlayoffMatchController::class, 'pullWinners'])->name('league-management.playoffs.pull-winners');
+            Route::put('league-management/{league}/group-cards/{groupCard}/playoffs/{playoffMatch}', [AdminPlayoffMatchController::class, 'update'])->name('league-management.playoffs.update');
+        });
+
+        // Groups (Group Cards)
+        Route::middleware('permission:manage group cards')->group(function () {
+            Route::resource('group-cards', AdminGroupCardController::class);
+        });
+
+        // Subgroups
+        Route::middleware('permission:manage groups')->group(function () {
+            Route::resource('groups', AdminGroupController::class);
+        });
+
+        // Players
+        Route::middleware('permission:manage players')->group(function () {
+            Route::resource('players', AdminPlayerController::class)->only(['index', 'edit', 'update', 'destroy']);
+        });
+
+        // Skills
+        Route::middleware('permission:manage skills')->group(function () {
+            Route::resource('skills', AdminSkillController::class);
+        });
+
+        // Categories
+        Route::middleware('permission:manage categories,manage settings')->group(function () {
+            Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
+        });
+
+        // Users & Provider Requests
+        Route::middleware('permission:manage users')->group(function () {
+            Route::get('provider-requests', [\App\Http\Controllers\AdminProviderRequestController::class, 'index'])->name('provider-requests.index');
+            Route::patch('provider-requests/{user}/approve', [\App\Http\Controllers\AdminProviderRequestController::class, 'approve'])->name('provider-requests.approve');
+            Route::patch('provider-requests/{user}/reject', [\App\Http\Controllers\AdminProviderRequestController::class, 'reject'])->name('provider-requests.reject');
+            Route::resource('users', \App\Http\Controllers\AdminUserController::class);
+            Route::post('users/{user}/unblock', [\App\Http\Controllers\AdminUserController::class, 'unblock'])->name('users.unblock');
+        });
+
         // Secure signed route to unlock account directly from email
         Route::get('users/{user}/unlock-signed', [\App\Http\Controllers\AdminUserController::class, 'unlockSigned'])
             ->name('users.unlock-signed')
             ->middleware('signed');
 
-        // Gallery management
-        Route::get('gallery', [\App\Http\Controllers\AdminGalleryController::class, 'index'])->name('gallery.index');
-        Route::post('gallery', [\App\Http\Controllers\AdminGalleryController::class, 'store'])->name('gallery.store');
-        Route::put('gallery/{upload}', [\App\Http\Controllers\AdminGalleryController::class, 'update'])->name('gallery.update');
-        Route::delete('gallery/{upload}', [\App\Http\Controllers\AdminGalleryController::class, 'destroy'])->name('gallery.destroy');
+        // Payment History
+        Route::middleware('permission:manage payment history,manage payments')->group(function () {
+            Route::get('payment-histories', [AdminPaymentHistoryController::class, 'index'])->name('payment-histories.index');
+        });
 
-        // Booking management
-        Route::get('bookings', [\App\Http\Controllers\AdminBookingController::class, 'index'])->name('bookings.index');
-        Route::get('bookings/{booking}', [\App\Http\Controllers\AdminBookingController::class, 'show'])->name('bookings.show');
-        Route::patch('bookings/{booking}/mark-paid', [\App\Http\Controllers\AdminBookingController::class, 'markPaid'])->name('bookings.mark-paid');
-        Route::patch('bookings/{booking}/status', [\App\Http\Controllers\AdminBookingController::class, 'updateStatus'])->name('bookings.update-status');
+        // Charity Causes
+        Route::middleware('permission:manage charity causes,manage donations')->group(function () {
+            Route::resource('charity-causes', AdminCharityCauseController::class);
+        });
+
+        // Charity Donations
+        Route::middleware('permission:manage charity donations,manage donations')->group(function () {
+            Route::get('charity-donations', [AdminCharityDonationController::class, 'index'])->name('charity-donations.index');
+            Route::get('charity-donations/email-recipient-count', [AdminCharityDonationController::class, 'recipientCount'])->name('charity-donations.email-recipient-count');
+            Route::post('charity-donations/send-email', [AdminCharityDonationController::class, 'sendEmail'])->name('charity-donations.send-email');
+        });
+
+        // Announcements
+        Route::middleware('permission:manage announcements')->group(function () {
+            Route::resource('announcements', AdminAnnouncementController::class);
+        });
+
+        // Official Partners
+        Route::middleware('permission:manage official partners')->group(function () {
+            Route::resource('official-partners', AdminOfficialPartnerController::class)->except(['show']);
+        });
+
+        // Rules & Regulations
+        Route::middleware('permission:manage rules,view admin panel')->group(function () {
+            Route::get('rules', [\App\Http\Controllers\AdminRulesController::class, 'index'])->name('rules.index');
+            Route::post('rules/sections', [\App\Http\Controllers\AdminRulesController::class, 'storeSection'])->name('rules.store-section');
+            Route::delete('rules/sections/{section}', [\App\Http\Controllers\AdminRulesController::class, 'destroySection'])->name('rules.destroy-section');
+            Route::post('rules/sections/{section}/items', [\App\Http\Controllers\AdminRulesController::class, 'storeItem'])->name('rules.store-item');
+            Route::put('rules/items/{item}', [\App\Http\Controllers\AdminRulesController::class, 'updateItem'])->name('rules.update-item');
+            Route::delete('rules/items/{item}', [\App\Http\Controllers\AdminRulesController::class, 'destroyItem'])->name('rules.destroy-item');
+            Route::post('rules/version', [\App\Http\Controllers\AdminRulesController::class, 'updateVersion'])->name('rules.update-version');
+            Route::post('rules/faqs', [\App\Http\Controllers\AdminRulesController::class, 'storeFaq'])->name('rules.store-faq');
+            Route::delete('rules/faqs/{faq}', [\App\Http\Controllers\AdminRulesController::class, 'destroyFaq'])->name('rules.destroy-faq');
+        });
+
+        // Roles & Permissions
+        Route::middleware('permission:manage roles')->group(function () {
+            Route::resource('roles', \App\Http\Controllers\AdminRoleController::class);
+        });
+
+        // Bookings
+        Route::middleware('permission:manage bookings')->group(function () {
+            Route::get('bookings', [\App\Http\Controllers\AdminBookingController::class, 'index'])->name('bookings.index');
+            Route::get('bookings/{booking}', [\App\Http\Controllers\AdminBookingController::class, 'show'])->name('bookings.show');
+            Route::patch('bookings/{booking}/mark-paid', [\App\Http\Controllers\AdminBookingController::class, 'markPaid'])->name('bookings.mark-paid');
+            Route::patch('bookings/{booking}/status', [\App\Http\Controllers\AdminBookingController::class, 'updateStatus'])->name('bookings.update-status');
+        });
+
+        // Gallery
+        Route::middleware('permission:manage gallery')->group(function () {
+            Route::get('gallery', [\App\Http\Controllers\AdminGalleryController::class, 'index'])->name('gallery.index');
+            Route::post('gallery', [\App\Http\Controllers\AdminGalleryController::class, 'store'])->name('gallery.store');
+            Route::put('gallery/{upload}', [\App\Http\Controllers\AdminGalleryController::class, 'update'])->name('gallery.update');
+            Route::delete('gallery/{upload}', [\App\Http\Controllers\AdminGalleryController::class, 'destroy'])->name('gallery.destroy');
+        });
+
+        // Site Settings
+        Route::middleware('permission:manage settings')->group(function () {
+            Route::get('contact-settings', [AdminContactSettingController::class, 'edit'])->name('contact-settings.edit');
+            Route::put('contact-settings', [AdminContactSettingController::class, 'update'])->name('contact-settings.update');
+            Route::post('contact-settings/test-smtp', [AdminContactSettingController::class, 'testSmtp'])->name('contact-settings.test-smtp');
+        });
 
         Route::get('/profile', function () {
             return view('admin.profile');
@@ -270,7 +336,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:organiser')->prefix('organiser')->name('organiser.')->group(function () {
         Route::get('/dashboard', function () {
-            return view('organiser.dashboard');
+            return redirect()->route('admin.dashboard');
         })->name('dashboard');
     });
 

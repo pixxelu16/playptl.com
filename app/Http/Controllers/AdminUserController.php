@@ -28,7 +28,10 @@ class AdminUserController extends Controller
 
         // Role filter
         if ($role = $request->get('role')) {
-            $query->where('role', $role);
+            $query->where(function ($q) use ($role) {
+                $q->where('role', strtolower($role))
+                  ->orWhereHas('roles', fn ($rq) => $rq->where('name', $role));
+            });
         } else {
             // Exclude players from the Users listing page so non-player roles display
             $query->where(function ($q) {
@@ -46,16 +49,18 @@ class AdminUserController extends Controller
         }
 
         $users = $query->latest('id')->paginate($perPage)->withQueryString();
+        $filterRoles = Role::whereNotIn('name', ['player', 'Player'])->orderBy('name')->pluck('name');
 
-        return view('admin.users.index', compact('users', 'perPage'));
+        return view('admin.users.index', compact('users', 'perPage', 'filterRoles'));
     }
 
     public function create()
     {
-        $roles = Role::all();
+        $allRoles = Role::orderBy('name')->pluck('name');
+        $adminRoles = Role::orderBy('name')->get();
         $permissions = Permission::all();
         $publicKey = \App\Support\PasswordEncryptionHelper::getPublicKey();
-        return view('admin.users.create', compact('roles', 'permissions', 'publicKey'));
+        return view('admin.users.create', compact('allRoles', 'adminRoles', 'permissions', 'publicKey'));
     }
 
     public function store(Request $request)
@@ -67,9 +72,8 @@ class AdminUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', Rules\Password::min(8)->letters()->numbers()->symbols()],
-            'role' => ['required', Rule::enum(UserRole::class)],
-            'spatie_roles' => ['nullable', 'array'],
-            'spatie_roles.*' => ['string', 'exists:roles,name'],
+            'role' => ['required', 'string', 'max:255'],
+            'spatie_role' => ['nullable', 'string', 'exists:roles,name'],
             'spatie_permissions' => ['nullable', 'array'],
             'spatie_permissions.*' => ['string', 'exists:permissions,name'],
         ]);
@@ -81,15 +85,21 @@ class AdminUserController extends Controller
             'email' => $validated['email'],
             'username' => $username,
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
+            'role' => strtolower((string) $validated['role']),
         ]);
 
-        // Sync Spatie Roles and Permissions
-        if (!empty($validated['spatie_roles'])) {
-            $user->syncRoles($validated['spatie_roles']);
+        // Sync Single Administrative Role
+        if (!empty($validated['spatie_role'])) {
+            $user->syncRoles([$validated['spatie_role']]);
+        } else {
+            $user->syncRoles([]);
         }
+
+        // Sync Direct Permissions
         if (isset($validated['spatie_permissions'])) {
             $user->syncPermissions($validated['spatie_permissions']);
+        } else {
+            $user->syncPermissions([]);
         }
 
         // Generate password reset link and send welcome email
@@ -106,13 +116,14 @@ class AdminUserController extends Controller
 
     public function edit(User $user)
     {
-        $roles = Role::all();
+        $allRoles = Role::orderBy('name')->pluck('name');
+        $adminRoles = Role::orderBy('name')->get();
         $permissions = Permission::all();
-        $userRoles = $user->roles->pluck('name')->toArray();
+        $userSpatieRole = $user->roles->first()?->name;
         $userPermissions = $user->permissions->pluck('name')->toArray();
         $publicKey = \App\Support\PasswordEncryptionHelper::getPublicKey();
 
-        return view('admin.users.edit', compact('user', 'roles', 'permissions', 'userRoles', 'userPermissions', 'publicKey'));
+        return view('admin.users.edit', compact('user', 'allRoles', 'adminRoles', 'permissions', 'userSpatieRole', 'userPermissions', 'publicKey'));
     }
 
     public function update(Request $request, User $user)
@@ -124,16 +135,15 @@ class AdminUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', Rules\Password::min(8)->letters()->numbers()->symbols()],
-            'role' => ['required', Rule::enum(UserRole::class)],
-            'spatie_roles' => ['nullable', 'array'],
-            'spatie_roles.*' => ['string', 'exists:roles,name'],
+            'role' => ['required', 'string', 'max:255'],
+            'spatie_role' => ['nullable', 'string', 'exists:roles,name'],
             'spatie_permissions' => ['nullable', 'array'],
             'spatie_permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
-        $user->role = $validated['role'];
+        $user->role = strtolower((string) $validated['role']);
 
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
@@ -141,13 +151,14 @@ class AdminUserController extends Controller
 
         $user->save();
 
-        // Sync Spatie Roles and Permissions
-        if (isset($validated['spatie_roles'])) {
-            $user->syncRoles($validated['spatie_roles']);
+        // Sync Single Administrative Role
+        if (!empty($validated['spatie_role'])) {
+            $user->syncRoles([$validated['spatie_role']]);
         } else {
             $user->syncRoles([]);
         }
 
+        // Sync Direct Permissions
         if (isset($validated['spatie_permissions'])) {
             $user->syncPermissions($validated['spatie_permissions']);
         } else {

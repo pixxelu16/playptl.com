@@ -237,9 +237,7 @@ final class MatchSchedulePresenter
         $won = $finished ? $match->homeSideWon() : null;
         $winnerLabel = null;
         if ($won !== null) {
-            $winnerLabel = $match->format === GroupMatchFormat::Doubles
-                ? ($won ? 'Home team' : 'Away team')
-                : self::formatSideNames($match, $won ? 'home' : 'away');
+            $winnerLabel = self::formatSideNames($match, $won ? 'home' : 'away');
         }
 
         $timeRaw = trim((string) ($match->start_time ?? ''));
@@ -351,16 +349,45 @@ final class MatchSchedulePresenter
         return array_values(array_unique($ids));
     }
 
+    public static function teamNameForSide(GroupMatch $match, string $side): ?string
+    {
+        if ($match->format !== GroupMatchFormat::Doubles) {
+            return null;
+        }
+
+        $isHome = $side === 'home';
+        $u1 = $isHome ? (int) $match->home_user_id : (int) $match->away_user_id;
+        $u2 = $isHome ? (int) ($match->home_partner_user_id ?? 0) : (int) ($match->away_partner_user_id ?? 0);
+
+        $userIds = array_values(array_filter([$u1, $u2]));
+        if ($userIds === [] || ! Schema::hasTable('league_registrations')) {
+            return null;
+        }
+
+        $teamName = LeagueRegistration::query()
+            ->where('league_id', $match->league_id)
+            ->whereIn('user_id', $userIds)
+            ->whereNotNull('team_name')
+            ->where('team_name', '!=', '')
+            ->value('team_name');
+
+        return $teamName ? trim((string) $teamName) : null;
+    }
+
     public static function formatSideNames(GroupMatch $match, string $side): string
     {
         $isHome = $side === 'home';
         if ($match->format === GroupMatchFormat::Doubles) {
-            if ($isHome && $match->homePartnerUser) {
-                return self::playerDisplayName($match->homeUser).' & '.self::playerDisplayName($match->homePartnerUser);
+            $teamName = self::teamNameForSide($match, $side);
+            $p1 = $isHome ? self::playerDisplayName($match->homeUser) : self::playerDisplayName($match->awayUser);
+            $p2 = $isHome ? self::playerDisplayName($match->homePartnerUser) : self::playerDisplayName($match->awayPartnerUser);
+            $playersStr = ($p1 !== '—' && $p2 !== '—') ? $p1.' & '.$p2 : ($p1 !== '—' ? $p1 : $p2);
+
+            if ($teamName) {
+                return $playersStr !== '—' ? $teamName.' ('.$playersStr.')' : $teamName;
             }
-            if (! $isHome && $match->awayPartnerUser) {
-                return self::playerDisplayName($match->awayUser).' & '.self::playerDisplayName($match->awayPartnerUser);
-            }
+
+            return $playersStr;
         }
 
         $u = $isHome ? $match->homeUser : $match->awayUser;

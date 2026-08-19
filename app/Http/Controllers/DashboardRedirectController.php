@@ -10,10 +10,25 @@ class DashboardRedirectController extends Controller
 {
     public function __invoke(Request $request): RedirectResponse
     {
-        if ($request->user()->role === UserRole::Player) {
-            return redirect()->to($request->user()->playerProfileUrl());
+        $user = $request->user();
+
+        if (
+            $user->hasRole('Super Admin')
+            || $user->hasRole('Admin')
+            || $user->hasRole('Organiser')
+            || $user->role === UserRole::Admin
+            || $user->role === UserRole::Organiser
+            || $user->can('view admin panel')
+            || $user->getAllPermissions()->isNotEmpty()
+            || $user->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->isNotEmpty()
+        ) {
+            return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->route($request->user()->dashboardRouteName());
+        if ($user->role === UserRole::Player) {
+            return redirect()->to($user->playerProfileUrl());
+        }
+
+        return redirect()->route($user->dashboardRouteName());
     }
 }

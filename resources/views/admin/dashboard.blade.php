@@ -7,13 +7,62 @@
     <section class="admin-card" style="margin-bottom: 24px;">
         <div class="admin-dashboard-hero">
             <div>
-                <h1 class="admin-card-title">Admin Dashboard</h1>
+                <h1 class="admin-card-title">
+                    @if(auth()->user()->hasRole('Organiser') && !auth()->user()->hasRole('Super Admin') && !auth()->user()->hasRole('Admin'))
+                        Organiser Dashboard
+                    @else
+                        Admin Dashboard
+                    @endif
+                </h1>
                 <p class="admin-card-text">Welcome, {{ auth()->user()->name }}. Use the stats, charts, and activity listings below for full oversight.</p>
             </div>
         </div>
     </section>
 
-    {{-- User Statistics Grid --}}
+    {{-- Tournament Overview (Visible if user has tournament or player management permissions) --}}
+    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage leagues') || auth()->user()->can('manage players'))
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; display:flex; align-items:center; gap: 12px;">
+            <div style="background: #ecfdf5; color: #059669; height: 48px; width: 48px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div>
+                <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Total Tournaments</span>
+                <strong style="display:block; font-size:22px; color:#1f2937; font-weight:800; line-height:1.2;">{{ $leaguesCount }}</strong>
+            </div>
+        </div>
+        <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; display:flex; align-items:center; gap: 12px;">
+            <div style="background: #e0f2fe; color: #0284c7; height: 48px; width: 48px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+                <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Total Players</span>
+                <strong style="display:block; font-size:22px; color:#1f2937; font-weight:800; line-height:1.2;">{{ $playersCount }}</strong>
+            </div>
+        </div>
+        <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; display:flex; align-items:center; gap: 12px;">
+            <div style="background: #faf5ff; color: #9333ea; height: 48px; width: 48px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-table-cells-large"></i>
+            </div>
+            <div>
+                <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Tournament Groups</span>
+                <strong style="display:block; font-size:22px; color:#1f2937; font-weight:800; line-height:1.2;">{{ $groupCardsCount }}</strong>
+            </div>
+        </div>
+        <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; display:flex; align-items:center; gap: 12px;">
+            <div style="background: #fff7ed; color: #ea580c; height: 48px; width: 48px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-users-line"></i>
+            </div>
+            <div>
+                <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Subgroups</span>
+                <strong style="display:block; font-size:22px; color:#1f2937; font-weight:800; line-height:1.2;">{{ $groupsCount }}</strong>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- User Statistics Grid (Visible if user has user management permissions) --}}
+    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage users'))
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; display:flex; align-items:center; gap: 12px;">
             <div style="background: #e0f2fe; color: #0284c7; height: 48px; width: 48px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px;">
@@ -43,17 +92,19 @@
             </div>
         </div>
         <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; display:flex; align-items:center; gap: 12px;">
-            <div style="background: #ecfdf5; color: #059669; height: 48px; width: 48px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px;">
-                <i class="fa-solid fa-trophy"></i>
+            <div style="background: #fdf2f8; color: #db2777; height: 48px; width: 48px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-user-shield"></i>
             </div>
             <div>
-                <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Total Players</span>
-                <strong style="display:block; font-size:22px; color:#1f2937; font-weight:800; line-height:1.2;">{{ $playersCount }}</strong>
+                <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:#9ca3af; letter-spacing:0.05em;">Total Users</span>
+                <strong style="display:block; font-size:22px; color:#1f2937; font-weight:800; line-height:1.2;">{{ $totalUsers }}</strong>
             </div>
         </div>
     </div>
+    @endif
 
-    {{-- Financial Statistics Grid --}}
+    {{-- Financial Statistics Grid (Visible if user has payment / finance management permissions) --}}
+    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage payment history') || auth()->user()->can('manage payments'))
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <div style="background: #059669; color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
             <span style="font-size:11px; text-transform:uppercase; font-weight:700; opacity:0.8; letter-spacing:0.05em;">Total Platform Revenue</span>
@@ -97,8 +148,10 @@
             <canvas id="revenueChart"></canvas>
         </div>
     </section>
+    @endif
 
-    {{-- Recent Users List --}}
+    {{-- Recent Users List (Visible if user has user management permissions) --}}
+    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage users'))
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 24px;">
         {{-- Recent Students --}}
         <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 18px; display:flex; flex-direction: column; gap: 12px;">
@@ -163,7 +216,9 @@
             </div>
         </div>
     </div>
+    @endif
 
+    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage payment history') || auth()->user()->can('manage payments'))
     {{-- Chart.js Script --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -190,7 +245,9 @@
         let revenueChart;
 
         function renderChart(type) {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
+            const chartCanvas = document.getElementById('revenueChart');
+            if (!chartCanvas) return;
+            const ctx = chartCanvas.getContext('2d');
             const data = chartData[type];
 
             if (revenueChart) {
@@ -259,12 +316,14 @@
             const types = ['daily', 'weekly', 'monthly', 'yearly'];
             types.forEach(t => {
                 const btn = document.getElementById('btn-' + t);
-                if (t === type) {
-                    btn.style.background = '#059669';
-                    btn.style.color = 'white';
-                } else {
-                    btn.style.background = '#f3f4f6';
-                    btn.style.color = '#4b5563';
+                if (btn) {
+                    if (t === type) {
+                        btn.style.background = '#059669';
+                        btn.style.color = 'white';
+                    } else {
+                        btn.style.background = '#f3f4f6';
+                        btn.style.color = '#4b5563';
+                    }
                 }
             });
 
@@ -277,4 +336,5 @@
             renderChart('daily');
         });
     </script>
+    @endif
 @endsection

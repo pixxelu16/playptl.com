@@ -16,6 +16,7 @@ use App\Models\LeagueRegistration;
 use App\Models\PaymentHistory;
 use App\Models\SiteSetting;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Hash;
@@ -57,6 +58,59 @@ class RegisteredUserController extends Controller
             'publicKey' => \App\Support\PasswordEncryptionHelper::getPublicKey(),
             'stripePublishableKey' => SiteSetting::stripePublishableKey(),
             'tournamentGroupsUrl' => route('register.tournament-groups'),
+        ]);
+    }
+
+    public function lookupPartner(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'primary_email' => ['nullable', 'string', 'email', 'max:255'],
+        ]);
+
+        $email = strtolower(trim((string) $validated['email']));
+        $primaryEmail = strtolower(trim((string) ($validated['primary_email'] ?? '')));
+
+        if ($primaryEmail !== '' && $email === $primaryEmail) {
+            return response()->json([
+                'found' => false,
+                'message' => 'Second player email must be different from your email.',
+            ], 422);
+        }
+
+        $partner = User::query()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        if (! $partner) {
+            return response()->json([
+                'found' => false,
+                'message' => 'Player not found in system. Please enter their details below.',
+            ]);
+        }
+
+        $firstName = trim((string) ($partner->first_name ?? ''));
+        $lastName = trim((string) ($partner->last_name ?? ''));
+        if ($firstName === '' && $lastName === '') {
+            $parts = preg_split('/\s+/', trim((string) $partner->name), 2) ?: [];
+            $firstName = $parts[0] ?? '';
+            $lastName = $parts[1] ?? '';
+        }
+
+        $skillLevel = trim((string) (UserSkillLevel::resolvedFor($partner) ?? $partner->skill_level ?? ''));
+
+        return response()->json([
+            'found' => true,
+            'message' => 'Existing player found! Details have been auto-populated.',
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'phone' => (string) ($partner->phone ?? ''),
+            'city' => (string) ($partner->city ?? ''),
+            'state' => (string) ($partner->state ?? ''),
+            'sex' => (string) ($partner->sex ?? ''),
+            'age_group' => (string) ($partner->age_group ?? ''),
+            'name' => trim((string) $partner->name) !== '' ? (string) $partner->name : trim($firstName.' '.$lastName),
+            'skill_level' => $skillLevel !== '' ? $skillLevel : null,
         ]);
     }
 
@@ -138,7 +192,8 @@ class RegisteredUserController extends Controller
             auth()->login($user);
             $request->session()->regenerate();
 
-            $profileUrl = route(strtolower($user->role->value) . '.profile');
+            $userRoleStr = strtolower($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
+            $profileUrl = route($userRoleStr . '.profile');
             $ajaxSuccessMessage = 'Registration successful! Redirecting to complete your profile...';
 
             if ($request->expectsJson() || $request->ajax()) {
@@ -149,7 +204,7 @@ class RegisteredUserController extends Controller
                 ]);
             }
 
-            return redirect()->route(strtolower($user->role->value) . '.profile')->with('status', 'Registration successful!');
+            return redirect()->route($userRoleStr . '.profile')->with('status', 'Registration successful!');
         }
 
         $isFreeReg = (SiteSetting::getValue('enable_free_registration', '0') === '1');
@@ -194,8 +249,8 @@ class RegisteredUserController extends Controller
             ];
             if ($isDoublesRegistration) {
                 $rules = array_merge($rules, [
-                    'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-                    'd2_phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
+                    'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'different:email'],
+                    'd2_phone' => ['required', 'string', 'max:32'],
                     'd2_city' => ['required', 'string', 'max:255'],
                     'd2_state' => ['required', 'string', 'max:64'],
                     'd2_age_group' => ['required', 'string', 'max:32'],
@@ -228,8 +283,8 @@ class RegisteredUserController extends Controller
                 'tournament_doubles' => ['required', 'integer', 'exists:leagues,id'],
                 'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
                 'team_name' => ['nullable', 'string', 'max:255'],
-                'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-                'd2_phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
+                'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'different:email'],
+                'd2_phone' => ['required', 'string', 'max:32'],
                 'd2_city' => ['required', 'string', 'max:255'],
                 'd2_state' => ['required', 'string', 'max:64'],
                 'd2_age_group' => ['required', 'string', 'max:32'],

@@ -105,7 +105,8 @@ class LeagueController extends Controller
         $detail['leagueSlug'] = $leagueSlug;
         $detail['leagueId'] = $league->id;
         $detail['groupCardId'] = $groupCard->id;
-        $detail['isRealized'] = (bool) ($league->realize_tournament ?? false);
+        $isRealized = (bool) ($league->realize_tournament ?? false) || $this->canUserViewUnrealizedLeague($league);
+        $detail['isRealized'] = $isRealized;
         $detail['breadcrumbLeagueLabel'] = Str::upper($league->name);
         $detail['statSeasonRange'] = $seasonRange;
         $detail['playerGroups'] = $playerGroups;
@@ -136,6 +137,26 @@ class LeagueController extends Controller
         return view('league-detail', $detail);
     }
 
+    protected function canUserViewUnrealizedLeague(?League $league = null): bool
+    {
+        if (! auth()->check()) {
+            return false;
+        }
+
+        $user = auth()->user();
+        $userRoleStr = strtolower($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
+
+        return $user->hasRole('Super Admin')
+            || $user->hasRole('Admin')
+            || $user->hasRole('admin')
+            || $user->hasRole('Organiser')
+            || $user->hasRole('organiser')
+            || in_array($userRoleStr, ['admin', 'super admin', 'organiser'])
+            || $user->can('manage leagues')
+            || $user->can('view admin panel')
+            || $user->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->isNotEmpty();
+    }
+
     protected function isUserRegisteredInLeague(League $league): bool
     {
         if (! auth()->check()) {
@@ -143,8 +164,19 @@ class LeagueController extends Controller
         }
 
         $user = auth()->user();
+        $userRoleStr = strtolower($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
 
-        if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('admin'))) {
+        if (
+            $user->hasRole('Super Admin')
+            || $user->hasRole('Admin')
+            || $user->hasRole('admin')
+            || $user->hasRole('Organiser')
+            || $user->hasRole('organiser')
+            || in_array($userRoleStr, ['admin', 'super admin', 'organiser'])
+            || $user->can('manage leagues')
+            || $user->can('view admin panel')
+            || $user->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->isNotEmpty()
+        ) {
             return true;
         }
 
@@ -1187,7 +1219,7 @@ class LeagueController extends Controller
         }
 
         return [
-            'isRealized' => (bool) ($league?->realize_tournament ?? false),
+            'isRealized' => (bool) ($league?->realize_tournament ?? false) || $this->canUserViewUnrealizedLeague($league),
             'currentLeagueSlug' => $league?->slug,
             'pageTitle' => $leagueName.' | Premier Tennis League',
             'pageMetaDescription' => ($league?->description && trim($league->description) !== '')

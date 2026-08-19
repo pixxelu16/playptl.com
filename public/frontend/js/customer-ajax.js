@@ -540,6 +540,99 @@
 
     $form.on('input', 'input[name="password"], input[name="password_confirmation"]', setPasswordMatchMessage);
 
+    function initRegisterPartnerEmailLookup() {
+      var lookupUrl = $form.data('partner-lookup-url') || '';
+      if (!lookupUrl || tab !== 'doubles') return;
+
+      var $email = $form.find('input[name="d2_email"]');
+      var $primaryEmail = $form.find('input[name="email"]');
+      var $status = $form.find('.partner-email-lookup-status');
+      var lookupTimer = null;
+      var lastLookupEmail = '';
+
+      function setStatus(type, message) {
+        if (!$status.length) return;
+        if (!message) {
+          $status.text('').addClass('hidden').removeClass('text-emerald-700 text-amber-700 text-red-600 text-[#1d4ed8]');
+          return;
+        }
+        var color =
+          type === 'success'
+            ? 'text-emerald-700'
+            : type === 'info'
+              ? 'text-[#1d4ed8]'
+              : type === 'warn'
+                ? 'text-amber-700'
+                : 'text-red-600';
+        $status
+          .text(message)
+          .removeClass('hidden text-emerald-700 text-amber-700 text-red-600 text-[#1d4ed8]')
+          .addClass(color);
+      }
+
+      function lookupPartner() {
+        var email = $.trim($email.val() || '').toLowerCase();
+        var primaryEmail = $.trim($primaryEmail.val() || '').toLowerCase();
+
+        if (!email) {
+          lastLookupEmail = '';
+          setStatus('', '');
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setStatus('error', 'Enter a valid email address.');
+          return;
+        }
+        if (primaryEmail && email === primaryEmail) {
+          setStatus('error', 'Second player email must be different from your email.');
+          return;
+        }
+        if (email === lastLookupEmail) return;
+
+        lastLookupEmail = email;
+        setStatus('info', 'Looking up player...');
+
+        $.ajax({
+          type: 'GET',
+          url: lookupUrl,
+          data: { email: email, primary_email: primaryEmail },
+          dataType: 'json',
+          headers: { Accept: 'application/json' },
+        })
+          .done(function (res) {
+            if (res.found) {
+              if (res.first_name) $form.find('input[name="d2_first"]').val(res.first_name);
+              if (res.last_name) $form.find('input[name="d2_last"]').val(res.last_name);
+              if (res.phone) $form.find('input[name="d2_phone"]').val(res.phone);
+              if (res.city) $form.find('input[name="d2_city"]').val(res.city);
+              if (res.state) $form.find('input[name="d2_state"]').val(res.state);
+              if (res.age_group) $form.find('select[name="d2_age_group"]').val(res.age_group);
+              if (res.sex) $form.find('select[name="d2_sex"]').val(res.sex);
+              if (res.skill_level) {
+                $form.find('select[name="d2_skill"]').val(res.skill_level);
+              }
+              loadDoublesAssignedGroup();
+              setStatus('success', res.message || 'Existing player found! Details have been auto-populated.');
+              return;
+            }
+            setStatus('', '');
+          })
+          .fail(function (xhr) {
+            var res = xhr.responseJSON || {};
+            setStatus('error', res.message || 'Error looking up player.');
+          });
+      }
+
+      $email.on('input change blur', function () {
+        clearTimeout(lookupTimer);
+        lookupTimer = setTimeout(lookupPartner, 350);
+      });
+    }
+
+    if (tab === 'doubles') {
+      initRegisterPartnerEmailLookup();
+    }
+
     mountCard();
 
     $form.on('submit', function (e) {

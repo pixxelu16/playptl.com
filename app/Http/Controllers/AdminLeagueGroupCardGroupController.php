@@ -78,6 +78,7 @@ class AdminLeagueGroupCardGroupController extends Controller
                 ->with([
                     'leagueRegistrations' => fn ($q) => $q
                         ->where('league_id', $league->id)
+                        ->whereHas('user', fn ($uq) => $uq->where('status', 'active'))
                         ->where(function ($qq) use ($groupCard) {
                             $qq->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
                         })
@@ -91,6 +92,7 @@ class AdminLeagueGroupCardGroupController extends Controller
                     LeagueRegistration::query()
                         ->where('league_id', $league->id)
                         ->where('group_id', $activeGroup->id)
+                        ->whereHas('user', fn ($uq) => $uq->where('status', 'active'))
                         ->where(function ($qq) use ($groupCard) {
                             $qq->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
                         })
@@ -122,6 +124,7 @@ class AdminLeagueGroupCardGroupController extends Controller
         if ($playerSchemaReady) {
             $unassignedQuery = LeagueRegistration::query()
                 ->where('league_id', $league->id)
+                ->whereHas('user', fn ($uq) => $uq->where('status', 'active'))
                 ->whereNull('group_id')
                 ->where(function ($q) use ($groupCard) {
                     $q->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
@@ -146,25 +149,16 @@ class AdminLeagueGroupCardGroupController extends Controller
         $isDoublesGroupCard = LeagueRegistrationRoster::isDoublesSubGroup($groupCard);
         $partnerOptionsByRegId = [];
         $currentPartnerRegIdByRegId = [];
+        $currentPartnerUserIdByRegId = [];
 
         if ($isDoublesGroupCard && $playerSchemaReady) {
             $allGroupCardRegistrations = LeagueRegistration::query()
                 ->where('league_id', $league->id)
-                ->where(function ($query) use ($groupCard) {
-                    $query->whereNull('group_card_id')->orWhere('group_card_id', $groupCard->id);
-                })
-                ->when(
-                    $ageGroupKey !== null && Schema::hasColumn('league_registrations', 'age_group_key'),
-                    fn ($query) => $query->where('age_group_key', $ageGroupKey)
-                )
+                ->whereHas('user', fn ($uq) => $uq->where('status', 'active'))
                 ->with('user')
                 ->get();
 
-            $activePool = $activeGroup
-                ? $activeGroup->leagueRegistrations
-                : collect();
-
-            [$partnerOptionsByRegId, $currentPartnerRegIdByRegId] = $this->partnerFieldMaps(
+            [$partnerOptionsByRegId, $currentPartnerRegIdByRegId, $currentPartnerUserIdByRegId] = $this->partnerFieldMaps(
                 $activeGroupRoster->merge($unassignedRoster),
                 $allGroupCardRegistrations,
             );
@@ -188,13 +182,14 @@ class AdminLeagueGroupCardGroupController extends Controller
             'isDoublesGroupCard' => $isDoublesGroupCard,
             'partnerOptionsByRegId' => $partnerOptionsByRegId,
             'currentPartnerRegIdByRegId' => $currentPartnerRegIdByRegId,
+            'currentPartnerUserIdByRegId' => $currentPartnerUserIdByRegId,
         ]);
     }
 
     /**
      * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $rosterEntries
      * @param  \Illuminate\Support\Collection<int, LeagueRegistration>  $allGroupCardRegistrations
-     * @return array{array<int, list<array{registration_id: int, user_id: int, label: string}>>, array<int, int|null>}
+     * @return array{array<int, list<array{registration_id: int, user_id: int, label: string}>>, array<int, int|null>, array<int, int|null>}
      */
     private function partnerFieldMaps(
         \Illuminate\Support\Collection $rosterEntries,
@@ -202,6 +197,7 @@ class AdminLeagueGroupCardGroupController extends Controller
     ): array {
         $options = [];
         $current = [];
+        $currentUserIds = [];
 
         foreach ($rosterEntries as $entry) {
             /** @var LeagueRegistration $registration */
@@ -212,9 +208,10 @@ class AdminLeagueGroupCardGroupController extends Controller
                 $allGroupCardRegistrations,
             )->all();
             $current[(int) $registration->id] = LeagueRegistrationRoster::partnerRegistrationIdFor($registration);
+            $currentUserIds[(int) $registration->id] = LeagueRegistrationRoster::partnerUserIdFor($registration);
         }
 
-        return [$options, $current];
+        return [$options, $current, $currentUserIds];
     }
 
     public function create(Request $request, League $league, GroupCard $groupCard): View
