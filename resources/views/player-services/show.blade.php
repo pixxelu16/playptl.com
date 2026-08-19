@@ -103,7 +103,7 @@
                                     if (auth()->user()->hasRole('Student')) {
                                         $activeRole = 'student';
                                     } else {
-                                        $activeRole = strtolower(auth()->user()->role->value);
+                                        $activeRole = strtolower(auth()->user()->role instanceof \App\Enums\UserRole ? auth()->user()->role->value : (string) auth()->user()->role);
                                     }
                                 }
                                 $isMentorOrCoach = auth()->user()->hasAnyRole(['Mentor', 'Coach']) || in_array($activeRole, ['mentor', 'coach']);

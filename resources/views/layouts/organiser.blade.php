@@ -164,8 +164,9 @@
             @php
                 $user = auth()->user();
                 $allRoles = $user ? $user->roles->pluck('name')->toArray() : [];
-                if ($user && !in_array($user->role->name, $allRoles)) {
-                    $allRoles[] = $user->role->name;
+                $currentBaseRole = $user ? (is_object($user->role) ? ($user->role->name ?? $user->role->value) : ucfirst($user->role)) : null;
+                if ($currentBaseRole && !in_array($currentBaseRole, $allRoles)) {
+                    $allRoles[] = $currentBaseRole;
                 }
                 $allRoles = array_unique(array_map('ucfirst', $allRoles));
             @endphp
@@ -173,11 +174,18 @@
                 <div style="padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 15px;">
                     <div style="font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.5); text-transform: uppercase;">Switch Panel</div>
                     @foreach($allRoles as $rName)
-                        @if(strtolower($rName) !== 'organiser')
-                            <a href="{{ route(strtolower($rName) . '.dashboard') }}" style="font-size: 12px; color: #B4F000; padding: 4px 0; display: block;">
-                                &rarr; {{ $rName }}
-                            </a>
-                        @endif
+                        @php
+                            $rLower = strtolower($rName);
+                            if ($rLower === 'organiser') continue;
+                            $targetUrl = match (true) {
+                                $rLower === 'player' => route('player.my-profile'),
+                                \Illuminate\Support\Facades\Route::has($rLower . '.dashboard') => route($rLower . '.dashboard'),
+                                default => route('admin.dashboard'),
+                            };
+                        @endphp
+                        <a href="{{ $targetUrl }}" style="font-size: 12px; color: #B4F000; padding: 4px 0; display: block;">
+                            &rarr; {{ $rName }}
+                        </a>
                     @endforeach
                 </div>
             @endif

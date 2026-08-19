@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Group;
 use App\Models\GroupCard;
 use App\Models\LeagueRegistration;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,16 +48,23 @@ class LeagueRegistrationRoster
      */
     public static function teamDisplayName(Collection $regs): string
     {
+        $teamName = $regs->pluck('team_name')->filter()->map(fn ($n) => trim((string) $n))->first(fn ($n) => $n !== '');
         $tokens = $regs
             ->map(fn (LeagueRegistration $r) => self::nameToken((string) ($r->user?->name ?? '')))
             ->filter()
             ->values();
 
+        $playerNames = $tokens->isNotEmpty() ? $tokens->implode('/') : '';
+
+        if ($teamName) {
+            return $playerNames !== '' ? $teamName.' ('.$playerNames.')' : $teamName;
+        }
+
         if ($tokens->isEmpty()) {
             return '—';
         }
 
-        return $tokens->implode('/');
+        return $playerNames;
     }
 
     /**
@@ -75,11 +83,20 @@ class LeagueRegistrationRoster
     public static function collapseForDisplay(Collection $regs): Collection
     {
         return $regs
+            ->filter(fn (LeagueRegistration $r) => $r->user !== null && strtolower((string) ($r->user->status ?? 'active')) === 'active')
             ->groupBy(fn (LeagueRegistration $r) => self::rosterKey($r))
             ->map(function (Collection $teamRegs) {
                 $teamRegs = $teamRegs->sortBy('id')->values();
                 /** @var LeagueRegistration $primary */
                 $primary = $teamRegs->first();
+
+                $teamName = $teamRegs->pluck('team_name')->filter()->map(fn ($n) => trim((string) $n))->first(fn ($n) => $n !== '') ?? '';
+
+                $tokens = $teamRegs
+                    ->map(fn (LeagueRegistration $r) => self::nameToken((string) ($r->user?->name ?? '')))
+                    ->filter()
+                    ->values();
+                $playerNames = $tokens->isNotEmpty() ? $tokens->implode(' / ') : (self::nameToken((string) ($primary->user?->name ?? '')) ?: '—');
 
                 $displayName = $teamRegs->count() > 1 || self::isDoublesTeam($primary)
                     ? self::teamDisplayName($teamRegs)
@@ -95,18 +112,20 @@ class LeagueRegistrationRoster
                     'registration' => $primary,
                     'registrations' => $teamRegs,
                     'display_name' => $displayName,
+                    'player_names' => $playerNames,
+                    'team_name' => $teamName,
                     'display_subtitle' => $emails->implode(' · '),
                     'user' => $primary->user,
                     'partner_user' => $teamRegs->get(1)?->user,
                 ];
             })
-            ->sortBy(fn (array $entry) => strtolower($entry['display_name']))
+            ->sortByDesc(fn (array $entry) => (int) ($entry['registration']?->id ?? 0))
             ->values();
     }
 
     public static function countSlots(Builder $query): int
     {
-        $regs = (clone $query)->get(['id', 'user_id', 'registration_type', 'team_key']);
+        $regs = (clone $query)->with('user')->get();
 
         return self::collapseForDisplay($regs)->count();
     }
@@ -207,7 +226,7 @@ class LeagueRegistrationRoster
     }
 
     /**
-     * Move registration(s) to another league sub group; clears group assignment.
+     * Move registration(s) to another league sub group; preserves/maps subgroup assignment.
      *
      * @return list<int> moved registration ids
      */
@@ -218,9 +237,36 @@ class LeagueRegistrationRoster
     ): array {
         $ids = self::registrationIdsForEntry($registration);
         $registrationType = self::registrationTypeForGroupCard($targetGroupCard);
+
+        $targetGroupId = null;
+        if ($registration->group_id !== null) {
+            $currentGroup = Group::query()->find($registration->group_id);
+            if ($currentGroup) {
+                $isValidInTarget = Group::query()
+                    ->whereKey($currentGroup->id)
+                    ->where(function ($q) use ($targetGroupCard) {
+                        $q->where('group_card_id', $targetGroupCard->id)
+                            ->orWhereHas('groupCards', fn ($qq) => $qq->whereKey($targetGroupCard->id));
+                    })
+                    ->exists();
+
+                if ($isValidInTarget) {
+                    $targetGroupId = $currentGroup->id;
+                } else {
+                    $targetGroupId = Group::query()
+                        ->where(function ($q) use ($targetGroupCard) {
+                            $q->where('group_card_id', $targetGroupCard->id)
+                                ->orWhereHas('groupCards', fn ($qq) => $qq->whereKey($targetGroupCard->id));
+                        })
+                        ->where('name', $currentGroup->name)
+                        ->value('id');
+                }
+            }
+        }
+
         $attributes = [
             'group_card_id' => $targetGroupCard->id,
-            'group_id' => null,
+            'group_id' => $targetGroupId,
             'registration_type' => $registrationType,
         ];
 
@@ -385,16 +431,48 @@ class LeagueRegistrationRoster
         Collection $candidateRegs,
     ): Collection {
         $selfUserId = (int) $registration->user_id;
+        $currentPartnerRegId = self::partnerRegistrationIdFor($registration);
 
         return $candidateRegs
-            ->filter(fn (LeagueRegistration $candidate) => (int) $candidate->user_id !== $selfUserId)
-            ->unique('user_id')
-            ->map(fn (LeagueRegistration $candidate) => [
-                'registration_id' => (int) $candidate->id,
-                'user_id' => (int) $candidate->user_id,
-                'label' => self::nameToken((string) ($candidate->user?->name ?? ''))
-                    ?: (string) ($candidate->user?->email ?? 'Player'),
-            ])
+            ->filter(function (LeagueRegistration $candidate) use ($selfUserId) {
+                if ((int) $candidate->user_id === $selfUserId) {
+                    return false;
+                }
+                $user = $candidate->user;
+                if (! $user) {
+                    return false;
+                }
+                $status = strtolower((string) ($user->status ?? 'active'));
+
+                return $status === 'active';
+            })
+            ->groupBy('user_id')
+            ->map(function (Collection $userRegs, $userId) use ($registration, $currentPartnerRegId) {
+                // Pick the candidate registration matching the current partner registration or group card
+                $candidate = null;
+                if ($currentPartnerRegId !== null) {
+                    $candidate = $userRegs->firstWhere('id', $currentPartnerRegId);
+                }
+                if (! $candidate && filled($registration->team_key)) {
+                    $candidate = $userRegs->firstWhere('team_key', $registration->team_key);
+                }
+                if (! $candidate && $registration->group_card_id !== null) {
+                    $candidate = $userRegs->firstWhere('group_card_id', $registration->group_card_id);
+                }
+                if (! $candidate) {
+                    $candidate = $userRegs->first();
+                }
+
+                $name = trim((string) ($candidate->user?->name ?? ''));
+                $email = trim((string) ($candidate->user?->email ?? ''));
+                $label = $name !== '' ? $name : ($email !== '' ? $email : 'Player');
+
+                return [
+                    'registration_id' => (int) $candidate->id,
+                    'user_id' => (int) $userId,
+                    'label' => $label,
+                ];
+            })
             ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
     }
@@ -422,11 +500,13 @@ class LeagueRegistrationRoster
         }
 
         $teamKey = LeagueRegistrationFlow::newDoublesTeamKey();
+        $teamName = trim((string) ($primary->team_name ?: $partner->team_name));
 
         LeagueRegistration::query()
             ->whereIn('id', [(int) $primary->id, (int) $partner->id])
             ->update([
                 'team_key' => $teamKey,
+                'team_name' => $teamName !== '' ? $teamName : null,
                 'registration_type' => 'doubles',
             ]);
     }

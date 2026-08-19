@@ -289,6 +289,7 @@
                             data-stripe-key="{{ $stripePublishableKey ?? '' }}"
                             data-payment-intent-url="{{ route('register.payment-intent') }}"
                             data-register-url="{{ route('register') }}"
+                            data-partner-lookup-url="{{ route('register.partner-lookup') }}"
                             data-csrf="{{ csrf_token() }}"
                             data-fee="{{ $feeDoubles }}"
                             data-free-registration="{{ \App\Models\SiteSetting::getValue('enable_free_registration', '0') }}">
@@ -321,7 +322,7 @@
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
                                             <label class="mb-1 block text-[12px] font-bold text-black">Email <span class="text-red-600">*</span></label>
-                                            <input type="email" name="email" id="doubles_email" value="{{ old('email') }}" placeholder="Email"
+                                            <input type="email" name="email" value="{{ old('email') }}" placeholder="Email"
                                                 class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
                                                 autocomplete="off" required>
                                         </div>
@@ -403,43 +404,44 @@
                                         <h2 class="text-center text-[14px] font-bold text-black underline decoration-[#5FA252] decoration-2 underline-offset-4">Second Player Details</h2>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div>
-                                                <label class="mb-1 block text-[12px] font-bold text-black">First Name <span class="text-red-600">*</span></label>
-                                                <input type="text" id="d2_first" name="d2_first" value="{{ old('d2_first') }}" placeholder="First name"
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="new-password" required>
-                                            </div>
-                                            <div>
-                                                <label class="mb-1 block text-[12px] font-bold text-black">Last Name <span class="text-red-600">*</span></label>
-                                                <input type="text" id="d2_last" name="d2_last" value="{{ old('d2_last') }}" placeholder="Last name"
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
-                                                    autocomplete="new-password" required>
-                                            </div>
-                                        </div>
-                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Email <span class="text-red-600">*</span></label>
-                                                <input type="email" name="d2_email" id="d2_email" value="{{ old('d2_email') }}" placeholder="Email"
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                <input type="email" name="d2_email" id="d2_email" value="{{ old('d2_email') }}" placeholder="Enter partner email first"
+                                                    class="partner-email-lookup h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
                                                 autocomplete="off" required>
+                                                <p class="partner-email-lookup-status mt-1.5 hidden text-[12px] font-semibold" aria-live="polite"></p>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Phone Number <span class="text-red-600">*</span></label>
                                                 <input type="tel" name="d2_phone" id="d2_phone" value="{{ old('d2_phone') }}" placeholder="Phone"
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
                                                 autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="15" required>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">First Name <span class="text-red-600">*</span></label>
+                                                <input type="text" id="d2_first" name="d2_first" value="{{ old('d2_first') }}" placeholder="First name"
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    autocomplete="off" required>
+                                            </div>
+                                            <div>
+                                                <label class="mb-1 block text-[12px] font-bold text-black">Last Name <span class="text-red-600">*</span></label>
+                                                <input type="text" id="d2_last" name="d2_last" value="{{ old('d2_last') }}" placeholder="Last name"
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    autocomplete="off" required>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">City <span class="text-red-600">*</span></label>
                                                 <input type="text" name="d2_city" value="{{ old('d2_city') }}" placeholder="City"
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
                                                     autocomplete="off" required>
                                             </div>
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">State <span class="text-red-600">*</span></label>
                                                 <input type="text" name="d2_state" value="{{ old('d2_state') }}" placeholder="State"
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] placeholder:text-[#888] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25"
                                                     autocomplete="off" required>
                                             </div>
                                         </div>
@@ -447,7 +449,7 @@
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Age Group <span class="text-red-600">*</span></label>
                                                 <select name="d2_age_group" required
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
                                                     <option value="">Select</option>
                                                     @foreach ($registrationAgeBrackets as $ageValue => $ageLabel)
                                                         <option value="{{ $ageValue }}" @selected(old('d2_age_group') === $ageValue)>{{ $ageLabel }}</option>
@@ -457,7 +459,7 @@
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Skill Level <span class="text-red-600">*</span></label>
                                                 <select name="d2_skill" required
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
                                                     <option value="">Select</option>
                                                     @foreach ($registrationSkillLevelValues as $skillValue)
                                                         <option value="{{ $skillValue }}" @selected(old('d2_skill') == $skillValue)>{{ $skillValue === 'not-sure' ? 'Not Sure' : $skillValue }}</option>
@@ -469,7 +471,7 @@
                                             <div>
                                                 <label class="mb-1 block text-[12px] font-bold text-black">Sex <span class="text-red-600">*</span></label>
                                                 <select name="d2_sex" required
-                                                    class="h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
+                                                    class="partner-detail-field h-11 w-full rounded-[8px] border border-[#dddddd] bg-white px-3 text-[14px] focus:border-[#5FA252] focus:outline-none focus:ring-2 focus:ring-[#5FA252]/25">
                                                     <option value="">Select</option>
                                                     <option value="male" @selected(old('d2_sex') === 'male')>Male</option>
                                                     <option value="female" @selected(old('d2_sex') === 'female')>Female</option>

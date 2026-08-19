@@ -48,7 +48,8 @@ class AdminLeagueManagementController extends Controller
 
             $registrationsQuery = LeagueRegistration::query()
                 ->where('league_id', $league->id)
-                ->where('group_card_id', $card->id);
+                ->where('group_card_id', $card->id)
+                ->whereHas('user', fn ($q) => $q->where('status', 'active'));
 
             $assignedQuery = (clone $registrationsQuery)->whereNotNull('group_id');
 

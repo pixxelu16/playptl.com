@@ -11,15 +11,101 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('admin/css/admin.css') }}">
+    <style>
+        /* Select2 Custom Admin Theme */
+        .select2-container {
+            vertical-align: middle;
+        }
+        .select2-container .select2-selection--single {
+            height: 38px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            padding: 4px 10px !important;
+            background-color: #ffffff !important;
+            display: flex !important;
+            align-items: center !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: all 0.15s ease-in-out;
+        }
+        .select2-container--default.select2-container--open .select2-selection--single,
+        .select2-container--default.select2-container--focus .select2-selection--single {
+            border-color: #5fa252 !important;
+            box-shadow: 0 0 0 3px rgba(95, 162, 82, 0.15) !important;
+            outline: none !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #1e293b !important;
+            line-height: 28px !important;
+            padding-left: 0 !important;
+            font-size: 13.5px !important;
+            font-weight: 500 !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px !important;
+            right: 8px !important;
+        }
+        .select2-dropdown {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+            font-size: 13.5px !important;
+            z-index: 99999 !important;
+            overflow: hidden;
+        }
+        .select2-container--default .select2-search--dropdown {
+            padding: 8px;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 6px 10px !important;
+            font-size: 13px !important;
+            outline: none !important;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field:focus {
+            border-color: #5fa252 !important;
+            box-shadow: 0 0 0 2px rgba(95, 162, 82, 0.2) !important;
+        }
+        .select2-container--default .select2-results__option {
+            padding: 8px 12px;
+            font-size: 13.5px;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #5fa252 !important;
+            color: #ffffff !important;
+        }
+        .select2-container--default .select2-results__option--selected {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            font-weight: 600 !important;
+        }
+    </style>
     @stack('styles')
 </head>
 <body class="admin-body">
     <div class="admin-shell" data-admin-shell>
         <aside class="admin-sidebar">
             <div class="admin-brand">
-                <span class="admin-brand-full">Admin Panel</span>
-                <span class="admin-brand-short" aria-hidden="true">AP</span>
+                <span class="admin-brand-full">
+                    @if(auth()->user() && auth()->user()->hasRole('Organiser') && !auth()->user()->hasRole('Super Admin') && !auth()->user()->hasRole('Admin'))
+                        Organiser Panel
+                    @elseif(auth()->user() && !auth()->user()->hasRole('Super Admin') && !auth()->user()->hasRole('Admin') && auth()->user()->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->isNotEmpty())
+                        {{ auth()->user()->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->first()->name }} Panel
+                    @else
+                        Admin Panel
+                    @endif
+                </span>
+                <span class="admin-brand-short" aria-hidden="true">
+                    @if(auth()->user() && auth()->user()->hasRole('Organiser') && !auth()->user()->hasRole('Super Admin') && !auth()->user()->hasRole('Admin'))
+                        OP
+                    @elseif(auth()->user() && !auth()->user()->hasRole('Super Admin') && !auth()->user()->hasRole('Admin') && auth()->user()->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->isNotEmpty())
+                        {{ strtoupper(substr(auth()->user()->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->first()->name, 0, 2)) }}
+                    @else
+                        AP
+                    @endif
+                </span>
             </div>
 
             <nav class="admin-nav" aria-label="Admin navigation">
@@ -29,43 +115,43 @@
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gauge-high"></i></span>
                         <span>Dashboard</span>
                     </a>
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage skills'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage skills'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.skills.*') ? 'is-active' : '' }}" href="{{ route('admin.skills.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-sliders"></i></span>
                         <span>Skills</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage settings'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage settings') || auth()->user()->can('manage categories'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.categories.*') ? 'is-active' : '' }}" href="{{ route('admin.categories.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-list-ul"></i></span>
                         <span>Categories</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage leagues'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage leagues'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.leagues.*', 'admin.league-management.*') ? 'is-active' : '' }}" href="{{ route('admin.leagues.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-trophy"></i></span>
                         <span>Tournaments</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage group cards'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage group cards'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.group-cards.*') ? 'is-active' : '' }}" href="{{ route('admin.group-cards.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-table-cells-large"></i></span>
                         <span>Groups</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage groups'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage groups'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.groups.*') ? 'is-active' : '' }}" href="{{ route('admin.groups.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-users-line"></i></span>
                         <span>Subgroups</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage players'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage players'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.players.*') ? 'is-active' : '' }}" href="{{ route('admin.players.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
                         <span>Players</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage users'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage users'))
                     @php
                         $pendingProvidersCount = \App\Models\User::whereIn('role', [\App\Enums\UserRole::Mentor, \App\Enums\UserRole::Coach])->where('status', 'pending')->count();
                     @endphp
@@ -81,59 +167,61 @@
                         <span>Users</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage payment history'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage payment history') || auth()->user()->can('manage payments'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.payment-histories.*') ? 'is-active' : '' }}" href="{{ route('admin.payment-histories.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
                         <span>Payment History</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage charity causes'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage charity causes') || auth()->user()->can('manage donations'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.charity-causes.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-causes.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-heart"></i></span>
                         <span>Charity Causes</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage charity donations'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage charity donations') || auth()->user()->can('manage donations'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.charity-donations.*') ? 'is-active' : '' }}" href="{{ route('admin.charity-donations.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-heart"></i></span>
                         <span>Charity Donations</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage announcements'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage announcements'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.announcements.*') ? 'is-active' : '' }}" href="{{ route('admin.announcements.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></span>
                         <span>Announcements</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage official partners'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage official partners'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.official-partners.*') ? 'is-active' : '' }}" href="{{ route('admin.official-partners.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-handshake"></i></span>
                         <span>Official Partners</span>
                     </a>
                     @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage rules') || auth()->user()->can('view admin panel'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.rules.*') ? 'is-active' : '' }}" href="{{ route('admin.rules.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-book"></i></span>
                         <span>Rules &amp; Regulations</span>
                     </a>
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage roles'))
+                    @endif
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage roles'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.roles.*') ? 'is-active' : '' }}" href="{{ route('admin.roles.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
                         <span>Roles & Permissions</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage bookings'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage bookings'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.bookings.*') ? 'is-active' : '' }}" href="{{ route('admin.bookings.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-calendar-check"></i></span>
                         <span>Bookings</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage gallery'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage gallery'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.gallery.*') ? 'is-active' : '' }}" href="{{ route('admin.gallery.index') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-image"></i></span>
                         <span>Gallery</span>
                     </a>
                     @endif
-                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->can('manage settings'))
+                    @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Admin') || auth()->user()->can('manage settings'))
                     <a class="admin-nav-link {{ request()->routeIs('admin.contact-settings.*') ? 'is-active' : '' }}" href="{{ route('admin.contact-settings.edit') }}">
                         <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-gear"></i></span>
                         <span>Site Settings</span>
@@ -143,22 +231,31 @@
 
                 @php
                     $user = auth()->user();
-                    $allRoles = $user ? $user->roles->pluck('name')->toArray() : [];
-                    if ($user && !in_array($user->role->name, $allRoles)) {
-                        $allRoles[] = $user->role->name;
+                    $switchableRoles = [];
+                    if ($user) {
+                        $baseRoleName = is_object($user->role) ? ($user->role->name ?? $user->role->value) : ucfirst($user->role);
+                        $allUserRoles = array_unique(array_merge(
+                            $user->roles->pluck('name')->toArray(),
+                            [$baseRoleName]
+                        ));
+                        foreach ($allUserRoles as $rName) {
+                            $rLower = strtolower($rName);
+                            if (in_array($rLower, ['coach', 'mentor', 'student']) && \Illuminate\Support\Facades\Route::has($rLower . '.dashboard')) {
+                                $switchableRoles[$rName] = route($rLower . '.dashboard');
+                            } elseif ($rLower === 'player') {
+                                $switchableRoles[$rName] = route('player.my-profile');
+                            }
+                        }
                     }
-                    $allRoles = array_unique(array_map('ucfirst', $allRoles));
                 @endphp
-                @if(count($allRoles) > 1)
+                @if(count($switchableRoles) > 0)
                     <div class="admin-nav-section">
                         <p class="admin-nav-label">Switch Panel</p>
-                        @foreach($allRoles as $rName)
-                            @if(strtolower($rName) !== 'admin' && strtolower($rName) !== 'super admin')
-                                <a class="admin-nav-link" href="{{ route(strtolower($rName) . '.dashboard') }}">
-                                    <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-arrow-right-left"></i></span>
-                                    <span>{{ $rName }} Dashboard</span>
-                                </a>
-                            @endif
+                        @foreach($switchableRoles as $rName => $rUrl)
+                            <a class="admin-nav-link" href="{{ $rUrl }}">
+                                <span class="admin-nav-icon" aria-hidden="true"><i class="fa-solid fa-arrow-right-left"></i></span>
+                                <span>{{ $rName }} Dashboard</span>
+                            </a>
                         @endforeach
                     </div>
                 @endif
@@ -442,6 +539,22 @@
                         });
                     });
                 }
+            });
+        });
+    </script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('.select2-search').each(function () {
+                var $el = $(this);
+                var config = {
+                    width: $el.data('select2-width') || 'resolve'
+                };
+                if ($el.data('placeholder')) {
+                    config.placeholder = $el.data('placeholder');
+                }
+                $el.select2(config);
             });
         });
     </script>

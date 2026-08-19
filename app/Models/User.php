@@ -102,7 +102,35 @@ class User extends Authenticatable
 
     public function dashboardRouteName(): string
     {
-        return $this->role->dashboardRouteName();
+        $roleStr = strtolower($this->role instanceof UserRole ? $this->role->value : (string) $this->role);
+
+        if (
+            $this->hasRole('Super Admin')
+            || $this->hasRole('Admin')
+            || $this->hasRole('Organiser')
+            || $roleStr === 'admin'
+            || $roleStr === 'organiser'
+            || $this->can('view admin panel')
+            || $this->getAllPermissions()->isNotEmpty()
+            || $this->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->isNotEmpty()
+        ) {
+            return 'admin.dashboard';
+        }
+
+        $enumRole = $this->role instanceof UserRole ? $this->role : UserRole::tryFrom($roleStr);
+        if ($enumRole) {
+            return $enumRole->dashboardRouteName();
+        }
+
+        return 'admin.dashboard';
+    }
+
+    public function getRoleAttribute($value)
+    {
+        if ($value instanceof UserRole) {
+            return $value;
+        }
+        return UserRole::tryFrom(strtolower((string) $value)) ?? (string) $value;
     }
 
     public function playerProfileUrl(): string
@@ -137,7 +165,6 @@ class User extends Authenticatable
             'date_of_birth' => 'date',
             'preferred_play_date' => 'date',
             'password' => 'hashed',
-            'role' => UserRole::class,
             'profile_locations' => 'array',
             'is_locked' => 'boolean',
             'locked_at' => 'datetime',

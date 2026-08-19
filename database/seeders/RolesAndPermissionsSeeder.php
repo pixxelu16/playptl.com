@@ -28,12 +28,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage official partners',
             'manage players',
             'manage settings',
+            'manage categories',
             'manage donations',
+            'manage charity causes',
+            'manage charity donations',
             'manage skills',
             'manage bookings',
             'manage gallery',
             'manage roles',
             'manage users',
+            'manage payment history',
+            'manage rules',
         ];
 
         foreach ($permissions as $permission) {

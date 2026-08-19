@@ -106,14 +106,15 @@ class AdminProviderRequestController extends Controller
             $user->assignRole('Coach');
             $roleLabel = 'Coach';
         } else {
-            if (!in_array($user->role, [UserRole::Mentor, UserRole::Coach], true)) {
+            $userRoleStr = strtolower($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
+            if (!in_array($userRoleStr, ['mentor', 'coach'], true)) {
                 return back()->with('error', 'Selected user is not a Mentor or Coach.');
             }
             $user->update(['status' => 'active']);
-            $roleName = ucfirst($user->role->value);
+            $roleName = ucfirst($userRoleStr);
             \Spatie\Permission\Models\Role::findOrCreate($roleName, 'web');
             $user->assignRole($roleName);
-            $roleLabel = $user->role->value;
+            $roleLabel = $userRoleStr;
         }
 
         try {
@@ -137,11 +138,12 @@ class AdminProviderRequestController extends Controller
             $user->update(['coach_status' => 'rejected']);
             $roleLabel = 'Coach';
         } else {
-            if (!in_array($user->role, [UserRole::Mentor, UserRole::Coach], true)) {
+            $userRoleStr = strtolower($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
+            if (!in_array($userRoleStr, ['mentor', 'coach'], true)) {
                 return back()->with('error', 'Selected user is not a Mentor or Coach.');
             }
             $user->update(['status' => 'rejected']);
-            $roleLabel = $user->role->value;
+            $roleLabel = $userRoleStr;
         }
 
         try {

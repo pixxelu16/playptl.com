@@ -6,13 +6,16 @@
 
 @section('content')
     <p style="margin:0 0 14px;">Hi Admin,</p>
+    @php
+        $roleStr = ucfirst($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
+    @endphp
     <p style="margin:0 0 14px;">
-        A new <strong>{{ ucfirst($user->role->value) }}</strong> registration has been submitted and is awaiting your review and approval.
+        A new <strong>{{ $roleStr }}</strong> registration has been submitted and is awaiting your review and approval.
     </p>
 
     @include('emails.partials.info-box', ['content' => '
         <p style="margin:0 0 8px;"><strong>Applicant Name:</strong> '.e($user->name).'</p>
-        <p style="margin:0 0 8px;"><strong>Requested Role:</strong> '.e(ucfirst($user->role->value)).'</p>
+        <p style="margin:0 0 8px;"><strong>Requested Role:</strong> '.e($roleStr).'</p>
         <p style="margin:0 0 8px;"><strong>Email:</strong> '.e($user->email).'</p>
         <p style="margin:0 0 8px;"><strong>Phone:</strong> '.e($user->phone ?? 'N/A').'</p>
         <p style="margin:0 0 8px;"><strong>Location:</strong> '.e($user->city).', '.e($user->state).'</p>
