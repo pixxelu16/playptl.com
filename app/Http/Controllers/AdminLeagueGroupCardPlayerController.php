@@ -142,7 +142,18 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $partnerRegistrationId = $request->input('partner_registration_id');
         if ($partnerRegistrationId === null || $partnerRegistrationId === '') {
+            $targetGroupId = $registration->group_id;
             LeagueRegistrationRoster::unlinkPartner($registration);
+
+            if ($targetGroupId !== null) {
+                $group = Group::query()->find($targetGroupId);
+                if ($group instanceof Group) {
+                    $ageKey = Schema::hasColumn('league_registrations', 'age_group_key')
+                        ? ($registration->age_group_key ?: null)
+                        : null;
+                    SubgroupRoundRobinScheduler::sync($league, $groupCard, $group, $ageKey);
+                }
+            }
 
             return back()->with('status', 'Partner removed.');
         }
@@ -167,8 +178,8 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $targetGroupId = $registration->group_id ?? $partnerRegistration->group_id;
         if ($targetGroupId !== null) {
-            LeagueRegistrationRoster::updateGroupForEntry($registration, (int) $targetGroupId);
-            LeagueRegistrationRoster::updateGroupForEntry($partnerRegistration, (int) $targetGroupId);
+            $registration->update(['group_id' => $targetGroupId]);
+            $partnerRegistration->update(['group_id' => $targetGroupId]);
         }
 
         try {
