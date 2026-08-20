@@ -114,9 +114,32 @@ class AdminLeagueGroupCardGroupController extends Controller
         $allGroups = $allGroupsQuery->orderBy('name')->get();
 
         if ($activeGroup) {
-            $activeGroupRoster = LeagueRegistrationRoster::collapseForDisplay(
-                $activeGroup->leagueRegistrations
-            );
+            $activeGroupRegs = $activeGroup->leagueRegistrations;
+            $teamKeys = $activeGroupRegs->pluck('team_key')->filter()->unique();
+
+            if ($teamKeys->isNotEmpty()) {
+                $allTeamRegs = LeagueRegistration::query()
+                    ->where('league_id', $league->id)
+                    ->whereIn('team_key', $teamKeys)
+                    ->whereHas('user', fn ($uq) => $uq->where('status', 'active'))
+                    ->with('user')
+                    ->latest('id')
+                    ->get();
+
+                $mismatchedPartnerIds = $allTeamRegs->where('group_id', '!=', $activeGroup->id)->pluck('id');
+                if ($mismatchedPartnerIds->isNotEmpty()) {
+                    LeagueRegistration::query()->whereIn('id', $mismatchedPartnerIds)->update([
+                        'group_id' => $activeGroup->id,
+                        'group_card_id' => $groupCard->id,
+                    ]);
+                }
+
+                $activeGroupRoster = LeagueRegistrationRoster::collapseForDisplay(
+                    $allTeamRegs->merge($activeGroupRegs)->unique('id')
+                );
+            } else {
+                $activeGroupRoster = LeagueRegistrationRoster::collapseForDisplay($activeGroupRegs);
+            }
         }
 
         $unassignedRegistrations = collect();

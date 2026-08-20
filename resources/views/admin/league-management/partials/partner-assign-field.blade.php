@@ -6,7 +6,7 @@
 <form method="POST" action="{{ route('admin.league-management.players.update-partner', [$league, $groupCard, $reg]) }}" class="admin-assign">
     @csrf
     @method('PUT')
-    <select class="admin-input select2-search" name="partner_registration_id" aria-label="Choose partner" data-select2-width="210px" style="width:210px;">
+    <select class="admin-input select2-search" name="partner_registration_id" aria-label="Choose partner" data-select2-width="250px" style="width:250px;">
         <option value="">No partner</option>
         @foreach ($partnerOptions as $option)
             @php
