@@ -16,7 +16,7 @@ class AdminPlayerLeagueRegistrationController extends Controller
 {
     public function create(Request $request, User $player): View
     {
-        abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
+        abort_unless(strtolower((string) ($player->role instanceof UserRole ? $player->role->value : $player->role)) === 'player', Response::HTTP_NOT_FOUND);
 
         $leagues = LeagueMenuHelper::registrationLeagues(latestFirst: true);
 
@@ -29,7 +29,7 @@ class AdminPlayerLeagueRegistrationController extends Controller
 
     public function store(Request $request, User $player): RedirectResponse
     {
-        abort_unless($player->role === UserRole::Player, Response::HTTP_NOT_FOUND);
+        abort_unless(strtolower((string) ($player->role instanceof UserRole ? $player->role->value : $player->role)) === 'player', Response::HTTP_NOT_FOUND);
 
         $validated = $request->validate([
             'league_id' => ['required', 'integer', Rule::exists('leagues', 'id')],

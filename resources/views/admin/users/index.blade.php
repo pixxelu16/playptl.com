@@ -35,10 +35,8 @@
                     <label for="role" style="font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">Filter by Role</label>
                     <select name="role" id="role" class="admin-input" style="height: 40px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; padding: 8px 12px; font-size: 14px;">
                         <option value="">-- All Roles --</option>
-                        @foreach(\App\Enums\UserRole::cases() as $case)
-                            @if($case !== \App\Enums\UserRole::Player)
-                                <option value="{{ $case->value }}" {{ request('role') === $case->value ? 'selected' : '' }}>{{ ucfirst($case->value) }}</option>
-                            @endif
+                        @foreach($filterRoles as $rName)
+                            <option value="{{ $rName }}" {{ request('role') === $rName || strtolower(request('role') ?? '') === strtolower($rName) ? 'selected' : '' }}>{{ $rName }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -97,7 +95,7 @@
                             </td>
                             <td>
                                 <span style="display: inline-block; font-size: 11px; text-transform: uppercase; font-weight: 700; background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 9999px;">
-                                    {{ $user->role->value }}
+                                    {{ is_object($user->role) && property_exists($user->role, 'value') ? $user->role->value : $user->role }}
                                 </span>
                             </td>
                             <td>

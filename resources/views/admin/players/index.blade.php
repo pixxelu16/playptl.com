@@ -110,7 +110,7 @@
                                 @endif
                             </td>
                             <td>
-                                @php $userRole = $player->roles->first()?->name ?? $player->role->value ?? 'Player'; @endphp
+                                @php $userRole = $player->roles->first()?->name ?? ($player->role instanceof \App\Enums\UserRole ? $player->role->value : (string) $player->role) ?: 'Player'; @endphp
                                 <span style="font-size: 11px; background-color: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 6px; font-weight: 600; border: 1px solid #e5e7eb; text-transform: uppercase;">
                                     {{ $userRole }}
                                 </span>

@@ -24,17 +24,25 @@ class EnsureUserHasRole
             // Normalise the expected role name for matching (e.g. "admin" → "Admin")
             $normalised = ucwords($role);
 
-            // Super Admin bypasses only the 'admin' role gate — NOT all role gates.
-            // This prevents privilege escalation for users that only hold certain permissions.
+            $userRoleVal = strtolower($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
+
+            // Admin / Super Admin, Organiser, custom roles, or users with management permissions can access admin area
             $isSuperAdminBypass = ($role === 'admin' || $normalised === 'Admin')
-                && $user->hasRole('Super Admin');
+                && ($user->hasRole('Super Admin')
+                    || $user->hasRole('Admin')
+                    || $user->hasRole('Organiser')
+                    || $userRoleVal === 'admin'
+                    || $userRoleVal === 'organiser'
+                    || $user->can('view admin panel')
+                    || $user->getAllPermissions()->isNotEmpty()
+                    || $user->roles->whereNotIn('name', ['Student', 'student', 'Player', 'player'])->isNotEmpty());
 
             if (
                 $user->hasRole($role)
                 || $user->hasRole($normalised)
                 || $user->hasRole(ucfirst($role))
                 || $isSuperAdminBypass
-                || strtolower($user->role->value) === strtolower($role)
+                || $userRoleVal === strtolower($role)
             ) {
                 $hasRole = true;
                 break;
@@ -48,13 +56,14 @@ class EnsureUserHasRole
         // Set active dashboard role in the session
         foreach ($roles as $role) {
             $normalised = ucwords($role);
+            $userRoleVal = strtolower($user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role);
             $isSuperAdminBypass = ($role === 'admin' || $normalised === 'Admin') && $user->hasRole('Super Admin');
             if (
                 $user->hasRole($role)
                 || $user->hasRole($normalised)
                 || $user->hasRole(ucfirst($role))
                 || $isSuperAdminBypass
-                || strtolower($user->role->value) === strtolower($role)
+                || $userRoleVal === strtolower($role)
             ) {
                 $activeRole = strtolower($role);
                 if (in_array($activeRole, ['player', 'student', 'mentor', 'coach'])) {

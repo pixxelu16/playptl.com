@@ -26,6 +26,7 @@ class AdminLeagueGroupCardPlayerController extends Controller
         $registrationsQuery = LeagueRegistration::query()
             ->where('league_id', $league->id)
             ->where('group_card_id', $groupCard->id)
+            ->whereHas('user', fn ($q) => $q->where('status', 'active'))
             ->with(['user', 'group'])
             ->latest('id');
 
@@ -40,25 +41,32 @@ class AdminLeagueGroupCardPlayerController extends Controller
                 fn ($q) => $q->where(function ($qq) use ($ageGroupKey) {
                     $qq->whereNull('age_group_key')->orWhere('age_group_key', $ageGroupKey);
                 })
-            )
-            ->orderBy('name')
-            ->get();
+            );
+        $groups = $groups->orderBy('name')->get();
 
         $allRegistrations = $registrationsQuery->get();
         $rosterEntries = LeagueRegistrationRoster::collapseForDisplay($allRegistrations);
         $isDoublesGroupCard = LeagueRegistrationRoster::isDoublesSubGroup($groupCard);
         $partnerOptionsByRegId = [];
         $currentPartnerRegIdByRegId = [];
+        $currentPartnerUserIdByRegId = [];
 
         if ($isDoublesGroupCard) {
+            $allLeagueRegistrations = LeagueRegistration::query()
+                ->where('league_id', $league->id)
+                ->whereHas('user', fn ($q) => $q->where('status', 'active'))
+                ->with('user')
+                ->get();
+
             foreach ($rosterEntries as $entry) {
                 /** @var LeagueRegistration $registration */
                 $registration = $entry['registration'];
                 $partnerOptionsByRegId[(int) $registration->id] = LeagueRegistrationRoster::partnerOptionsFor(
                     $registration,
-                    $allRegistrations,
+                    $allLeagueRegistrations,
                 )->all();
                 $currentPartnerRegIdByRegId[(int) $registration->id] = LeagueRegistrationRoster::partnerRegistrationIdFor($registration);
+                $currentPartnerUserIdByRegId[(int) $registration->id] = LeagueRegistrationRoster::partnerUserIdFor($registration);
             }
         }
 
@@ -84,6 +92,7 @@ class AdminLeagueGroupCardPlayerController extends Controller
             'isDoublesGroupCard' => $isDoublesGroupCard,
             'partnerOptionsByRegId' => $partnerOptionsByRegId,
             'currentPartnerRegIdByRegId' => $currentPartnerRegIdByRegId,
+            'currentPartnerUserIdByRegId' => $currentPartnerUserIdByRegId,
         ]);
     }
 
@@ -133,7 +142,18 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $partnerRegistrationId = $request->input('partner_registration_id');
         if ($partnerRegistrationId === null || $partnerRegistrationId === '') {
+            $targetGroupId = $registration->group_id;
             LeagueRegistrationRoster::unlinkPartner($registration);
+
+            if ($targetGroupId !== null) {
+                $group = Group::query()->find($targetGroupId);
+                if ($group instanceof Group) {
+                    $ageKey = Schema::hasColumn('league_registrations', 'age_group_key')
+                        ? ($registration->age_group_key ?: null)
+                        : null;
+                    SubgroupRoundRobinScheduler::sync($league, $groupCard, $group, $ageKey);
+                }
+            }
 
             return back()->with('status', 'Partner removed.');
         }
@@ -158,8 +178,8 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $targetGroupId = $registration->group_id ?? $partnerRegistration->group_id;
         if ($targetGroupId !== null) {
-            LeagueRegistrationRoster::updateGroupForEntry($registration, (int) $targetGroupId);
-            LeagueRegistrationRoster::updateGroupForEntry($partnerRegistration, (int) $targetGroupId);
+            $registration->update(['group_id' => $targetGroupId]);
+            $partnerRegistration->update(['group_id' => $targetGroupId]);
         }
 
         try {
@@ -224,7 +244,29 @@ class AdminLeagueGroupCardPlayerController extends Controller
 
         $label = LeagueRegistrationRoster::collapseForDisplay($movingRegs)->first()['display_name'] ?? 'Player';
 
-        return back()->with('status', $label.' moved to '.$targetCard->name.'. Assign a group there when ready.');
+        return back()->with('status', $label.' moved to '.$targetCard->name.'.');
+    }
+
+    public function updateTeamName(Request $request, League $league, GroupCard $groupCard, LeagueRegistration $registration): RedirectResponse
+    {
+        abort_unless($league->groupCards()->whereKey($groupCard->id)->exists(), 404);
+        abort_unless($registration->league_id === $league->id, 404);
+
+        $validated = $request->validate([
+            'team_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $teamName = trim((string) ($validated['team_name'] ?? ''));
+
+        $entryIds = LeagueRegistrationRoster::registrationIdsForEntry($registration);
+
+        LeagueRegistration::query()
+            ->whereIn('id', $entryIds)
+            ->update([
+                'team_name' => $teamName !== '' ? $teamName : null,
+            ]);
+
+        return back()->with('status', 'Team name updated successfully.');
     }
 }
 

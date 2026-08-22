@@ -29,7 +29,7 @@ class BookingController extends Controller
             if (Auth::user()->hasRole('Student')) {
                 $activeRole = 'student';
             } else {
-                $activeRole = strtolower(Auth::user()->role->value);
+                $activeRole = strtolower(Auth::user()->role instanceof \App\Enums\UserRole ? Auth::user()->role->value : (string) Auth::user()->role);
             }
         }
 
@@ -76,7 +76,7 @@ class BookingController extends Controller
             if (Auth::user()->hasRole('Student')) {
                 $activeRole = 'student';
             } else {
-                $activeRole = strtolower(Auth::user()->role->value);
+                $activeRole = strtolower(Auth::user()->role instanceof \App\Enums\UserRole ? Auth::user()->role->value : (string) Auth::user()->role);
             }
         }
 
@@ -184,7 +184,7 @@ class BookingController extends Controller
             if (Auth::user()->hasRole('Student')) {
                 $activeRole = 'student';
             } else {
-                $activeRole = strtolower(Auth::user()->role->value);
+                $activeRole = strtolower(Auth::user()->role instanceof \App\Enums\UserRole ? Auth::user()->role->value : (string) Auth::user()->role);
             }
         }
 

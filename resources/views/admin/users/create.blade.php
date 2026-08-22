@@ -49,8 +49,8 @@
                 <div class="admin-form-group">
                     <label for="role" class="admin-form-label" style="font-weight: 600; display: block; margin-bottom: 6px;">Account Type / Base Role <span style="color: red;">*</span></label>
                     <select name="role" id="role" class="admin-form-input" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%; height: 43px;" required>
-                        @foreach(\App\Enums\UserRole::cases() as $case)
-                            <option value="{{ $case->value }}" {{ old('role') === $case->value ? 'selected' : '' }}>{{ ucfirst($case->value) }}</option>
+                        @foreach($allRoles as $rName)
+                            <option value="{{ $rName }}" {{ old('role', 'Organiser') === $rName || strtolower(old('role', '')) === strtolower($rName) ? 'selected' : '' }}>{{ $rName }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -61,29 +61,29 @@
             {{-- Assign Roles & Permissions --}}
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
                 
-                {{-- Spatie Roles --}}
+                {{-- Administrative Role Selectbox --}}
                 <div>
-                    <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-users-gear" style="color: #5DA44E;"></i> Assign Administrative Roles
+                    <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-users-gear" style="color: #5DA44E;"></i> Assign Administrative Role
                     </h3>
-                    <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Assigning a role grants all permissions associated with that role automatically.</p>
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Select an administrative role to automatically grant all associated permissions (e.g. Test, Super Admin, Organiser).</p>
                     
-                    <div style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
-                        @foreach($roles as $role)
-                            <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: #334155; cursor: pointer;">
-                                <input type="checkbox" name="spatie_roles[]" value="{{ $role->name }}" {{ is_array(old('spatie_roles')) && in_array($role->name, old('spatie_roles')) ? 'checked' : '' }} style="border-radius: 4px; border: 1px solid #cbd5e1; width: 16px; height: 16px;">
-                                <span>{{ $role->name }}</span>
-                            </label>
-                        @endforeach
+                    <div class="admin-form-group">
+                        <select name="spatie_role" id="spatie_role" class="admin-form-input" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%; height: 43px;">
+                            <option value="">-- None / No Administrative Role --</option>
+                            @foreach($adminRoles as $adminRole)
+                                <option value="{{ $adminRole->name }}" {{ old('spatie_role') === $adminRole->name ? 'selected' : '' }}>{{ $adminRole->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
 
-                {{-- Spatie Permissions --}}
+                {{-- Direct Permissions --}}
                 <div>
-                    <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                    <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-shield-halved" style="color: #5DA44E;"></i> Direct Permissions
                     </h3>
-                    <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Directly assign specific granular permissions to this user (bypassing role scopes).</p>
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Directly assign specific granular permissions to this user (optional override).</p>
                     
                     <div style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
                         @foreach($permissions as $perm)

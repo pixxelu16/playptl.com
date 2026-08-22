@@ -103,8 +103,9 @@
                             <p class="mt-1 text-[14px] font-medium text-[#666666]">{{ $roleName }}</p>
                             @php
                                 $allRoles = $user->roles->pluck('name')->toArray();
-                                if (!in_array($user->role->name, $allRoles)) {
-                                    $allRoles[] = $user->role->name;
+                                $currentBaseRole = is_object($user->role) ? ($user->role->name ?? $user->role->value) : ucfirst($user->role);
+                                if (!in_array($currentBaseRole, $allRoles)) {
+                                    $allRoles[] = $currentBaseRole;
                                 }
                                 $allRoles = array_unique(array_map('ucfirst', $allRoles));
                             @endphp
@@ -120,8 +121,14 @@
                                                     'student' => 'fa-graduation-cap',
                                                     'mentor' => 'fa-chalkboard-user',
                                                     'coach' => 'fa-users-gear',
-                                                    'admin', 'super admin' => 'fa-user-shield',
+                                                    'admin', 'super admin', 'organiser' => 'fa-user-shield',
                                                     default => 'fa-user',
+                                                };
+                                                $rLower = strtolower($rName);
+                                                $targetUrl = match (true) {
+                                                    $rLower === 'player' => route('player.my-profile'),
+                                                    \Illuminate\Support\Facades\Route::has($rLower . '.dashboard') => route($rLower . '.dashboard'),
+                                                    default => route('admin.dashboard'),
                                                 };
                                             @endphp
                                             @if ($isActiveRole)
@@ -133,7 +140,7 @@
                                                     <span class="inline-flex h-2 w-2 rounded-full bg-[#B4F000] animate-pulse"></span>
                                                 </div>
                                             @else
-                                                <a href="{{ route(strtolower($rName) . '.dashboard') }}" 
+                                                <a href="{{ $targetUrl }}" 
                                                    class="group flex items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-4 py-2.5 text-[13px] font-semibold text-[#424242] shadow-sm transition-all duration-200 hover:border-[#66A157] hover:bg-[#F4FAF3] hover:text-[#2d4a2d] hover:shadow-md">
                                                     <span class="flex items-center gap-2.5">
                                                         <i class="fa-solid {{ $iconClass }} text-[#66A157] transition-transform duration-200 group-hover:scale-110"></i>

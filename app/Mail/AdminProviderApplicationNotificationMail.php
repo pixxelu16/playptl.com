@@ -19,7 +19,7 @@ class AdminProviderApplicationNotificationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $roleName = ucfirst($this->user->role->value);
+        $roleName = ucfirst($this->user->role instanceof \App\Enums\UserRole ? $this->user->role->value : (string) $this->user->role);
         return new Envelope(
             subject: "Action Required: New {$roleName} Registration - {$this->user->name}",
         );

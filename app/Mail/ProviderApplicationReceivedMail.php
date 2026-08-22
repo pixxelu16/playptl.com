@@ -19,7 +19,7 @@ class ProviderApplicationReceivedMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $roleName = ucfirst($this->user->role->value);
+        $roleName = ucfirst($this->user->role instanceof \App\Enums\UserRole ? $this->user->role->value : (string) $this->user->role);
         return new Envelope(
             subject: "Application Received - {$roleName} Registration under Review",
         );

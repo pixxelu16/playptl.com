@@ -63,8 +63,8 @@ class LeagueRegistrationValidation
             ];
             if ($isDoublesRegistration) {
                 $rules = array_merge($rules, [
-                    'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-                    'd2_phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
+                    'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
+                    'd2_phone' => ['required', 'string', 'max:32'],
                     'd2_city' => ['required', 'string', 'max:255'],
                     'd2_state' => ['required', 'string', 'max:64'],
                     'd2_age_group' => ['required', 'string', 'max:32'],
@@ -98,8 +98,8 @@ class LeagueRegistrationValidation
                 'tournament_doubles' => ['required', 'integer', 'exists:leagues,id'],
                 'group_card_doubles' => ['required', 'integer', 'exists:group_cards,id'],
                 'team_name' => ['nullable', 'string', 'max:255'],
-                'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-                'd2_phone' => ['required', 'string', 'max:32', 'unique:users,phone'],
+                'd2_email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
+                'd2_phone' => ['required', 'string', 'max:32'],
                 'd2_city' => ['required', 'string', 'max:255'],
                 'd2_state' => ['required', 'string', 'max:64'],
                 'd2_age_group' => ['required', 'string', 'max:32'],
