@@ -20,6 +20,10 @@ class TournamentRegistrationGroupsController extends Controller
         ]);
 
         $league = League::query()->findOrFail((int) $validated['league_id']);
+        if (! \App\Helpers\LeagueMenuHelper::acceptsRegistration($league)) {
+            return response()->json(['message' => 'Registration is not open for this tournament.'], 422);
+        }
+
         $tab = (string) $validated['tab'];
         $skill = isset($validated['skill_level']) ? trim((string) $validated['skill_level']) : '';
         $skillTwo = isset($validated['skill_level_2']) ? trim((string) $validated['skill_level_2']) : '';

@@ -2007,12 +2007,7 @@ class PlayerProfileController extends Controller
 
         $allLeagues = LeagueMenuHelper::registrationLeagues();
         $registrationLeagues = $allLeagues
-            ->filter(function ($league) {
-                if ($league->registration_deadline !== null && now()->startOfDay()->gt($league->registration_deadline)) {
-                    return false;
-                }
-                return true;
-            })
+            ->filter(fn ($league) => LeagueMenuHelper::acceptsRegistration($league))
             ->values();
 
         $playerSkillLevel = $this->playerFixedSkillLevel($user, $request) ?? '';

@@ -35,12 +35,7 @@ class RegisteredUserController extends Controller
     public function create(): View
     {
         $registrationLeagues = LeagueMenuHelper::registrationLeagues()
-            ->filter(function ($league) {
-                if ($league->registration_deadline !== null && now()->startOfDay()->gt($league->registration_deadline)) {
-                    return false;
-                }
-                return true;
-            })
+            ->filter(fn ($league) => LeagueMenuHelper::acceptsRegistration($league))
             ->values();
 
         $allCategories = \App\Models\Category::query()->orderBy('menu_order')->get();
