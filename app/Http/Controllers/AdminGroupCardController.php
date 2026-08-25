@@ -117,11 +117,23 @@ class AdminGroupCardController extends Controller
         $category = Category::findOrFail((int) $validated['tag']);
         $validated['category_id'] = $category->id;
 
-        $tagStr = strtolower($category->name);
-        if (in_array($tagStr, ['single', 'singles'], true)) {
+        $catName = strtolower(trim((string) $category->name));
+        $catType = strtolower(trim((string) $category->type));
+
+        if (str_contains($catName, 'single')) {
             $tagStr = 'single';
-        } elseif (in_array($tagStr, ['double', 'doubles'], true)) {
+        } elseif (str_contains($catName, 'double')) {
             $tagStr = 'doubles';
+        } elseif (str_contains($catName, 'mixed')) {
+            $tagStr = 'mixed';
+        } elseif (str_contains($catName, 'youth')) {
+            $tagStr = 'youth';
+        } elseif ($catType === 'doubles' || (str_contains($catType, 'doubles') && ! str_contains($catType, 'single'))) {
+            $tagStr = 'doubles';
+        } elseif ($catType === 'single' || (str_contains($catType, 'single') && ! str_contains($catType, 'doubles'))) {
+            $tagStr = 'single';
+        } else {
+            $tagStr = 'single';
         }
         $validated['tag'] = $tagStr;
 

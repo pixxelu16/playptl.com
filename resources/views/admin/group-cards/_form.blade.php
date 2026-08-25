@@ -72,13 +72,18 @@
             <option value="">Select Category</option>
             @foreach (($categories ?? []) as $cat)
                 @php
-                    $currentCatId = old('category_id', $groupCard->category_id ?? null);
-                    $selected = $currentCatId ? (int) $currentCatId === (int) $cat->id : (
-                        old('tag', $groupCard->tag) == $cat->id || 
-                        (is_string(old('tag', $groupCard->tag)) && 
-                         (strtolower(old('tag', $groupCard->tag)) === strtolower($cat->name) || 
-                          (strtolower($cat->name) === 'singles' && strtolower(old('tag', $groupCard->tag)) === 'single')))
-                    );
+                    $oldTag = old('tag');
+                    if ($oldTag !== null) {
+                        $selected = ((string) $oldTag === (string) $cat->id);
+                    } elseif ($groupCard->category_id) {
+                        $selected = ((int) $groupCard->category_id === (int) $cat->id);
+                    } else {
+                        $cardTag = strtolower((string) ($groupCard->tag ?? ''));
+                        $catName = strtolower($cat->name);
+                        $selected = ($cardTag === $catName)
+                            || ($catName === 'singles' && $cardTag === 'single')
+                            || ($cardTag !== '' && str_contains($catName, $cardTag));
+                    }
                 @endphp
                 <option value="{{ $cat->id }}" @selected($selected)>{{ $cat->name }}</option>
             @endforeach
